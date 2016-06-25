@@ -1,0 +1,8 @@
+*.pyc
+*.sqlite3
+.idea
+arenda.sublime-workspace
+media/
+.sass-cache
+nginx_gen.conf
+uwsgi_gen.ini
