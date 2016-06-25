@@ -22,6 +22,7 @@ def on_user_registered(sender, **kwargs):
     logger.info('User has been registered. {} {} {}'.format(sender.pk, sender.country, sender.phone))
     confirmation = PhoneConfirmation.objects.create(user=sender)
 
+    # TODO (VM): Send sms message to user phone
     return
 
 user_registered.connect(on_user_registered)
