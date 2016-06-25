@@ -9,6 +9,7 @@ from django.db import models
 from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser, PermissionsMixin
 )
+from countries.models import Country
 
 
 def avatars_upload_dir(instance, filename):
@@ -47,6 +48,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(max_length=30, blank=True)
     username = models.CharField(max_length=15, unique=True)
     fullname = models.CharField(max_length=50, blank=False)
+
+    country = models.ForeignKey(Country)
 
     avatar = models.ImageField(upload_to=avatars_upload_dir, blank=True)
 

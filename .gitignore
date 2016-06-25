@@ -6,3 +6,4 @@ media/
 .sass-cache
 nginx_gen.conf
 uwsgi_gen.ini
+env/
