@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy
 from rest_framework import status
+from smsconfirmation.models import PhoneConfirmation
 from users.models import User
 
 
@@ -74,4 +75,9 @@ class RegisterTest(TestCase):
         self.assertIsNotNone(response.data.get('user_id'))
         self.assertEqual(user.phone, data['phone'])
         self.assertEqual(user.country.pk, data['country'])
+
+        confirmation = PhoneConfirmation.objects.get(user=user)
+
+        self.assertFalse(confirmation.is_confirmed)
+        self.assertFalse(confirmation.is_delivered)
 

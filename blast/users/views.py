@@ -3,6 +3,7 @@ from rest_framework import status, viewsets, mixins, permissions
 
 from users.serializers import RegisterUserSerializer, PublicUserSerializer, UpdateUserSerializer
 from users.models import User
+from users.signals import user_registered
 
 
 class UserViewSet(mixins.CreateModelMixin,
@@ -38,6 +39,8 @@ class UserViewSet(mixins.CreateModelMixin,
                 'message': 'register completed successfully',
                 'user_id': user.id
             }
+
+            user_registered.send(sender=user)
 
             return Response(data, status=status.HTTP_201_CREATED)
         else:
