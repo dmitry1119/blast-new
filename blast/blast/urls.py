@@ -18,11 +18,13 @@ from django.contrib import admin
 
 from rest_framework_jwt.views import obtain_jwt_token
 from rest_framework.routers import DefaultRouter
+from countries.views import CountryViewSet
 
 from users.views import UserViewSet
 
 api_1 = DefaultRouter()
 api_1.register('users', UserViewSet)
+api_1.register('countries', CountryViewSet)
 
 urlpatterns = [
     url(r'api/v1/', include(api_1.urls)),
