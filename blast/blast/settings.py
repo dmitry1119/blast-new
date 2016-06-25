@@ -116,7 +116,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication', # TODO: Get rid fo
         'rest_framework.authentication.SessionAuthentication', # TODO: Get rid fo
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-    )
+    ),
+
+    'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardResultsSetPagination'
 }
 
 
