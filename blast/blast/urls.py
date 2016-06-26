@@ -21,6 +21,7 @@ from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
 
 from users.views import UserViewSet
+from smsconfirmation.views import PhoneConfirmView
 
 api_1 = DefaultRouter()
 api_1.register('users', UserViewSet)
@@ -28,7 +29,8 @@ api_1.register('countries', CountryViewSet)
 
 urlpatterns = [
     url(r'api/v1/', include(api_1.urls)),
+    url(r'api/v1/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),
 
     url(r'^admin/', admin.site.urls),
-    url(r'^auth/v1/token/', obtain_jwt_token),
+    url(r'^auth/v1/token/', obtain_jwt_token, name='get-auth-token'),
 ]
