@@ -98,18 +98,26 @@ class UpdateProfileAccessTest(BaseTestCase):
         })
 
     def test_edit_access(self):
+        """
+        Should return 404 for user that tries to edit not his profile.
+        """
         response = self.client.patch(self.url, json.dumps({
             'bio': 'new bio',
             'website': 'new website'
         }), content_type='application/json')
 
-        print('CODE', response.status_code, response.data)
-
         self.other_user.refresh_from_db()
-        print ('BIO', self.other_user.bio)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.user.bio, '')
+        self.assertEqual(self.user.website, '')
 
 
 class UpdateProfileTest(BaseTestCase):
+
+    bio = 'user bio text'
+    website = 'www.google.com'
+    fullname = 'Tiler'
 
     def setUp(self):
         super().setUp()
@@ -118,8 +126,19 @@ class UpdateProfileTest(BaseTestCase):
             'pk': self.user.pk
         })
 
-    def test_edit_access(self):
-        pass
+    def test_edit_optional_data(self):
+        data = json.dumps({
+            'bio': self.bio,
+            'website': self.website,
+            'fullname': self.fullname
+        })
 
-    def test_edit_bio_and_website(self):
-        pass
+        response = self.client.patch(self.url, data, content_type='application/json')
+
+        self.user.refresh_from_db()
+
+        print(self.user.website, self.user.bio)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user.bio, self.bio)
+        self.assertEqual(self.user.website, self.website)
+        self.assertEqual(self.user.fullname, self.fullname)
