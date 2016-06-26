@@ -38,7 +38,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('fullname', 'avatar', 'website', 'gender', 'birthday',)
+        fields = ('fullname', 'avatar', 'bio', 'website', 'gender', 'birthday',)
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
@@ -48,5 +48,5 @@ class PublicUserSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ('id', 'username', 'created_at', 'fullname', 'avatar',
+        fields = ('id', 'username', 'created_at', 'birthday', 'fullname', 'avatar',
                   'bio', 'website',)
