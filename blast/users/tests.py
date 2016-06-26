@@ -2,6 +2,7 @@ import json
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy
 from django.test.client import MULTIPART_CONTENT
+from django.utils import timezone
 from rest_framework import status
 from smsconfirmation.models import PhoneConfirmation
 from users.models import User
@@ -118,6 +119,7 @@ class UpdateProfileTest(BaseTestCase):
     bio = 'user bio text'
     website = 'www.google.com'
     fullname = 'Tiler'
+    birthday = timezone.now()
 
     def setUp(self):
         super().setUp()
@@ -130,15 +132,29 @@ class UpdateProfileTest(BaseTestCase):
         data = json.dumps({
             'bio': self.bio,
             'website': self.website,
-            'fullname': self.fullname
+            'fullname': self.fullname,
         })
 
         response = self.client.patch(self.url, data, content_type='application/json')
 
         self.user.refresh_from_db()
 
-        print(self.user.website, self.user.bio)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.user.bio, self.bio)
         self.assertEqual(self.user.website, self.website)
         self.assertEqual(self.user.fullname, self.fullname)
+
+    def test_edit_private_data(self):
+        data = json.dumps({
+            'birthday': str(self.birthday),
+            'gender': User.GENDER_FEMALE,
+        })
+
+        response = self.client.patch(self.url, data, content_type='application/json')
+        print(response.data)
+
+        self.user.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user.gender, User.GENDER_FEMALE)
+        self.assertEqual(self.user.birthday, self.birthday)

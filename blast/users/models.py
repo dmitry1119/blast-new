@@ -43,12 +43,12 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
 
-    GENDER_FEMALE = 0,
-    GENDER_MALE = 1,
+    GENDER_FEMALE = 0
+    GENDER_MALE = 1
 
     GENDER = (
-        (),
-        (),
+        (GENDER_FEMALE, 0),
+        (GENDER_MALE, 1),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

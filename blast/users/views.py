@@ -19,11 +19,9 @@ class UserViewSet(mixins.CreateModelMixin,
     def get_serializer_class(self):
         if self.request.method in permissions.SAFE_METHODS:
             return PublicUserSerializer
-
-        if self.request.method == 'POST':
+        elif self.request.method == 'POST' or self.request.method == 'PUT':
             return RegisterUserSerializer
-
-        if self.request.method == 'PATCH':
+        elif self.request.method == 'PATCH':
             return UpdateUserSerializer
 
     def create(self, request, *args, **kwargs):
@@ -53,13 +51,15 @@ class UserViewSet(mixins.CreateModelMixin,
 
     def get_object(self, queryset=None):
         obj = super().get_object()
-        if obj != self.request.user:
+
+        if self.request.method in permissions.SAFE_METHODS:
+            return obj
+        elif obj != self.request.user:
             raise Http404()
 
         return obj
 
     def update(self, request, **kwargs):
-
         instance = self.get_object()
 
         serializer = self.get_serializer_class()
