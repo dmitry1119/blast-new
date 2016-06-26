@@ -8,4 +8,10 @@ Set up and configure virtalenv
 
 `pip install -r docs/requriments.txt`
 
-`./load_fixtures.sh'
+Load fixtures
+
+`./manage.py loaddata countries`
+
+Start dev-server
+
+`./manage.py runserver 0.0.0.0:8000`
