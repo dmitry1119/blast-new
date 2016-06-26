@@ -1,10 +1,8 @@
 from django.core.urlresolvers import reverse_lazy
-from django.test import TestCase
 from rest_framework import status
-from core.tests import BaseTestCase
 
+from core.tests import BaseTestCase
 from smsconfirmation.models import PhoneConfirmation
-from users.models import User
 
 
 class TestPhoneConfirmation(BaseTestCase):
@@ -53,7 +51,7 @@ class TestResetPassword(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        response = self.client.get(self.url)
+        self.client.get(self.url)
         self.password_request = PhoneConfirmation.objects.get(user=self.user,
                                                               request_type=PhoneConfirmation.REQUEST_PASSWORD)
 

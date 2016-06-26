@@ -38,15 +38,15 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('fullname', 'avatar', 'website', )
+        fields = ('fullname', 'avatar', 'website', 'gender', 'birthday',)
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
     """
-    Safe serializer for public methods.
+    Serializer for safe methods.
     It serialize only safe public methods, like username, avatar etc.
     """
     class Meta:
         model = User
         fields = ('id', 'username', 'created_at', 'fullname', 'avatar',
-                  'website')
+                  'bio', 'website',)

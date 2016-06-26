@@ -1,3 +1,4 @@
+from django.http import Http404
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins, permissions
 
@@ -22,7 +23,7 @@ class UserViewSet(mixins.CreateModelMixin,
         if self.request.method == 'POST':
             return RegisterUserSerializer
 
-        if self.request.metoh == 'PATCH':
+        if self.request.method == 'PATCH':
             return UpdateUserSerializer
 
     def create(self, request, *args, **kwargs):
@@ -50,6 +51,26 @@ class UserViewSet(mixins.CreateModelMixin,
             }
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
+    def get_object(self, queryset=None):
+        obj = super().get_object()
+        if obj != self.request.user:
+            raise Http404()
+
+        return obj
+
     def update(self, request, **kwargs):
-        return Response(data={'message': 'not implemented'},
-                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        instance = self.get_object()
+
+        serializer = self.get_serializer_class()
+        serializer = serializer(data=self.request.data,
+                                instance=instance, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data={'message': 'ok'})
+        else:
+            return Response(data={
+                'message': 'failed to update user profile',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
