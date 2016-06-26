@@ -6,7 +6,7 @@ Set up and configure virtalenv
 
 `. env/bin/activate`
 
-`pip install -r docs/requriments.txt`
+`pip install -r conf/requriments.txt`
 
 Load fixtures
 
