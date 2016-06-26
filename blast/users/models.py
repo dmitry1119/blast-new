@@ -57,10 +57,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     website = models.CharField(max_length=50, blank=True)
 
     is_private = models.BooleanField(default=False)
+
     is_verified = models.BooleanField(default=False)  # Was phone confirmed?
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    is_confirm = models.BooleanField(default=False)
 
     objects = UserManager()
 

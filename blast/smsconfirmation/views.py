@@ -70,7 +70,7 @@ class PhoneConfirmView(PhoneConfirmBase):
                                                 request_type=PhoneConfirmation.REQUEST_PHONE)
 
     def on_code_confirmed(self, request, confirmation):
-        request.user.is_confirm = True
+        request.user.is_verified = True
         request.user.save()
 
 

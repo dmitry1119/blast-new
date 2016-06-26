@@ -21,7 +21,7 @@ class TestPhoneConfirmation(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(confirm.is_confirmed)
-        self.assertFalse(self.user.is_confirm)
+        self.assertFalse(self.user.is_verified)
 
     def test_invalid_code(self):
         response = self.client.post(self.url, {
@@ -33,7 +33,7 @@ class TestPhoneConfirmation(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(confirm.is_confirmed)
-        self.assertFalse(self.user.is_confirm)
+        self.assertFalse(self.user.is_verified)
 
     def test_valid_code(self):
         confirm = PhoneConfirmation.objects.get(user=self.user)
@@ -43,7 +43,7 @@ class TestPhoneConfirmation(BaseTestCase):
         self.user.refresh_from_db()
 
         self.assertTrue(confirm.is_confirmed)
-        self.assertTrue(self.user.is_confirm)
+        self.assertTrue(self.user.is_verified)
 
 
 class TestResetPassword(BaseTestCase):
