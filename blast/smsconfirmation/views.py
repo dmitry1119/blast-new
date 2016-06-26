@@ -1,28 +1,33 @@
 # Create your views here.
 import logging
-from rest_framework.permissions import AllowAny
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status, permissions
+from rest_framework import status
 
 from smsconfirmation.models import PhoneConfirmation
-from smsconfirmation.serializers import PhoneConfirmationSerializer
+from smsconfirmation.serializers import PhoneConfirmationSerializer, ChangePasswordSerializer
 
 
 logger = logging.getLogger(__name__)
 
 
-class PhoneConfirmView(APIView):
-    # TODO (VM): Add is_delivered to filter?
-    queryset = PhoneConfirmation.objects.filter(is_confirmed=False)
+class PhoneConfirmBase(APIView):
+    """
+    Base class for requests that can be confirmed by phone.
+
+    serializer_class - class for serializing and validating request data.
+    queryset - PhoneConfirmation queryset.
+    """
+    def on_code_confirmed(self, request, confirmation):
+        raise NotImplemented()
 
     def post(self, request):
-        serializer = PhoneConfirmationSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
 
         if not serializer.is_valid():
             return Response({
-                'message': 'Failed to confirm phone',
+                'message': 'wrong data',
                 'errors': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -35,24 +40,59 @@ class PhoneConfirmView(APIView):
                             status=status.HTTP_404_NOT_FOUND)
 
         if not confirmation.is_actual():
+            logger.info('Confirmation code is expired {}'.format(confirmation.pk))
             return Response({
-                'message': 'confirmation request outdated'
+                'message': 'Confirmation code is expired'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         if confirmation.code == serializer.data['code']:
             confirmation.is_confirmed = True
             confirmation.save()
 
-            # TODO: Move to confirmatio.save()?
-            request.user.is_confirm = True
-            request.user.save()
+            self.on_code_confirmed(request, confirmation)
 
             return Response({
-                'message': 'confirmed'
+                'message': 'ok'
             }, status=status.HTTP_200_OK)
         else:
             return Response({
                 'message': 'wrong code'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+
+class PhoneConfirmView(PhoneConfirmBase):
+    """TODO(VM)"""
+
+    serializer_class = PhoneConfirmationSerializer
+
+    # TODO (VM): Add is_delivered to filter?
+    queryset = PhoneConfirmation.objects.filter(is_confirmed=False,
+                                                request_type=PhoneConfirmation.REQUEST_PHONE)
+
+    def on_code_confirmed(self, request, confirmation):
+        request.user.is_confirm = True
+        request.user.save()
+
+
+# TODO: Fix permissions:
+class ResetPasswordView(PhoneConfirmBase):
+    """TODO:(VM)"""
+
+    serializer_class = ChangePasswordSerializer
+
+    # TODO (VM): Add is_delivered to filter?
+    queryset = PhoneConfirmation.objects.filter(is_confirmed=False,
+                                                request_type=PhoneConfirmation.REQUEST_PASSWORD)
+
+    def get(self, request):
+        PhoneConfirmation.objects.create(user=self.request.user,
+                                         request_type=PhoneConfirmation.REQUEST_PASSWORD)
+        # TODO(VM): Send message to phone
+        return Response({
+            'message': 'sms code has been sent to your phone'
+        })
+
+    def on_code_confirmed(self, request, confirmation):
+        request.user.set_password(request.data['password1'])
+        request.user.save()
 

@@ -1,47 +1,15 @@
-import json
 from django.core.urlresolvers import reverse_lazy
 from django.test import TestCase
-
 from rest_framework import status
+from core.tests import BaseTestCase
 
-from smsconfirmation.models import PhoneConfirmation, get_phone_confirmation_code
+from smsconfirmation.models import PhoneConfirmation
 from users.models import User
 
 
-class Test(TestCase):
-
-    fixtures = ('countries.json',)
-
-    phone = '8913123123'
-    country = 1
-    password = '111111'
-    username = 'username'
+class TestPhoneConfirmation(BaseTestCase):
 
     url = reverse_lazy('phone-confirmation')
-
-    def setUp(self):
-        """Should register user."""
-        data = {
-            'phone': self.phone,
-            'username': self.username,
-            'password': self.password,
-            'country': self.country
-        }
-
-        self.client.post(reverse_lazy('user-list'), data)
-        self.user = User.objects.get(username=self.username)
-
-        data = {
-            'phone': self.phone,
-            'password': self.password
-        }
-
-        response = self.client.post(reverse_lazy('get-auth-token'), data)
-        self.auth_token = response.data.get('token')
-        self.headers = {
-            'HTTP_AUTHORIZATION': 'JWT {0}'.format(self.auth_token)
-        }
-        self.client.defaults.update(self.headers)
 
     def test_empty_code(self):
         response = self.client.post(self.url, {
@@ -76,3 +44,64 @@ class Test(TestCase):
 
         self.assertTrue(confirm.is_confirmed)
         self.assertTrue(self.user.is_confirm)
+
+
+class TestResetPassword(BaseTestCase):
+
+    url = reverse_lazy('reset-password')
+
+    def setUp(self):
+        super().setUp()
+
+        response = self.client.get(self.url)
+        self.password_request = PhoneConfirmation.objects.get(user=self.user,
+                                                              request_type=PhoneConfirmation.REQUEST_PASSWORD)
+
+    def test_wrong_password_len(self):
+        data = {
+            'code': self.password_request.code,
+            'password1': 'new',
+            'password2': 'new'
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.user.refresh_from_db()
+        self.password_request.refresh_from_db()
+
+        self.assertTrue(self.user.check_password(self.password))
+        self.assertFalse(self.password_request.is_confirmed)
+        self.assertIsNotNone(response.data.get('errors'))
+
+    def test_password_do_not_match(self):
+        data = {
+            'code': self.password_request.code,
+            'password1': 'old_password',
+            'password2': 'new_password'
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.user.refresh_from_db()
+        self.password_request.refresh_from_db()
+
+        self.assertTrue(self.user.check_password(self.password))
+        self.assertFalse(self.password_request.is_confirmed)
+        self.assertIsNotNone(response.data.get('errors'))
+
+    def test_change_password(self):
+        new_password = 'new_password'
+        data = {
+            'code': self.password_request.code,
+            'password1': new_password,
+            'password2': new_password,
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.user.refresh_from_db()
+        self.password_request.refresh_from_db()
+
+        self.assertTrue(self.password_request.is_confirmed)
+        self.assertTrue(self.user.check_password(new_password))
+        self.assertIsNone(response.data.get('errors'))

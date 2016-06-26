@@ -17,7 +17,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         if not value or len(value) > 15:
-            raise serializers.ValidationError('Your username m/ust be 15 characters or less')
+            raise serializers.ValidationError('Your username must be 15 characters or less')
         return value
 
     def create(self, validated_data):

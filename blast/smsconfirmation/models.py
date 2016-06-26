@@ -17,6 +17,14 @@ def get_phone_confirmation_code():
 
 
 class PhoneConfirmation(models.Model):
+    REQUEST_PHONE = 1
+    REQUEST_PASSWORD = 2
+
+    REQUEST_TYPES = (
+        (REQUEST_PHONE, 'Phone confirmation'),
+        (REQUEST_PASSWORD, 'Reset password'),
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -28,6 +36,8 @@ class PhoneConfirmation(models.Model):
     is_delivered = models.BooleanField(default=False)
     is_confirmed = models.BooleanField(default=False)
 
+    request_type = models.IntegerField(choices=REQUEST_TYPES)
+
     def is_actual(self):
         # TODO: Add test and implementation.
         return True
@@ -38,7 +48,7 @@ class PhoneConfirmation(models.Model):
 
 def on_user_registered(sender, **kwargs):
     logger.info('User has been registered. {} {} {}'.format(sender.pk, sender.country, sender.phone))
-    PhoneConfirmation.objects.create(user=sender)
+    PhoneConfirmation.objects.create(user=sender, request_type=PhoneConfirmation.REQUEST_PHONE)
 
     # TODO (VM): Send sms message to user phone
     return
