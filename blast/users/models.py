@@ -92,6 +92,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
         return super().clean()
 
+    def followers_count(self):
+        # TODO: Use cached value from Redis.
+        import random
+        return random.randint(0, 100000)
+
     def get_full_name(self):
         return self.fullname
 

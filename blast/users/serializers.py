@@ -46,7 +46,9 @@ class PublicUserSerializer(serializers.ModelSerializer):
     Serializer for safe methods.
     It serialize only safe public methods, like username, avatar etc.
     """
+    followers = serializers.ReadOnlyField(source='followers_count')
+
     class Meta:
         model = User
         fields = ('id', 'username', 'created_at', 'birthday', 'fullname', 'avatar',
-                  'bio', 'website',)
+                  'bio', 'website', 'followers')
