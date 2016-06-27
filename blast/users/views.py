@@ -17,10 +17,10 @@ class UserViewSet(mixins.CreateModelMixin,
     queryset = User.objects.filter(is_private=False)
 
     def get_permissions(self):
-        if self.request.method == 'PATCH':
-            return permissions.IsAuthenticated(),
+        if self.request.method in permissions.SAFE_METHODS:
+            return (permissions.AllowAny(),)
         else:
-            return permissions.AllowAny(),
+            return (permissions.IsAuthenticated(),)
 
     def get_serializer_class(self):
         if self.request.method in permissions.SAFE_METHODS:
