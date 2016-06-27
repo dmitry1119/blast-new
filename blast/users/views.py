@@ -16,6 +16,12 @@ class UserViewSet(mixins.CreateModelMixin,
 
     queryset = User.objects.filter(is_private=False)
 
+    def get_permissions(self):
+        if self.request.method == 'PATCH':
+            return permissions.IsAuthenticated(),
+        else:
+            return permissions.AllowAny(),
+
     def get_serializer_class(self):
         if self.request.method in permissions.SAFE_METHODS:
             return PublicUserSerializer
@@ -60,6 +66,7 @@ class UserViewSet(mixins.CreateModelMixin,
         return obj
 
     def update(self, request, **kwargs):
+        """Updates user profile"""
         instance = self.get_object()
 
         serializer = self.get_serializer_class()

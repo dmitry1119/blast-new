@@ -1,13 +1,14 @@
 import json
+
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy
-from django.test.client import MULTIPART_CONTENT
 from django.utils import timezone
 from rest_framework import status
+
 from smsconfirmation.models import PhoneConfirmation
 from users.models import User
+from core.tests import BaseTestCase, BaseTestCaseUnauth
 
-from core.tests import BaseTestCase
 
 class RegisterTest(TestCase):
 
@@ -110,8 +111,32 @@ class UpdateProfileAccessTest(BaseTestCase):
         self.other_user.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.other_user.bio, '')
+        self.assertEqual(self.other_user.website, '')
+
+
+class UpdateProfilePermissionsTest(BaseTestCaseUnauth):
+
+    def test_edit_access(self):
+        """
+        Should return 404 for user that tries to edit not his profile.
+        """
+        response = self.client.patch(self.url, json.dumps({
+            'bio': 'new bio',
+            'website': 'new website'
+        }), content_type='application/json')
+
+        self.user.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(self.user.bio, '')
         self.assertEqual(self.user.website, '')
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse_lazy('user-detail', kwargs={
+            'pk': self.user.pk
+        })
 
 
 class UpdateProfileTest(BaseTestCase):
@@ -151,7 +176,6 @@ class UpdateProfileTest(BaseTestCase):
         })
 
         response = self.client.patch(self.url, data, content_type='application/json')
-        print(response.data)
 
         self.user.refresh_from_db()
 
