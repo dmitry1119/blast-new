@@ -33,7 +33,7 @@ urlpatterns = [
 
     url(r'^admin/', admin.site.urls),
     url(r'^auth/v1/token/', obtain_jwt_token, name='get-auth-token'),
-    url(r'api/v1/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),
 
+    url(r'api/v1/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),
     url(r'api/v1/password/', ResetPasswordView.as_view(), name='reset-password'),
 ]

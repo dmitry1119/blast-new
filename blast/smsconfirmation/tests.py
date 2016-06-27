@@ -103,3 +103,20 @@ class TestResetPassword(BaseTestCase):
         self.assertTrue(self.password_request.is_confirmed)
         self.assertTrue(self.user.check_password(new_password))
         self.assertIsNone(response.data.get('errors'))
+
+    def test_two_confirmation_requests(self):
+        confirmations = PhoneConfirmation.objects.all().order_by('-created_at')
+        new_password = 'new_password'
+        data = {
+            'code': confirmations[1].code,
+            'password1': new_password,
+            'password2': new_password,
+        }
+
+        self.client.post(self.url, data)
+
+        self.user.refresh_from_db()
+        self.password_request.refresh_from_db()
+
+        self.assertFalse(self.password_request.is_confirmed)
+        self.assertTrue(self.user.check_password(self.password))

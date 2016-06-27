@@ -38,6 +38,9 @@ class PhoneConfirmation(models.Model):
 
     request_type = models.IntegerField(choices=REQUEST_TYPES)
 
+    def __str__(self):
+        return '{} {}'.format(self.user, self.code)
+
     def is_actual(self):
         # TODO: Add test and implementation.
         return True

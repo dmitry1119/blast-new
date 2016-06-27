@@ -32,7 +32,7 @@ class PhoneConfirmBase(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         confirmation = self.queryset.filter(user=request.user.pk)
-        confirmation = confirmation.order_by('created_at').first()
+        confirmation = confirmation.order_by('-created_at').first()
 
         if not confirmation:
             logger.error('Confirmation request for user {} was not found'.format(request.user))
@@ -68,6 +68,14 @@ class PhoneConfirmView(PhoneConfirmBase):
     # TODO (VM): Add is_delivered to filter?
     queryset = PhoneConfirmation.objects.filter(is_confirmed=False,
                                                 request_type=PhoneConfirmation.REQUEST_PHONE)
+
+    def get(self):
+        PhoneConfirmation.objects.create(user=self.request.user,
+                                         request_type=PhoneConfirmation.REQUEST_PHONE)
+
+        return Response({
+            'sms code has been sent to your phone'
+        })
 
     def on_code_confirmed(self, request, confirmation):
         request.user.is_verified = True
