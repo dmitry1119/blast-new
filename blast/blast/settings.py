@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_swagger',
     'core',
     'smsconfirmation',
     'countries',
@@ -75,6 +76,31 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'blast.wsgi.application'
 
+SWAGGER_SETTINGS = {
+    'exclude_namespaces': [],
+    'api_version': '1',
+    'api_path': '/',
+    'enabled_methods': [
+        'get',
+        'post',
+        'patch',
+        'delete'
+    ],
+    'api_key': '',
+    'is_authenticated': False,
+    'is_superuser': False,
+    'unauthenticated_user': 'django.contrib.auth.models.AnonymousUser',
+    'permission_denied_handler': None,
+    'resource_access_handler': None,
+    'info': {
+        'contact': 'vlmihnevich@gmail.com',
+        'description': 'This is swagger documentation for blast API',
+        'license': 'Apache 2.0',
+        'title': 'Blast Api',
+    },
+    'doc_expansion': 'none',
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
@@ -104,7 +130,6 @@ AUTH_PASSWORD_VALIDATORS = [
     #     'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     # },
 ]
-
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
@@ -120,6 +145,7 @@ REST_FRAMEWORK = {
 
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardResultsSetPagination'
 }
+
 
 
 # Internationalization

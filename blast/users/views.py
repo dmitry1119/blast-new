@@ -14,10 +14,10 @@ class UserViewSet(mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     permission_classes = (permissions.AllowAny,)
 
-    queryset = User.objects.filter(is_private=False)
+    queryset = User.objects.all()
 
     def get_permissions(self):
-        if self.request.method in permissions.SAFE_METHODS:
+        if self.request.method in permissions.SAFE_METHODS or self.request.method == 'POST':
             return (permissions.AllowAny(),)
         else:
             return (permissions.IsAuthenticated(),)
@@ -32,7 +32,18 @@ class UserViewSet(mixins.CreateModelMixin,
 
     def create(self, request, *args, **kwargs):
         """
-        Register user by phone, username, password and avatar.
+        Register user by phone, username, password and country id.
+        Avatar field is optional and can be set after registration.
+
+        ---
+        parameters:
+            - name: phone
+              description: user phone number without country code (e.g. 9131234567 not +79131234567)
+            - name: username
+              description: unique user name. Must be less then 16 symbols.
+            - name: password
+              description: user password. Must be greater than 5 symbols.
+            - name: user country identifier.
         """
         serializer = self.get_serializer_class()
         serializer = serializer(data=self.request.data)
@@ -66,7 +77,19 @@ class UserViewSet(mixins.CreateModelMixin,
         return obj
 
     def update(self, request, **kwargs):
-        """Updates user profile"""
+        """
+        Updates user profile
+
+        ---
+        parameters:
+            - name: fullname
+              description: user fullname
+            - name: avatar
+              description: user avatar image.
+            - name: gender
+              description: user gender. 0 for female and 1 for male.
+            - name: user country identifier.
+        """
         instance = self.get_object()
 
         serializer = self.get_serializer_class()

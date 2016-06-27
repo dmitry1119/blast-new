@@ -6,5 +6,8 @@ from countries.serializers import CountrySerializer
 
 class CountryViewSet(mixins.ListModelMixin,
                      viewsets.GenericViewSet):
+    """
+    Returns list of countries with phone codes.
+    """
     serializer_class = CountrySerializer
     queryset = Country.objects.all()

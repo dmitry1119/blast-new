@@ -63,14 +63,28 @@ class PhoneConfirmBase(APIView):
 
 
 class PhoneConfirmView(PhoneConfirmBase):
-    """TODO(VM)"""
     serializer_class = PhoneConfirmationSerializer
 
     # TODO (VM): Add is_delivered to filter?
     queryset = PhoneConfirmation.objects.filter(is_confirmed=False,
                                                 request_type=PhoneConfirmation.REQUEST_PHONE)
 
-    def get(self):
+    def post(self, *args, **kwargs):
+        """
+        Method for confirming the user phone number.
+
+        ---
+        serializer: smsconfirmation.serializers.PhoneConfirmationSerializer
+        parameters:
+            - name: code
+              description: Code received by SMS
+        """
+        return super().post(*args, **kwargs)
+
+    def get(self, *args, **kwargs):
+        """
+        Requests new phone confirmation code by SMS.
+        """
         PhoneConfirmation.objects.create(user=self.request.user,
                                          request_type=PhoneConfirmation.REQUEST_PHONE)
 
@@ -85,7 +99,6 @@ class PhoneConfirmView(PhoneConfirmBase):
 
 # TODO: Fix permissions:
 class ResetPasswordView(PhoneConfirmBase):
-    """TODO:(VM)"""
 
     serializer_class = ChangePasswordSerializer
 
@@ -93,13 +106,34 @@ class ResetPasswordView(PhoneConfirmBase):
     queryset = PhoneConfirmation.objects.filter(is_confirmed=False,
                                                 request_type=PhoneConfirmation.REQUEST_PASSWORD)
 
-    def get(self, request):
+    def get(self, *args, **kwargs):
+        """
+        Requests new sms confirmation for password changing.
+        Call this method before you reset your password.
+
+        """
         PhoneConfirmation.objects.create(user=self.request.user,
                                          request_type=PhoneConfirmation.REQUEST_PASSWORD)
         # TODO(VM): Send message to phone
         return Response({
             'message': 'sms code has been sent to your phone'
         })
+
+    def post(self, *args, **kwargs):
+        """
+        Method for changing password.
+
+        ---
+        serializer: smsconfirmation.serializers.ChangePasswordSerializer
+        parameters:
+            - name: code
+              description: Code received by SMS
+            - name: password1
+              description: New password. Must be great than 5.
+            - name: password2
+              description: Password confirmation. Must be equal to password1.
+        """
+        return super().post(*args, **kwargs)
 
     def on_code_confirmed(self, request, confirmation):
         request.user.set_password(request.data['password1'])

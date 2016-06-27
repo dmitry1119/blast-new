@@ -77,6 +77,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Internal information
     is_verified = models.BooleanField(default=False)  # Is phone confirmed?
+
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
