@@ -4,7 +4,7 @@ from django.core.urlresolvers import reverse_lazy
 from users.models import User
 
 
-class BaseTestCase(TestCase):
+class BaseTestCaseUnauth(TestCase):
     fixtures = ('countries.json',)
 
     phone = '8913123123'
@@ -13,7 +13,6 @@ class BaseTestCase(TestCase):
     username = 'username'
 
     def setUp(self):
-        """Should register user."""
         data = {
             'phone': self.phone,
             'username': self.username,
@@ -31,6 +30,13 @@ class BaseTestCase(TestCase):
 
         response = self.client.post(reverse_lazy('get-auth-token'), data)
         self.auth_token = response.data.get('token')
+
+
+class BaseTestCase(BaseTestCaseUnauth):
+
+    def setUp(self):
+        super().setUp()
+
         self.headers = {
             'HTTP_AUTHORIZATION': 'JWT {0}'.format(self.auth_token)
         }

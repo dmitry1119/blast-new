@@ -1,7 +1,9 @@
+from unittest import TestCase
+
 from django.core.urlresolvers import reverse_lazy
 from rest_framework import status
 
-from core.tests import BaseTestCase
+from core.tests import BaseTestCase, BaseTestCaseUnauth
 from smsconfirmation.models import PhoneConfirmation
 
 
@@ -120,3 +122,13 @@ class TestResetPassword(BaseTestCase):
 
         self.assertFalse(self.password_request.is_confirmed)
         self.assertTrue(self.user.check_password(self.password))
+
+
+class TestResetPasswordUnauth(BaseTestCaseUnauth):
+    url = reverse_lazy('reset-password')
+
+    def test_change_password(self):
+        """Should not change password"""
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

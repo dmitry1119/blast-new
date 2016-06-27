@@ -3,7 +3,7 @@ import logging
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status
+from rest_framework import status, permissions
 
 from smsconfirmation.models import PhoneConfirmation
 from smsconfirmation.serializers import PhoneConfirmationSerializer, ChangePasswordSerializer
@@ -19,6 +19,8 @@ class PhoneConfirmBase(APIView):
     serializer_class - class for serializing and validating request data.
     queryset - PhoneConfirmation queryset.
     """
+    permission_classes = (permissions.IsAuthenticated,)
+
     def on_code_confirmed(self, request, confirmation):
         raise NotImplemented()
 
@@ -62,7 +64,6 @@ class PhoneConfirmBase(APIView):
 
 class PhoneConfirmView(PhoneConfirmBase):
     """TODO(VM)"""
-
     serializer_class = PhoneConfirmationSerializer
 
     # TODO (VM): Add is_delivered to filter?
