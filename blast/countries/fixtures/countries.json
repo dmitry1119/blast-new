@@ -2,7 +2,7 @@
   {
     "fields": {
       "name": "Afghanistan", 
-      "code": "93 "
+      "code": "93"
     },
     "model": "countries.country"
   }, {
@@ -56,7 +56,7 @@
   }, {
     "fields": {
       "name": "Argentina", 
-      "code": "54 "
+      "code": "54"
     },
     "model": "countries.country"
   }, {
@@ -74,13 +74,13 @@
   }, {
     "fields": {
       "name": "Australia", 
-      "code": "61 "
+      "code": "61"
     },
     "model": "countries.country"
   }, {
     "fields": {
       "name": "Austria", 
-      "code": "43 "
+      "code": "43"
     },
     "model": "countries.country"
   }, {
@@ -338,7 +338,7 @@
   }, {
     "fields": {
       "name": "Denmark", 
-      "code": "45 "
+      "code": "45"
     },
     "model": "countries.country"
   }, {
@@ -374,7 +374,7 @@
   }, {
     "fields": {
       "name": "Egypt", 
-      "code": "20 "
+      "code": "20"
     },
     "model": "countries.country"
   }, {
@@ -434,7 +434,7 @@
   }, {
     "fields": {
       "name": "France", 
-      "code": "33 "
+      "code": "33"
     },
     "model": "countries.country"
   }, {
@@ -554,7 +554,7 @@
   }, {
     "fields": {
       "name": "Hungary", 
-      "code": "36 "
+      "code": "36"
     },
     "model": "countries.country"
   }, {
@@ -566,19 +566,19 @@
   }, {
     "fields": {
       "name": "India", 
-      "code": "91 "
+      "code": "91"
     },
     "model": "countries.country"
   }, {
     "fields": {
       "name": "Indonesia", 
-      "code": "62 "
+      "code": "62"
     },
     "model": "countries.country"
   }, {
     "fields": {
       "name": "Iran", 
-      "code": "98 "
+      "code": "98"
     },
     "model": "countries.country"
   }, {
@@ -608,7 +608,7 @@
   }, {
     "fields": {
       "name": "Italy", 
-      "code": "39 "
+      "code": "39"
     },
     "model": "countries.country"
   }, {
@@ -626,7 +626,7 @@
   }, {
     "fields": {
       "name": "Japan", 
-      "code": "81 "
+      "code": "81"
     },
     "model": "countries.country"
   }, {
@@ -758,7 +758,7 @@
   }, {
     "fields": {
       "name": "Malaysia", 
-      "code": "60 "
+      "code": "60"
     },
     "model": "countries.country"
   }, {
@@ -806,7 +806,7 @@
   }, {
     "fields": {
       "name": "Mexico", 
-      "code": "52 "
+      "code": "52"
     },
     "model": "countries.country"
   }, {
@@ -992,13 +992,13 @@
   }, {
     "fields": {
       "name": "Peru", 
-      "code": "51 "
+      "code": "51"
     },
     "model": "countries.country"
   }, {
     "fields": {
       "name": "Philippines", 
-      "code": "63 "
+      "code": "63"
     },
     "model": "countries.country"
   }, {
@@ -1010,7 +1010,7 @@
   }, {
     "fields": {
       "name": "Poland", 
-      "code": "48 "
+      "code": "48"
     },
     "model": "countries.country"
   }, {
@@ -1154,7 +1154,7 @@
   }, {
     "fields": {
       "name": "Singapore",
-      "code": "65 "
+      "code": "65"
     },
     "model": "countries.country"
   }, {
@@ -1232,7 +1232,7 @@
   }, {
     "fields": {
       "name": "Svalbard and Jan Mayen",
-      "code": "47 "
+      "code": "47"
     },
     "model": "countries.country"
   }, {
