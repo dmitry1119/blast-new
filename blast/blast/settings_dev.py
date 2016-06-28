@@ -5,7 +5,7 @@ ALLOWED_HOSTS = ['*']
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'arenda',
+        'NAME': 'blast',
         'USER': 'blastadmin',
         'PASSWORD': '123456',
         'HOST': 'localhost',
