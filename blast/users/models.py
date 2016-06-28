@@ -93,7 +93,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         return super().clean()
 
     def followers_count(self):
-        # TODO: Use cached value from Redis.
+        # TODO (VM): Use cached value from Redis.
+        import random
+        return random.randint(0, 100000)
+
+    def blasts_count(self):
+        # TODO (VM): Use cached value from Redis.
+        import random
+        return random.randint(0, 100000)
+
+    def following_count(self):
+        # TODO (VM): Use cached value from Redis.
         import random
         return random.randint(0, 100000)
 
