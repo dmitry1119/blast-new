@@ -86,11 +86,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = ['username']
 
-    def clean(self):
-        if not self.username or len(self.username) > self._meta.fields['username'].max_length:
-            raise ValidationError({'username': 'Your username must be 15 characters or less'})
-
-        return super().clean()
+    # def clean(self):
+    #     if not self.username or len(self.username) > self._meta.fields['username'].max_length:
+    #         raise ValidationError({'username': 'Your username must be 15 characters or less'})
+        # return super().clean()
 
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.
