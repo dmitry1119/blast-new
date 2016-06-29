@@ -33,7 +33,7 @@ class PostsViewSet(mixins.CreateModelMixin,
             return self.permission_denied(self.request, 'You are not owner of this post')
 
     def create(self, request, *args, **kwargs):
-        """Creates new blast"""
+        """Creates new post"""
         serializer = self.get_serializer_class()
         serializer = serializer(data=request.data)
 
