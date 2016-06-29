@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from users.models import User
+from users.models import User, UserSettings
 
 
 class RegisterUserSerializer(serializers.ModelSerializer):
@@ -54,3 +54,9 @@ class PublicUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'created_at', 'birthday', 'fullname', 'avatar',
                   'bio', 'website', 'followers', 'blasts', 'following')
+
+
+class NotificationSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSettings
+        exclude = ('user',)

@@ -20,7 +20,7 @@ from rest_framework_jwt.views import obtain_jwt_token
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
 
-from users.views import UserViewSet
+from users.views import UserViewSet, UserSettingsViewSet
 from smsconfirmation.views import PhoneConfirmView, ResetPasswordView
 
 api_1 = DefaultRouter()
@@ -30,6 +30,7 @@ api_1.register('countries', CountryViewSet)
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^admin/', admin.site.urls),
+    url(r'^api/v1/user/settings/$', UserSettingsViewSet.as_view(), name='user-settings'),
     url(r'^api/v1/token/$', obtain_jwt_token, name='get-auth-token'),
     url(r'^api/v1/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),
     url(r'^api/v1/password/', ResetPasswordView.as_view(), name='reset-password'),

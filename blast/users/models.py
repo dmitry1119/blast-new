@@ -121,24 +121,26 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
-# class NotifySettings(models.Model):
-#     """List of notify settings"""
-#     OFF = 0
-#     PEOPLE_I_FOLLOW = 1
-#     EVERYONE = 2
-#
-#     CHOICES = (
-#         (OFF, 0),
-#         (PEOPLE_I_FOLLOW, 1),
-#         (EVERYONE, 2)
-#     )
-#
-#     notify_my_blasts = models.BooleanField(default=True)
-#     notify_upvoted_blasts = models.BooleanField(default=False)
-#     notify_downvoted_blasts = models.BooleanField(default=False)
-#     notify_pinned_blasts = models.BooleanField(default=False)
-#
-#     notify_votes = models.BooleanField(default=True)
-#
-#     comments = models.IntegerField(choices=CHOICES)
-#     reblasts = models.IntegerField(choices=CHOICES)
+class UserSettings(models.Model):
+    """ List of user notify settings """
+    OFF = 0
+    PEOPLE_I_FOLLOW = 1
+    EVERYONE = 2
+
+    CHOICES = (
+        (OFF, 0),
+        (PEOPLE_I_FOLLOW, 1),
+        (EVERYONE, 2)
+    )
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    notify_my_blasts = models.BooleanField(default=True)
+    notify_upvoted_blasts = models.BooleanField(default=False)
+    notify_downvoted_blasts = models.BooleanField(default=False)
+    notify_pinned_blasts = models.BooleanField(default=False)
+
+    notify_votes = models.BooleanField(default=True)
+
+    notify_comments = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
+    notify_reblasts = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)

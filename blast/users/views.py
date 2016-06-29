@@ -1,9 +1,11 @@
 from django.http import Http404
 from rest_framework.response import Response
-from rest_framework import status, viewsets, mixins, permissions
+from rest_framework import status, views, viewsets, mixins, permissions
 
-from users.serializers import RegisterUserSerializer, PublicUserSerializer, UpdateUserSerializer
-from users.models import User
+from users.serializers import (RegisterUserSerializer, PublicUserSerializer, UpdateUserSerializer,
+                               NotificationSettingsSerializer)
+
+from users.models import User, UserSettings
 from users.signals import user_registered
 
 
@@ -102,5 +104,50 @@ class UserViewSet(mixins.CreateModelMixin,
         else:
             return Response(data={
                 'message': 'failed to update user profile',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserSettingsViewSet(mixins.UpdateModelMixin,
+                          mixins.RetrieveModelMixin,
+                          views.APIView):
+
+    # TODO: Make permissions test
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self):
+        instance, _ = UserSettings.objects.get_or_create(user=self.request.user)
+        return instance
+
+    def get_serializer_class(self):
+        return NotificationSettingsSerializer
+
+    # TODO: Make permissions test
+    def get(self, request, *args, **kwargs):
+        """Returns user settings"""
+        self.check_permissions(request)
+
+        instance = self.get_object()
+        serializer = self.get_serializer_class()(instance=instance)
+
+        print(serializer.data)
+        return Response(serializer.data)
+
+    # TODO: Make permissions test
+    def patch(self, request, *args, **kwargs):
+        """Updates user settings"""
+        self.check_permissions(request)
+
+        instance = self.get_object()
+
+        serializer = self.get_serializer_class()
+        serializer = serializer(instance=instance, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data={'message': 'ok'})
+        else:
+            return Response(data={
+                'message': 'failed to update user settings',
                 'errors': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
