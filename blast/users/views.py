@@ -38,7 +38,7 @@ class UserViewSet(mixins.CreateModelMixin,
         ---
         parameters:
             - name: phone
-              description: user phone number without country code (e.g. 9131234567 not +79131234567)
+              description: user phone number with country code (e.g. +79131234567, +1-492-9131234567)
             - name: username
               description: unique user name. Must be less then 16 symbols.
             - name: password
