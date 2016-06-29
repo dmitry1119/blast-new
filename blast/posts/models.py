@@ -25,7 +25,11 @@ class PostVote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     user = models.ForeignKey(User)
+    post = models.ForeignKey(Post)
     is_voted = models.BooleanField()  # False if post is downvoted, True otherwise.
+
+    class Meta:
+        unique_together = (('user', 'post'),)
 
 
 class PostComment(models.Model):

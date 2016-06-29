@@ -29,7 +29,7 @@ class PostsViewSet(mixins.CreateModelMixin,
         if request.method in permissions.SAFE_METHODS:
             return
 
-        if obj.user is not request.user:
+        if obj.user.pk is not request.user.pk:
             return self.permission_denied(self.request, 'You are not owner of this post')
 
     def create(self, request, *args, **kwargs):
@@ -47,3 +47,15 @@ class PostsViewSet(mixins.CreateModelMixin,
                 'message': 'Failed to create post',
                 'errors': serializer.errors,
             }, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Deletes user post
+
+        ---
+        omit_serializer: true
+        parameters:
+            - name: pk
+              description: user post id
+        """
+        return super().destroy(request, *args, **kwargs)
