@@ -71,7 +71,7 @@ class PhoneConfirmView(PhoneConfirmBase):
 
     def post(self, *args, **kwargs):
         """
-        Method for confirming the user phone number.
+        Method for confirming user phone number.
 
         ---
         serializer: smsconfirmation.serializers.PhoneConfirmationSerializer
@@ -97,7 +97,7 @@ class PhoneConfirmView(PhoneConfirmBase):
         request.user.save()
 
 
-# TODO: Fix permissions:
+# TODO: Fix permissions
 class ResetPasswordView(PhoneConfirmBase):
 
     serializer_class = ChangePasswordSerializer

@@ -20,6 +20,17 @@ class Post(models.Model):
     user = models.ForeignKey(User)
     image = models.ImageField(upload_to=post_image_upload_dir)
 
+    def comments_count(self):
+        # TODO (VM): Cache this value to redis
+        return PostComment.objects.filter(post=self.pk).count()
+
+    def downvoted_count(self):
+        return PostVote.objects.filter(post=self.pk, is_votes=False).count()
+
+    def votes_count(self):
+        # TODO (VM): Cache this value to redis
+        return PostVote.objects.filter(post=self.pk, is_votes=True).count()
+
 
 class PostVote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
