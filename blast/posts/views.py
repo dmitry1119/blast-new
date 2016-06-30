@@ -1,23 +1,20 @@
-from rest_framework import views, viewsets, mixins, permissions, status
-from rest_framework.response import Response
+from rest_framework import viewsets, mixins, permissions
 
 from posts.models import Post, PostComment
-from posts.serializers import PostSerializer, PostPublicSerializer
+from posts.serializers import (PostSerializer, PostPublicSerializer,
+                               CommentSerializer, CommentPublicSerializer)
 
 
-class PostsViewSet(mixins.CreateModelMixin,
-                   mixins.RetrieveModelMixin,
-                   mixins.DestroyModelMixin,
-                   mixins.ListModelMixin,
-                   viewsets.GenericViewSet):
-    queryset = Post.objects.all()  # FIXME: What about private users?
-    serializer_class = PostSerializer
+class PerObjectPermissionMixin(object):
+
+    public_serializer_class = None
+    private_serializer_class = None
 
     def get_serializer_class(self):
         if self.request.method in permissions.SAFE_METHODS:
-            return PostPublicSerializer
+            return self.public_serializer_class
         else:
-            return PostSerializer
+            return self.private_serializer_class
 
     def get_permissions(self):
         if self.request.method in permissions.SAFE_METHODS:
@@ -30,23 +27,23 @@ class PostsViewSet(mixins.CreateModelMixin,
             return
 
         if obj.user.pk is not request.user.pk:
-            return self.permission_denied(self.request, 'You are not owner of this post')
+            return self.permission_denied(self.request, 'You are not owner of this object')
 
-    def create(self, request, *args, **kwargs):
-        """Creates new post"""
-        serializer = self.get_serializer_class()
-        serializer = serializer(data=request.data)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
-        if serializer.is_valid():
-            serializer.save(user=request.user)
 
-            return Response(data=serializer.data,
-                            status=status.HTTP_201_CREATED)
-        else:
-            return Response(data={
-                'message': 'Failed to create post',
-                'errors': serializer.errors,
-            }, status=status.HTTP_400_BAD_REQUEST)
+class PostsViewSet(PerObjectPermissionMixin,
+                   mixins.CreateModelMixin,
+                   mixins.RetrieveModelMixin,
+                   mixins.DestroyModelMixin,
+                   mixins.ListModelMixin,
+                   viewsets.GenericViewSet):
+    queryset = Post.objects.all()  # FIXME(VM): What about private users?
+    serializer_class = PostSerializer
+
+    public_serializer_class = PostPublicSerializer
+    private_serializer_class = PostSerializer
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -59,3 +56,41 @@ class PostsViewSet(mixins.CreateModelMixin,
               description: user post id
         """
         return super().destroy(request, *args, **kwargs)
+
+
+class CommentsViewSet(PerObjectPermissionMixin,
+                      mixins.CreateModelMixin,
+                      mixins.RetrieveModelMixin,
+                      mixins.DestroyModelMixin,
+                      mixins.ListModelMixin,
+                      viewsets.GenericViewSet):
+    queryset = PostComment.objects.all()
+    public_serializer_class = CommentPublicSerializer
+    private_serializer_class = CommentSerializer
+
+    def create(self, request, *args, **kwargs):
+        """
+        Creates new comment
+
+        parameters:
+            - name: post
+              description: commented post id
+        """
+        return super().create(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Deletes user comment
+        ---
+        omit_serializer: true
+        parameters:
+            - name: pk
+              description: comment id
+        """
+        return super().destroy(request, *args, **kwargs)
+
+
+class VotePostView(mixins.CreateModelMixin,
+                   mixins.UpdateModelMixin,
+                   viewsets.ViewSet):
+    pass

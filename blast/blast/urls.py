@@ -22,12 +22,13 @@ from countries.views import CountryViewSet
 
 from users.views import UserViewSet, UserSettingsViewSet
 from smsconfirmation.views import PhoneConfirmView, ResetPasswordView
-from posts.views import PostsViewSet
+from posts.views import PostsViewSet, VotePostView, CommentsViewSet
 
 api_1 = DefaultRouter()
 api_1.register('users', UserViewSet)
 api_1.register('countries', CountryViewSet)
 api_1.register('posts', PostsViewSet)
+api_1.register('comments', CommentsViewSet)
 
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),

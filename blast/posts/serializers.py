@@ -15,6 +15,13 @@ class PostSerializer(serializers.ModelSerializer):
         exclude = ('created_at', 'updated_at', 'user', 'id')
 
 
-class PostCommentSerializer(serializers.ModelSerializer):
+class CommentPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostComment
+        read_only = ('created_at', 'user', 'text', 'post',)
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostComment
+        fields = ('text', 'post',)
