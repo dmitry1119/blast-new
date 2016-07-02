@@ -41,8 +41,8 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
 
         phone = serializer.validated_data['phone']
 
-        confirmation = self.queryset.filter(phone=phone)
-        confirmation = confirmation.order_by('-created_at').first()
+        confirmation = PhoneConfirmation.objects.get_actual(phone,
+                                                            request_type=self.REQUEST_TYPE)
 
         if not confirmation:
             logger.error('Confirmation request for {} was not found'.format(phone))
@@ -73,9 +73,7 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
 class PhoneConfirmView(PhoneConfirmBase):
     serializer_class = PhoneConfirmationSerializer
 
-    # TODO (VM): Add is_delivered to filter?
-    queryset = PhoneConfirmation.objects.filter(is_confirmed=False,
-                                                request_type=PhoneConfirmation.REQUEST_PHONE)
+    REQUEST_TYPE = PhoneConfirmation.REQUEST_PHONE
 
     def get_serializer(self, data):
         if self.request.method == 'POST':
@@ -91,7 +89,7 @@ class PhoneConfirmView(PhoneConfirmBase):
         return super().create(request)
 
     def perform_create(self, serializer):
-        serializer.save(request_type=PhoneConfirmation.REQUEST_PHONE)
+        serializer.save(request_type=self.REQUEST_TYPE)
 
     def on_code_confirmed(self, request, confirmation: PhoneConfirmation):
         user = User.objects.get(phone=confirmation.phone)
@@ -99,14 +97,11 @@ class PhoneConfirmView(PhoneConfirmBase):
         user.save()
 
 
-# TODO: Fix permissions
 class ResetPasswordView(PhoneConfirmBase):
 
     serializer_class = ChangePasswordSerializer
 
-    # TODO (VM): Add is_delivered to filter?
-    queryset = PhoneConfirmation.objects.filter(is_confirmed=False,
-                                                request_type=PhoneConfirmation.REQUEST_PASSWORD)
+    REQUEST_TYPE = PhoneConfirmation.REQUEST_PASSWORD
 
     def get_serializer(self, data):
         if self.request.method == 'POST':
@@ -115,7 +110,7 @@ class ResetPasswordView(PhoneConfirmBase):
             return ChangePasswordSerializer(data=data)
 
     def perform_create(self, serializer):
-        serializer.save(request_type=PhoneConfirmation.REQUEST_PASSWORD)
+        serializer.save(request_type=self.REQUEST_TYPE)
 
     def patch(self, request, *args, **kwargs):
         """

@@ -87,10 +87,14 @@ class TestResetPassword(BaseTestCaseUnauth):
 
     def test_two_confirmation_requests(self):
         self.client.post(self.url, data={'phone': self.user.phone})
-        confirmations = PhoneConfirmation.objects.all().order_by('-created_at')
+
+        confirmations = PhoneConfirmation.objects.get_actual(phone=self.phone,
+                                                             request_type=PhoneConfirmation.REQUEST_PASSWORD)
+
+        print(confirmations)
         new_password = 'new_password'
         data = {
-            'code': confirmations[1].code,
+            'code': confirmations.code,
             'phone': self.user.phone,
             'password1': new_password,
             'password2': new_password,
@@ -102,4 +106,4 @@ class TestResetPassword(BaseTestCaseUnauth):
         self.password_request.refresh_from_db()
 
         self.assertFalse(self.password_request.is_confirmed)
-        self.assertTrue(self.user.check_password(self.password))
+        self.assertTrue(self.user.check_password(new_password))

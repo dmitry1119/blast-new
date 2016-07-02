@@ -3,9 +3,8 @@ import random
 import string
 
 from django.db import models
-from users.models import User
-from users.signals import user_registered
 
+from users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +15,15 @@ def get_phone_confirmation_code():
     return ''.join([random.choice(string.digits) for _ in range(CODE_CONFIRMATION_LEN)])
 
 
+class PhoneConfirmationManager(models.Manager):
+
+    def get_actual(self, phone, **kwargs):
+        qs = self.get_queryset().filter(phone=phone, is_confirmed=False, **kwargs)
+        qs = qs.order_by('-created_at')
+
+        return qs.first()
+
+
 class PhoneConfirmation(models.Model):
     REQUEST_PHONE = 1
     REQUEST_PASSWORD = 2
@@ -24,6 +32,8 @@ class PhoneConfirmation(models.Model):
         (REQUEST_PHONE, 'Phone confirmation'),
         (REQUEST_PASSWORD, 'Reset password'),
     )
+
+    objects = PhoneConfirmationManager()
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -47,13 +57,3 @@ class PhoneConfirmation(models.Model):
 
     class Meta:
         ordering = ('created_at',)
-
-#
-# def on_user_registered(sender, **kwargs):
-#     logger.info('User has been registered. {} {} {}'.format(sender.pk, sender.country, sender.phone))
-#     PhoneConfirmation.objects.create(user=sender, request_type=PhoneConfirmation.REQUEST_PHONE)
-#
-#     # TODO (VM): Send sms message to user phone
-#     return
-#
-# user_registered.connect(on_user_registered)

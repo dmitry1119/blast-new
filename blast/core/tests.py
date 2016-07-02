@@ -19,11 +19,9 @@ class BaseTestCaseUnauth(TestCase):
             'phone': self.phone,
             'username': self.username,
             'password': self.password,
-            'country': self.country
         }
 
-        self.client.post(reverse_lazy('user-list'), data)
-        self.user = User.objects.get(username=self.username)
+        self.user = User.objects.create_user(**data)
 
         data = {
             'phone': self.phone,
