@@ -30,3 +30,14 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostComment
         fields = ('text', 'post',)
+
+
+class VoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostVote
+        fields = ('post', 'is_voted', )
+
+
+class VotePublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostVote

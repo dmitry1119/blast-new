@@ -1,8 +1,9 @@
 from rest_framework import viewsets, mixins, permissions
 
-from posts.models import Post, PostComment
+from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
-                               CommentSerializer, CommentPublicSerializer)
+                               CommentSerializer, CommentPublicSerializer,
+                               VoteSerializer, VotePublicSerializer)
 
 
 class PerObjectPermissionMixin(object):
@@ -90,7 +91,18 @@ class CommentsViewSet(PerObjectPermissionMixin,
         return super().destroy(request, *args, **kwargs)
 
 
-class VotePostView(mixins.CreateModelMixin,
+class VotePostView(PerObjectPermissionMixin,
                    mixins.UpdateModelMixin,
+                   mixins.RetrieveModelMixin,
                    viewsets.ViewSet):
-    pass
+
+    queryset = PostVote.objects.all()
+
+    public_serializer_class = PostSerializer
+    private_serializer_class = PostPublicSerializer
+
+    def get_object(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return super(viewsets.ViewSet, self).get_object()
+        else:
+            return PostVote.objects.get_or_create(user=self.request.user, is_voted=True)
