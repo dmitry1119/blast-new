@@ -28,7 +28,7 @@ class PhoneConfirmation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    user = models.ForeignKey(User)
+    phone = models.CharField(max_length=20)
 
     code = models.CharField(max_length=CODE_CONFIRMATION_LEN,
                             default=get_phone_confirmation_code)
@@ -39,7 +39,7 @@ class PhoneConfirmation(models.Model):
     request_type = models.IntegerField(choices=REQUEST_TYPES)
 
     def __str__(self):
-        return '{} {}'.format(self.user, self.code)
+        return '{} {}'.format(self.phone, self.code)
 
     def is_actual(self):
         # TODO: Add test and implementation.
@@ -48,12 +48,12 @@ class PhoneConfirmation(models.Model):
     class Meta:
         ordering = ('created_at',)
 
-
-def on_user_registered(sender, **kwargs):
-    logger.info('User has been registered. {} {} {}'.format(sender.pk, sender.country, sender.phone))
-    PhoneConfirmation.objects.create(user=sender, request_type=PhoneConfirmation.REQUEST_PHONE)
-
-    # TODO (VM): Send sms message to user phone
-    return
-
-user_registered.connect(on_user_registered)
+#
+# def on_user_registered(sender, **kwargs):
+#     logger.info('User has been registered. {} {} {}'.format(sender.pk, sender.country, sender.phone))
+#     PhoneConfirmation.objects.create(user=sender, request_type=PhoneConfirmation.REQUEST_PHONE)
+#
+#     # TODO (VM): Send sms message to user phone
+#     return
+#
+# user_registered.connect(on_user_registered)
