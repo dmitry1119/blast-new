@@ -1,11 +1,9 @@
 # Create your views here.
 import logging
 
-from django.shortcuts import get_object_or_404
-
-from rest_framework.response import Response
-from rest_framework import mixins, views, viewsets, status
+from rest_framework import mixins, views
 from rest_framework import status, permissions
+from rest_framework.response import Response
 
 from smsconfirmation.models import PhoneConfirmation
 from smsconfirmation.serializers import PhoneConfirmationSerializer, ChangePasswordSerializer, \
@@ -120,36 +118,20 @@ class ResetPasswordView(PhoneConfirmBase):
         serializer.save(request_type=PhoneConfirmation.REQUEST_PASSWORD)
 
     def patch(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        """
+        Method for changing password.
 
-    # def get(self, request, *args, **kwargs):
-    #     """
-    #     Requests new sms confirmation for password changing.
-    #     Call this method before you reset your password.
-    #
-    #     """
-    #     PhoneConfirmation.objects.create(user=self.request.user,
-    #                                      request_type=PhoneConfirmation.REQUEST_PASSWORD)
-    #     # TODO(VM): Send message to phone
-    #     return Response({
-    #         'message': 'sms code has been sent to your phone'
-    #     })
-    #
-    # def post(self, request, *args, **kwargs):
-    #     """
-    #     Method for changing password.
-    #
-    #     ---
-    #     serializer: smsconfirmation.serializers.ChangePasswordSerializer
-    #     parameters:
-    #         - name: code
-    #           description: Code received by SMS
-    #         - name: password1
-    #           description: New password. Must be great than 5.
-    #         - name: password2
-    #           description: Password confirmation. Must be equal to password1.
-    #     """
-    #     return super().post(*args, **kwargs)
+        ---
+        serializer: smsconfirmation.serializers.ChangePasswordSerializer
+        parameters:
+            - name: code
+              description: Code received by SMS
+            - name: password1
+              description: New password. Must be great than 5.
+            - name: password2
+              description: Password confirmation. Must be equal to password1.
+        """
+        return self.update(request, *args, **kwargs)
 
     def on_code_confirmed(self, request, confirmation):
         user = User.objects.get(phone=confirmation.phone)
