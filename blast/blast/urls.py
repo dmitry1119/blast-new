@@ -16,7 +16,7 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 
-from rest_framework_jwt.views import obtain_jwt_token
+from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
 
@@ -34,6 +34,7 @@ urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^api/v1/user/settings/$', UserSettingsViewSet.as_view(), name='user-settings'),
+    url(r'^api/v1/token/refresh/', refresh_jwt_token, name='refresh-token'),
     url(r'^api/v1/token/$', obtain_jwt_token, name='get-auth-token'),
     url(r'^api/v1/sms/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),
     url(r'^api/v1/sms/password/', ResetPasswordView.as_view(), name='reset-password'),
