@@ -18,7 +18,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         read_only = ('user',)
-        exclude = ('created_at', 'updated_at', 'user', 'id')
+        exclude = ('created_at', 'updated_at', 'user', 'id', 'is_hidden')
 
 
 class CommentPublicSerializer(serializers.ModelSerializer):

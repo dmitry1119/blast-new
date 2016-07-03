@@ -85,6 +85,7 @@ class PostTest(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(self.post.is_hidden)
 
+    # TODO: Add permission test
     def test_delete_post(self):
         url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
 
