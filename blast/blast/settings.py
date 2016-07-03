@@ -131,6 +131,7 @@ AUTH_PASSWORD_VALIDATORS = [
     #     'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     # },
 ]
+
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
@@ -147,6 +148,13 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardResultsSetPagination'
 }
 
+SINCH = {
+    'APP_KEY': '155edefb-991d-4e14-864e-4e9451a21bd6',
+    'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
+}
+
+BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 
 # Internationalization

@@ -3,8 +3,11 @@ import random
 import string
 
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from users.models import User
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,3 +60,10 @@ class PhoneConfirmation(models.Model):
 
     class Meta:
         ordering = ('created_at',)
+
+
+@receiver(post_save, sender=PhoneConfirmation)
+def post_confirmation(sender, instance, *args, **kwargs):
+    from blast.celery import send_sms
+
+    send_sms.delay(instance.phone, instance.code)
