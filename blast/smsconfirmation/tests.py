@@ -91,7 +91,6 @@ class TestResetPassword(BaseTestCaseUnauth):
         confirmations = PhoneConfirmation.objects.get_actual(phone=self.phone,
                                                              request_type=PhoneConfirmation.REQUEST_PASSWORD)
 
-        print(confirmations)
         new_password = 'new_password'
         data = {
             'code': confirmations.code,

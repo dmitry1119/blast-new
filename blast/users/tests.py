@@ -14,18 +14,42 @@ class RegisterTest(TestCase):
 
     fixtures = ('countries',)
     url = reverse_lazy('user-list')
-    phone = '9521234567'
+    phone = '+79521234567'
+    username = 'username'
+    password = 'password123'
+    country = 1
 
     def setUp(self):
-        self.country = 1
-        pass
+        self.confirmation = PhoneConfirmation.objects.create(phone=self.phone,
+                                                             request_type=PhoneConfirmation.REQUEST_PHONE)
+
+    def test_user_register(self):
+        """Should register user"""
+        data = {
+            'phone': self.phone,
+            'username': self.username,
+            'password': self.password,
+            'country': self.country,
+            'code': self.confirmation.code
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        user = User.objects.get(phone=self.phone)
+
+        self.assertEqual(self.phone, user.phone)
+        self.assertEqual(self.username, user.username)
+        self.assertTrue(user.check_password(self.password))
 
     def test_min_password_length(self):
         """Checks that password length greater or equal 6"""
 
         data = {
+            'code': self.confirmation.code,
             'phone': self.phone,
-            'username': 'bob_dilan',
+            'username': self.username,
             'password': '1234',
             'country': self.country
         }
@@ -33,8 +57,6 @@ class RegisterTest(TestCase):
         response = self.client.post(self.url, data)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIsNotNone(response.data.get('errors'))
-        self.assertIsNotNone(response.data.get('errors').get('password'))
 
     def test_empty_password(self):
         data = {
@@ -46,8 +68,6 @@ class RegisterTest(TestCase):
         response = self.client.post(self.url, data)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIsNotNone(response.data.get('errors'))
-        self.assertIsNotNone(response.data.get('errors').get('password'))
 
     def test_username_max_length(self):
         """Checks that username length less than 15"""
@@ -60,31 +80,14 @@ class RegisterTest(TestCase):
 
         response = self.client.post(self.url, data)
 
+        user = None
+        try:
+            user = User.objects.get(phone=self.phone)
+        except User.DoesNotExist:
+            pass
+
+        self.assertIsNone(user)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIsNotNone(response.data.get('errors'))
-        self.assertIsNotNone(response.data.get('errors').get('username'))
-
-    def test_register_user(self):
-        """Should register user."""
-        data = {
-            'phone': self.phone,
-            'username': 'batman',
-            'password': '123456',
-            'country': self.country
-        }
-
-        response = self.client.post(self.url, data)
-        user = User.objects.get(phone=data['phone'], username=data['username'])
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIsNotNone(response.data.get('user_id'))
-        self.assertEqual(user.phone, data['phone'])
-        self.assertEqual(user.country.pk, data['country'])
-
-        confirmation = PhoneConfirmation.objects.get(user=user)
-
-        self.assertFalse(confirmation.is_confirmed)
-        self.assertFalse(confirmation.is_delivered)
 
 
 class UpdateProfileAccessTest(BaseTestCase):
@@ -119,7 +122,7 @@ class UpdateProfilePermissionsTest(BaseTestCaseUnauth):
 
     def test_edit_access(self):
         """
-        Should return 404 for user that tries to edit not his profile.
+        Should return 404 for user which try to edit not his profile.
         """
         response = self.client.patch(self.url, json.dumps({
             'bio': 'new bio',

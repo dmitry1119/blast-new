@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
+from smsconfirmation.models import CODE_CONFIRMATION_LEN, PhoneConfirmation
 from users.models import User, UserSettings
 
 
@@ -9,6 +9,9 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     Serializer for registration method.
     It allows set up very limited field set.
     """
+    code = serializers.CharField(max_length=CODE_CONFIRMATION_LEN,
+                                 min_length=CODE_CONFIRMATION_LEN,
+                                 write_only=True)
 
     def validate_password(self, value):
         if not value or len(value) < 6:
@@ -21,14 +24,29 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        instance = super().create(validated_data)
+        confirmation = PhoneConfirmation.objects.get_actual(validated_data['phone'],
+                                                            request_type=PhoneConfirmation.REQUEST_PHONE)
+
+        if not confirmation:
+            raise serializers.ValidationError('Confirmation code was not found')
+
+        if not confirmation.is_actual():
+            raise serializers.ValidationError('You phone code is expired')
+
+        if confirmation.code != validated_data['code']:
+            raise serializers.ValidationError('Wrong confirmation code')
+
+        instance = User.objects.create_user(phone=validated_data['phone'],
+                                            password=validated_data['password'],
+                                            username=validated_data['username'],
+                                            country=validated_data['country'])
         instance.set_password(validated_data['password'])
         instance.save()
         return instance
 
     class Meta:
         model = User
-        fields = ('phone', 'username', 'password', 'avatar', 'country')
+        fields = ('phone', 'username', 'password', 'avatar', 'country', 'code')
 
 
 class UpdateUserSerializer(serializers.ModelSerializer):

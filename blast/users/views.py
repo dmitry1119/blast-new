@@ -39,6 +39,8 @@ class UserViewSet(mixins.CreateModelMixin,
 
         ---
         parameters:
+            - name: code
+              description: code received by sms.
             - name: phone
               description: user phone number with country code (e.g. +79131234567, +1-492-9131234567)
             - name: username
@@ -47,26 +49,7 @@ class UserViewSet(mixins.CreateModelMixin,
               description: user password. Must be greater than 5 symbols.
             - name: user country identifier.
         """
-        serializer = self.get_serializer_class()
-        serializer = serializer(data=self.request.data)
-
-        if serializer.is_valid():
-            user = serializer.save()
-
-            data = {
-                'message': 'register completed successfully',
-                'user_id': user.id
-            }
-
-            user_registered.send(sender=user)
-
-            return Response(data, status=status.HTTP_201_CREATED)
-        else:
-            data = {
-                'message': 'registration failed',
-                'errors': serializer.errors
-            }
-            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+        return super().create(request, *args, **kwargs)
 
     def get_object(self, queryset=None):
         obj = super().get_object()
@@ -78,7 +61,7 @@ class UserViewSet(mixins.CreateModelMixin,
 
         return obj
 
-    def update(self, request, **kwargs):
+    def update(self, request, *args, **kwargs):
         """
         Updates user profile
 
@@ -92,20 +75,7 @@ class UserViewSet(mixins.CreateModelMixin,
               description: user gender. 0 for female and 1 for male.
             - name: user country identifier.
         """
-        instance = self.get_object()
-
-        serializer = self.get_serializer_class()
-        serializer = serializer(data=self.request.data,
-                                instance=instance, partial=True)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(data={'message': 'ok'})
-        else:
-            return Response(data={
-                'message': 'failed to update user profile',
-                'errors': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+        return super().update(request, *args, **kwargs)
 
 
 class UserSettingsViewSet(mixins.UpdateModelMixin,
@@ -125,19 +95,14 @@ class UserSettingsViewSet(mixins.UpdateModelMixin,
     # TODO: Make permissions test
     def get(self, request, *args, **kwargs):
         """Returns user settings"""
-        self.check_permissions(request)
-
         instance = self.get_object()
         serializer = self.get_serializer_class()(instance=instance)
 
-        print(serializer.data)
         return Response(serializer.data)
 
     # TODO: Make permissions test
     def patch(self, request, *args, **kwargs):
         """Updates user settings"""
-        self.check_permissions(request)
-
         instance = self.get_object()
 
         serializer = self.get_serializer_class()
