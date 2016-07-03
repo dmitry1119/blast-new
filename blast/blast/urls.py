@@ -28,7 +28,7 @@ api_1 = DefaultRouter()
 api_1.register('users', UserViewSet)
 api_1.register('countries', CountryViewSet)
 api_1.register('posts', PostsViewSet)
-api_1.register('comments', CommentsViewSet)
+api_1.register('comments', CommentsViewSet, base_name='comment')
 
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),

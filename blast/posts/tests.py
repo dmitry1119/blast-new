@@ -9,7 +9,7 @@ from rest_framework import status
 
 from core.tests import BaseTestCase
 from users.models import User
-from posts.models import Post
+from posts.models import Post, PostComment
 
 
 def crete_file(name, content_file=True):
@@ -91,6 +91,38 @@ class PostTest(BaseTestCase):
         self.client.delete(url, content_type='application/json')
 
         self.assertEqual(Post.objects.all().count(), 0)
+
+
+class CommentTest(BaseTestCase):
+    url = reverse_lazy('comment-list')
+
+    def setUp(self):
+        super().setUp()
+        file = crete_file('filename.txt')
+        self.post = Post.objects.create(video=file, user=self.user, text='text')
+
+    def test_create_comment(self):
+        text = 'comment text'
+        response = self.client.post(self.url, data={
+            'post': self.post.pk,
+            'text': text
+        })
+
+        comment = PostComment.objects.get(user=self.user)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(comment.text, text)
+        self.assertEqual(comment.user, self.user)
+        self.assertEqual(comment.post, self.post)
+
+    # TODO: Check permissions on delete method
+    def test_delete_comment(self):
+        text = 'comment text'
+        comment = PostComment.objects.create(post=self.post, user=self.user, text=text)
+
+        url = reverse_lazy('comment-detail', kwargs={'pk': comment.pk})
+        self.client.delete(url, content_type='application/json')
+
+        self.assertEqual(PostComment.objects.filter(post=self.post, user=self.user).count(), 0)
 
 
 class AuthorizedPermissionsTest(BaseTestCase):
