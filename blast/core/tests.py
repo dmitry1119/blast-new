@@ -38,6 +38,7 @@ class BaseTestCaseUnauth(TestCase):
         return self.client.patch(url, json.dumps(data),
                                  content_type='application/json')
 
+
 class BaseTestCase(BaseTestCaseUnauth):
 
     def setUp(self):

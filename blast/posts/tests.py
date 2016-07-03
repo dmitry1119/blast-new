@@ -63,6 +63,29 @@ class AnyPermissionTest(TestCase):
         self.assertEqual(Post.objects.count(), 1)
 
 
+class PostTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        file = crete_file('test.png')
+        self.post = Post.objects.create(user=self.user, text='some_text', video=file)
+
+    def test_hide_post(self):
+        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
+
+        response = self.patch_json(url + 'hide/')
+        self.post.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(self.post.is_hidden)
+
+        response = self.patch_json(url + 'show/')
+        self.post.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(self.post.is_hidden)
+
+
 class AuthorizedPermissionsTest(BaseTestCase):
     def setUp(self):
         super().setUp()
@@ -116,7 +139,17 @@ class AuthorizedPermissionsTest(BaseTestCase):
         self.assertEqual(self.post.votes_count(), 1)
         self.assertEqual(self.post.downvoted_count(), 0)
 
-        self.put_json(url + 'downvote/')
+        response = self.put_json(url + 'downvote/')
         self.post.refresh_from_db()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.post.votes_count(), 0)
         self.assertEqual(self.post.downvoted_count(), 1)
+
+    def test_hide_permissions_post(self):
+        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
+
+        response = self.patch_json(url + 'hide/')
+        self.post.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(self.post.is_hidden)
