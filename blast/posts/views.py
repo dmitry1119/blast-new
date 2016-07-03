@@ -1,4 +1,7 @@
-from rest_framework import viewsets, mixins, permissions
+from rest_framework import filters
+from rest_framework import viewsets, mixins, permissions, status
+from rest_framework.decorators import detail_route
+from rest_framework.response import Response
 
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
@@ -40,11 +43,38 @@ class PostsViewSet(PerObjectPermissionMixin,
                    mixins.DestroyModelMixin,
                    mixins.ListModelMixin,
                    viewsets.GenericViewSet):
+    """
+
+    ---
+    vote:
+        omit_serializer: true
+        parameters_strategy:
+            form: replace
+    downvote:
+        omit_serializer: true
+        parameters_strategy:
+            form: replace
+    """
     queryset = Post.objects.filter(is_hidden=False)  # FIXME(VM): What about private users?
     serializer_class = PostSerializer
 
     public_serializer_class = PostPublicSerializer
     private_serializer_class = PostSerializer
+
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('user',)
+
+    def list(self, request, *args, **kwargs):
+        """
+
+        ---
+        parameters:
+            - name: user
+              description: filter result by user id
+              paramType: query
+              type: int
+        """
+        return super().list(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -58,6 +88,29 @@ class PostsViewSet(PerObjectPermissionMixin,
         """
         return super().destroy(request, *args, **kwargs)
 
+    def _update_vote(self, request, is_positive, pk=None,):
+        if not self.request.user.is_authenticated():
+            return self.permission_denied(self.request, 'You are not authenticated')
+
+        post = self.queryset.get(pk=pk)
+        vote, created = PostVote.objects.get_or_create(user=request.user, post=post)
+        vote.is_positive = is_positive
+        vote.save()
+
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+
+        serializer = VoteSerializer(instance=vote)
+        return Response(serializer.data, status=status_code)
+
+    @detail_route(methods=['put'])
+    def vote(self, request, pk=None):
+        return self._update_vote(request, True, pk)
+
+    @detail_route(methods=['put'])
+    def downvote(self, request, pk=None):
+        return self._update_vote(request, False, pk)
+
+
 
 # TODO (VM): Check if post is hidden
 class CommentsViewSet(PerObjectPermissionMixin,
@@ -70,6 +123,9 @@ class CommentsViewSet(PerObjectPermissionMixin,
     public_serializer_class = CommentPublicSerializer
     private_serializer_class = CommentSerializer
 
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('user',)
+
     def create(self, request, *args, **kwargs):
         """
         Creates new comment
@@ -79,6 +135,18 @@ class CommentsViewSet(PerObjectPermissionMixin,
               description: comment post id
         """
         return super().create(request, *args, **kwargs)
+
+    def list(self, request, *args, **kwargs):
+        """
+
+        ---
+        parameters:
+            - name: user
+              description: filter result by user id
+              paramType: query
+              type: int
+        """
+        return super().list(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -90,20 +158,3 @@ class CommentsViewSet(PerObjectPermissionMixin,
               description: comment id
         """
         return super().destroy(request, *args, **kwargs)
-
-
-class VotePostView(PerObjectPermissionMixin,
-                   mixins.UpdateModelMixin,
-                   mixins.RetrieveModelMixin,
-                   viewsets.ViewSet):
-
-    queryset = PostVote.objects.all()
-
-    public_serializer_class = PostSerializer
-    private_serializer_class = PostPublicSerializer
-
-    def get_object(self):
-        if self.request.method in permissions.SAFE_METHODS:
-            return super(viewsets.ViewSet, self).get_object()
-        else:
-            return PostVote.objects.get_or_create(user=self.request.user, is_positive=True)

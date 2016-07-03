@@ -2,13 +2,12 @@ from __future__ import unicode_literals
 
 import os
 import uuid
-from django.core.exceptions import ValidationError
-
-from django.db import models
 
 from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser, PermissionsMixin
 )
+from django.db import models
+
 from countries.models import Country
 
 
@@ -86,10 +85,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = ['username']
 
-    # def clean(self):
-    #     if not self.username or len(self.username) > self._meta.fields['username'].max_length:
-    #         raise ValidationError({'username': 'Your username must be 15 characters or less'})
-        # return super().clean()
 
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.
@@ -98,8 +93,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def blasts_count(self):
         # TODO (VM): Use cached value from Redis.
-        import random
-        return random.randint(0, 100000)
+        from posts.models import Post
+        return Post.objects.filter(user=self.pk).count()
 
     def following_count(self):
         # TODO (VM): Use cached value from Redis.

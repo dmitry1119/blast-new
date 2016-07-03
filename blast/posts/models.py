@@ -50,7 +50,7 @@ class PostVote(models.Model):
 
     user = models.ForeignKey(User)
     post = models.ForeignKey(Post)
-    is_positive = models.BooleanField()  # False if post is downvoted, True otherwise.
+    is_positive = models.NullBooleanField() # False if post is downvoted, True otherwise.
 
     class Meta:
         unique_together = (('user', 'post'),)

@@ -31,9 +31,12 @@ class BaseTestCaseUnauth(TestCase):
         response = self.client.post(reverse_lazy('get-auth-token'), data)
         self.auth_token = response.data.get('token')
 
-    def patch_json(self, url, data):
-        return self.client.patch(url, json.dumps(data), content_type='application/json')
+    def put_json(self, url, data=''):
+        return self.client.put(url, data=data)
 
+    def patch_json(self, url, data=''):
+        return self.client.patch(url, json.dumps(data),
+                                 content_type='application/json')
 
 class BaseTestCase(BaseTestCaseUnauth):
 

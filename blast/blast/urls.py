@@ -22,7 +22,7 @@ from countries.views import CountryViewSet
 
 from users.views import UserViewSet, UserSettingsViewSet
 from smsconfirmation.views import PhoneConfirmView, ResetPasswordView
-from posts.views import PostsViewSet, VotePostView, CommentsViewSet
+from posts.views import PostsViewSet, CommentsViewSet
 
 api_1 = DefaultRouter()
 api_1.register('users', UserViewSet)

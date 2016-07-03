@@ -104,3 +104,19 @@ class AuthorizedPermissionsTest(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Post.objects.count(), 1)
+
+    def test_vote_post(self):
+
+        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
+
+        response = self.put_json(url + 'vote/')
+        self.post.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.post.votes_count(), 1)
+        self.assertEqual(self.post.downvoted_count(), 0)
+
+        self.put_json(url + 'downvote/')
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.votes_count(), 0)
+        self.assertEqual(self.post.downvoted_count(), 1)
