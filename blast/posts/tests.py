@@ -12,7 +12,7 @@ from users.models import User
 from posts.models import Post
 
 
-def create_image(name, content_file=True):
+def crete_file(name, content_file=True):
     image = Image.new('RGBA', size=(50, 50))
     file = BytesIO(image.tostring())
     file.name = name
@@ -34,8 +34,8 @@ class AnyPermissionTest(TestCase):
     def setUp(self):
         user = User.objects.create_user(phone='+1234567', password='123456', username='username')
 
-        file = create_image('test.png')
-        self.post = Post.objects.create(user=user, text='some_text', image=file)
+        file = crete_file('test.png')
+        self.post = Post.objects.create(user=user, text='some_text', video=file)
 
     def test_any_view_posts(self):
         url = reverse_lazy('post-list')
@@ -47,7 +47,7 @@ class AnyPermissionTest(TestCase):
     def test_any_create_post(self):
         url = reverse_lazy('post-list')
         response = self.client.post(url, data={
-            'image': create_image('test_01.png'),
+            'video': crete_file('test_01.png'),
             'user': 1,
             'text': 'spam'
         })
@@ -71,8 +71,8 @@ class AuthorizedPermissionsTest(BaseTestCase):
                                               password='123456',
                                               username='user2')
 
-        file = create_image('test.png')
-        self.post = Post.objects.create(user=self.user2, text='some text', image=file)
+        file = crete_file('test.png')
+        self.post = Post.objects.create(user=self.user2, text='some text', video=file)
 
     def test_other_get_posts(self):
         url = reverse_lazy('post-list')
@@ -84,10 +84,10 @@ class AuthorizedPermissionsTest(BaseTestCase):
     def test_authorized_create_post(self):
         url = reverse_lazy('post-list')
 
-        image = create_image('test.png', False)
+        video = crete_file('test.png', False)
 
         response = self.client.post(url, data={
-            'image': image,
+            'video': video,
             'user': self.user.pk,
             'text': 'text'
         })

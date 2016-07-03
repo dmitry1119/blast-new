@@ -4,7 +4,7 @@ from posts.models import Post, PostComment, PostVote
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'user', 'text', 'image',)
+    list_display = ('pk', 'user', 'text', 'video',)
 
 
 @admin.register(PostComment)
@@ -14,4 +14,4 @@ class PostComment(admin.ModelAdmin):
 
 @admin.register(PostVote)
 class PostVote(admin.ModelAdmin):
-    list_display = ('pk', 'post', 'user', 'is_voted')
+    list_display = ('pk', 'post', 'user', 'is_positive')

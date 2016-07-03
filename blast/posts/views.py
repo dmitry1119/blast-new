@@ -40,7 +40,7 @@ class PostsViewSet(PerObjectPermissionMixin,
                    mixins.DestroyModelMixin,
                    mixins.ListModelMixin,
                    viewsets.GenericViewSet):
-    queryset = Post.objects.all()  # FIXME(VM): What about private users?
+    queryset = Post.objects.filter(is_hidden=False)  # FIXME(VM): What about private users?
     serializer_class = PostSerializer
 
     public_serializer_class = PostPublicSerializer
@@ -59,6 +59,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         return super().destroy(request, *args, **kwargs)
 
 
+# TODO (VM): Check if post is hidden
 class CommentsViewSet(PerObjectPermissionMixin,
                       mixins.CreateModelMixin,
                       mixins.RetrieveModelMixin,
@@ -75,7 +76,7 @@ class CommentsViewSet(PerObjectPermissionMixin,
 
         parameters:
             - name: post
-              description: commented post id
+              description: comment post id
         """
         return super().create(request, *args, **kwargs)
 
@@ -105,4 +106,4 @@ class VotePostView(PerObjectPermissionMixin,
         if self.request.method in permissions.SAFE_METHODS:
             return super(viewsets.ViewSet, self).get_object()
         else:
-            return PostVote.objects.get_or_create(user=self.request.user, is_voted=True)
+            return PostVote.objects.get_or_create(user=self.request.user, is_positive=True)
