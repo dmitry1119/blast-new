@@ -82,9 +82,13 @@ class PhoneConfirmView(PhoneConfirmBase):
     def post(self, request, *args, **kwargs):
         """
         Requests new phone confirmation code by SMS.
+        This method should be called before signing.
 
         ---
         serializer: smsconfirmation.serializers.PhoneConfirmationSerializer
+        parameters:
+            - name: phone
+              description: phone number with country code (+79131234567 e.g)
         """
         return super().create(request)
 
@@ -112,9 +116,22 @@ class ResetPasswordView(PhoneConfirmBase):
     def perform_create(self, serializer):
         serializer.save(request_type=self.REQUEST_TYPE)
 
+    def post(self, request, *args, **kwargs):
+        """
+        Initial password changing and send confirmation code to user phone.
+
+        ---
+        serializer: smsconfirmation.serializers.RequestChangePasswordSerializer
+        parameters:
+            - name: phone
+              description: phone number (+79528048941 for e.g)
+        """
+        return super().post(request, *args, **kwargs)
+
     def patch(self, request, *args, **kwargs):
         """
         Method for changing password.
+        You must request confirmation code before changing your password.
 
         ---
         serializer: smsconfirmation.serializers.ChangePasswordSerializer
