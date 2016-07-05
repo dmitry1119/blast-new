@@ -74,9 +74,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     gender = models.IntegerField(default=None, blank=True, null=True)
     birthday = models.DateTimeField(default=None, blank=True, null=True)
 
-    # Internal information
-    is_verified = models.BooleanField(default=False)  # Is phone confirmed?
-
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 

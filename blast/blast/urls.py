@@ -20,7 +20,7 @@ from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
 
-from users.views import UserViewSet, UserSettingsViewSet
+from users.views import UserViewSet, UserProfileView, UserSettingsView
 from smsconfirmation.views import PhoneConfirmView, ResetPasswordView
 from posts.views import PostsViewSet, CommentsViewSet
 
@@ -33,7 +33,9 @@ api_1.register('comments', CommentsViewSet, base_name='comment')
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^admin/', admin.site.urls),
-    url(r'^api/v1/user/settings/$', UserSettingsViewSet.as_view(), name='user-settings'),
+
+    url(r'^api/v1/user/profile/$', UserProfileView.as_view(), name='user-profile'),
+    url(r'^api/v1/user/settings/$', UserSettingsView.as_view(), name='user-settings'),
     url(r'^api/v1/token/refresh/', refresh_jwt_token, name='refresh-token'),
     url(r'^api/v1/token/$', obtain_jwt_token, name='get-auth-token'),
     url(r'^api/v1/sms/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),

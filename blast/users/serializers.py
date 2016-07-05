@@ -49,14 +49,26 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         fields = ('phone', 'username', 'password', 'avatar', 'country', 'code')
 
 
-class UpdateUserSerializer(serializers.ModelSerializer):
+class ProfileUserSerializer(serializers.ModelSerializer):
     """
     Serializer for updating user model
     """
-
     class Meta:
         model = User
         fields = ('fullname', 'avatar', 'bio', 'website', 'gender', 'birthday',)
+
+
+class ProfilePublicSerializer(serializers.ModelSerializer):
+    """
+    Special serializer for logged user
+    """
+    followers = serializers.ReadOnlyField(source='followers_count')
+    blasts = serializers.ReadOnlyField(source='blasts_count')
+    following = serializers.ReadOnlyField(source='following_count')
+
+    class Meta:
+        model = User
+        exclude = ('password', 'user_permissions', 'groups',)
 
 
 class PublicUserSerializer(serializers.ModelSerializer):

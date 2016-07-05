@@ -1,7 +1,7 @@
 import json
 
 from django.test import TestCase
-from django.core.urlresolvers import reverse_lazy
+from django.core.urlresolvers import reverse_lazy, reverse
 from django.utils import timezone
 from rest_framework import status
 
@@ -90,58 +90,6 @@ class RegisterTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
-class UpdateProfileAccessTest(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-
-        self.other_user = User.objects.create_user(username='username-01',
-                                                   password='password',
-                                                   phone='987654321')
-
-        self.url = reverse_lazy('user-detail', kwargs={
-            'pk': self.other_user.pk
-        })
-
-    def test_edit_access(self):
-        """
-        Should return 404 for user that tries to edit not his profile.
-        """
-        response = self.client.patch(self.url, json.dumps({
-            'bio': 'new bio',
-            'website': 'new website'
-        }), content_type='application/json')
-
-        self.other_user.refresh_from_db()
-
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(self.other_user.bio, '')
-        self.assertEqual(self.other_user.website, '')
-
-
-class UpdateProfilePermissionsTest(BaseTestCaseUnauth):
-
-    def test_edit_access(self):
-        """
-        Should return 404 for user which try to edit not his profile.
-        """
-        response = self.client.patch(self.url, json.dumps({
-            'bio': 'new bio',
-            'website': 'new website'
-        }), content_type='application/json')
-
-        self.user.refresh_from_db()
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(self.user.bio, '')
-        self.assertEqual(self.user.website, '')
-
-    def setUp(self):
-        super().setUp()
-        self.url = reverse_lazy('user-detail', kwargs={
-            'pk': self.user.pk
-        })
-
-
 class UpdateProfileTest(BaseTestCase):
 
     bio = 'user bio text'
@@ -152,9 +100,7 @@ class UpdateProfileTest(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        self.url = reverse_lazy('user-detail', kwargs={
-            'pk': self.user.pk
-        })
+        self.url = reverse('user-profile')
 
     def test_edit_optional_data(self):
         data = json.dumps({
