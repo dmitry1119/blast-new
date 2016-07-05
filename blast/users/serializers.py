@@ -28,25 +28,26 @@ class RegisterUserSerializer(serializers.ModelSerializer):
                                                             request_type=PhoneConfirmation.REQUEST_PHONE)
 
         if not confirmation:
-            raise serializers.ValidationError('Confirmation code was not found')
+            raise serializers.ValidationError({'code': ['Confirmation code was not found']})
 
         if not confirmation.is_actual():
-            raise serializers.ValidationError('You phone code is expired')
+            raise serializers.ValidationError({'code': ['You phone code is expired']})
 
         if confirmation.code != validated_data['code']:
-            raise serializers.ValidationError('Wrong confirmation code')
+            raise serializers.ValidationError({'code': ['Wrong confirmation code']})
 
         instance = User.objects.create_user(phone=validated_data['phone'],
                                             password=validated_data['password'],
                                             username=validated_data['username'],
                                             country=validated_data['country'])
+        # TODO (VM): What about avatar?
         instance.set_password(validated_data['password'])
         instance.save()
         return instance
 
     class Meta:
         model = User
-        fields = ('phone', 'username', 'password', 'avatar', 'country', 'code')
+        fields = ('phone', 'username', 'password', 'country', 'code')
 
 
 class ProfileUserSerializer(serializers.ModelSerializer):
