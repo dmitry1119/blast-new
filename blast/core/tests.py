@@ -24,7 +24,7 @@ class BaseTestCaseUnauth(TestCase):
         self.user = User.objects.create_user(**data)
 
         data = {
-            'phone': self.phone,
+            'username': self.username,
             'password': self.password
         }
 
