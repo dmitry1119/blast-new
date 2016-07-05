@@ -10,18 +10,9 @@ class UserViewSet(mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.ListModelMixin,
                   viewsets.GenericViewSet):
-    """
-    Returns list of users or specific user by id.
-    """
     permission_classes = (permissions.AllowAny,)
 
     queryset = User.objects.all()
-
-    def get_permissions(self):
-        if self.request.method in permissions.SAFE_METHODS or self.request.method == 'POST':
-            return (permissions.AllowAny(),)
-        else:
-            return (permissions.IsAuthenticated(),)
 
     def get_serializer_class(self):
         if self.request.method in permissions.SAFE_METHODS:
@@ -31,7 +22,7 @@ class UserViewSet(mixins.CreateModelMixin,
 
     def create(self, request, *args, **kwarg):
         """
-        Register user by phone, username, password, country id and confirmation phone received by sms.
+        Register user by phone, username, password, country id and confirmation code received by sms.
         Avatar field is optional and can be set after registration.
 
         ---

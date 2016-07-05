@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import filters
 from rest_framework import viewsets, mixins, permissions, status
@@ -55,7 +56,7 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     def list(self, request, *args, **kwargs):
         """
-
+        Returns list of posts without hidden posts.
         ---
         parameters:
             - name: user
@@ -81,7 +82,11 @@ class PostsViewSet(PerObjectPermissionMixin,
         if not self.request.user.is_authenticated():
             return self.permission_denied(self.request, 'You are not authenticated')
 
-        post = self.queryset.get(pk=pk)
+        try:
+            post = self.queryset.get(pk=pk)
+        except Post.DoesNotExist:
+            raise Http404()
+
         vote, created = PostVote.objects.get_or_create(user=request.user, post=post)
         vote.is_positive = is_positive
         vote.save()
@@ -109,7 +114,7 @@ class PostsViewSet(PerObjectPermissionMixin,
     @detail_route(methods=['put'])
     def downvote(self, request, pk=None):
         """
-        Downvote to post
+        Downvote post
         ---
         omit_serializer: true
         parameters_strategy:

@@ -68,13 +68,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     avatar = models.ImageField(upload_to=avatars_upload_dir, blank=True)
     website = models.CharField(max_length=50, blank=True)
 
-    is_private = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=False,
+                                     help_text='Is user account in private mode?')
     is_safe_mode = models.BooleanField(default=False)
 
     save_original_content = models.BooleanField(default=True)
 
     # Private information
-    gender = models.IntegerField(default=None, blank=True, null=True)
+    gender = models.IntegerField(default=None, blank=True, null=True,
+                                 help_text=('Use 1 for male and 0 for female'))
     birthday = models.DateTimeField(default=None, blank=True, null=True)
 
     is_admin = models.BooleanField(default=False)
@@ -84,7 +86,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = ['username']
-
 
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.

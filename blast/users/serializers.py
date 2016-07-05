@@ -62,9 +62,12 @@ class ProfilePublicSerializer(serializers.ModelSerializer):
     """
     Special serializer for logged user
     """
-    followers = serializers.ReadOnlyField(source='followers_count')
-    blasts = serializers.ReadOnlyField(source='blasts_count')
-    following = serializers.ReadOnlyField(source='following_count')
+    followers = serializers.ReadOnlyField(source='followers_count',
+                                          help_text='Total count of followers')
+    blasts = serializers.ReadOnlyField(source='blasts_count',
+                                       help_text='Total count of blasts')
+    following = serializers.ReadOnlyField(source='following_count',
+                                          help_text='Total count of followee')
 
     class Meta:
         model = User
