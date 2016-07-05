@@ -10,6 +10,9 @@ class UserViewSet(mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.ListModelMixin,
                   viewsets.GenericViewSet):
+    """
+    Returns list of users or specific user by id.
+    """
     permission_classes = (permissions.AllowAny,)
 
     queryset = User.objects.all()
@@ -26,9 +29,9 @@ class UserViewSet(mixins.CreateModelMixin,
         else:
             return RegisterUserSerializer
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwarg):
         """
-        Register user by phone, username, password and country id.
+        Register user by phone, username, password, country id and confirmation phone received by sms.
         Avatar field is optional and can be set after registration.
 
         ---
@@ -44,7 +47,7 @@ class UserViewSet(mixins.CreateModelMixin,
             - name: country
               description: user country id.
         """
-        return super().create(request, *args, **kwargs)
+        return super().create(request, *args, **kwarg)
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
