@@ -27,6 +27,9 @@ class UserManager(BaseUserManager):
         user.is_active = True
         user.save(using=self._db)
 
+        # Create settings for user
+        UserSettings.objects.create(user=user)
+
         return user
 
     def create_superuser(self, phone, username, password):

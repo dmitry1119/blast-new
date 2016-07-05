@@ -1,14 +1,9 @@
-from django.http import Http404
-from rest_framework.decorators import detail_route, list_route
-from rest_framework.response import Response
-from rest_framework import status, views, viewsets, mixins, permissions, generics
+from rest_framework import viewsets, mixins, permissions, generics
 
+from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer)
-
-from users.models import User, UserSettings
-from users.signals import user_registered
 
 
 class UserViewSet(mixins.CreateModelMixin,
