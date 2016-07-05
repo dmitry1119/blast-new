@@ -6,7 +6,7 @@ from django.utils import timezone
 from rest_framework import status
 
 from smsconfirmation.models import PhoneConfirmation
-from users.models import User
+from users.models import User, UserSettings
 from core.tests import BaseTestCase, BaseTestCaseUnauth
 
 
@@ -42,6 +42,12 @@ class RegisterTest(TestCase):
         self.assertEqual(self.phone, user.phone)
         self.assertEqual(self.username, user.username)
         self.assertTrue(user.check_password(self.password))
+
+        # Check user settings
+        settings = UserSettings.objects.get(user=user)
+
+        # Useless assert
+        self.assertEqual(settings.user.pk, user.pk)
 
     def test_min_password_length(self):
         """Checks that password length greater or equal 6"""
