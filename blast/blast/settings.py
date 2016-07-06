@@ -148,6 +148,11 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardResultsSetPagination'
 }
 
+JWT_AUTH = {
+    'JWT_VERIFY_EXPIRATION': False,
+    'JWT_ALLOW_REFRESH': False,
+}
+
 SINCH = {
     'APP_KEY': '155edefb-991d-4e14-864e-4e9451a21bd6',
     'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
