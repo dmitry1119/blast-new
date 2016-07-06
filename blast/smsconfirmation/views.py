@@ -30,14 +30,12 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
     def post(self, request, *args, **kwargs):
         return self.create(request)
 
+    # TODO: Make tests
     def update(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
 
         if not serializer.is_valid():
-            return Response({
-                'message': 'wrong data',
-                'errors': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         phone = serializer.validated_data['phone']
 
@@ -46,13 +44,13 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
 
         if not confirmation:
             logger.error('Confirmation request for {} was not found'.format(phone))
-            return Response({'message': 'confirmation request was not found'},
+            return Response({'code': ['confirmation request was not found']},
                             status=status.HTTP_404_NOT_FOUND)
 
         if not confirmation.is_actual():
             logger.info('Confirmation code is expired {}'.format(confirmation.pk))
             return Response({
-                'message': 'Confirmation code is expired'
+                'code': ['Confirmation code is expired']
             }, status=status.HTTP_400_BAD_REQUEST)
 
         if confirmation.code == serializer.data['code']:
@@ -61,13 +59,9 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
 
             self.on_code_confirmed(request, confirmation)
 
-            return Response({
-                'message': 'ok'
-            }, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({
-                'message': 'wrong code'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'code': ['Invalid confirmation code']}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PhoneConfirmView(PhoneConfirmBase):

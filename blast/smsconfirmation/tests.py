@@ -32,6 +32,34 @@ class TestResetPassword(BaseTestCaseUnauth):
         self.password_request = PhoneConfirmation.objects.get(phone=self.user.phone,
                                                               request_type=PhoneConfirmation.REQUEST_PASSWORD)
 
+    def test_code_not_found(self):
+        data = {
+            'code': 'abcd',
+            'phone': '1234567',
+            'password1': 'newpass',
+            'password2': 'newpass'
+        }
+
+        response = self.patch_json(self.url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIsNotNone(response.data.get('code'))
+        self.assertIsInstance(response.data.get('code'), list)
+
+    def test_invalid_code(self):
+        data = {
+            'code': 'abcd',
+            'phone': self.user.phone,
+            'password1': 'password',
+            'password2': 'password'
+        }
+
+        response = self.patch_json(self.url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNotNone(response.data.get('code'))
+        self.assertIsInstance(response.data.get('code'), list)
+
     def test_wrong_password_len(self):
         data = {
             'code': self.password_request.code,
