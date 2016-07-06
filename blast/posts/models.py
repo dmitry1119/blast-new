@@ -62,3 +62,29 @@ class PostComment(models.Model):
     user = models.ForeignKey(User)
     post = models.ForeignKey(Post)
     text = models.CharField(max_length=256)
+
+
+class PostReport(models.Model):
+    OTHER = -1
+    SENSITIVE_CONTENT = 0
+    SPAM = 1
+    DUPLICATED_CONTENT = 2
+    BULLING = 3
+    INTEL_VIOLATION = 4
+
+    REASONS = (
+        (OTHER, -1),
+        (SENSITIVE_CONTENT, 0),
+        (SPAM, 1),
+        (DUPLICATED_CONTENT, 2),
+        (BULLING, 3),
+        (INTEL_VIOLATION, 4),
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    user = models.ForeignKey(User)
+    post = models.ForeignKey(Post)
+
+    reason = models.IntegerField(choices=REASONS)
+    text = models.CharField(max_length=128, blank=True, help_text='Details')
