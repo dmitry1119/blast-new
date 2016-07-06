@@ -6,8 +6,8 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 
 from smsconfirmation.models import PhoneConfirmation
-from smsconfirmation.serializers import PhoneConfirmationSerializer, ChangePasswordSerializer, \
-    RequestChangePasswordSerializer
+from smsconfirmation.serializers import (PhoneConfirmationSerializer, ChangePasswordSerializer,
+                                         RequestChangePasswordSerializer)
 from users.models import User
 
 logger = logging.getLogger(__name__)
