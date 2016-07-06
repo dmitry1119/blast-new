@@ -97,7 +97,6 @@ class NotificationSettingsSerializer(serializers.ModelSerializer):
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
-    """Serializer for authorized user"""
     old_password = serializers.CharField(min_length=6, write_only=True)
     password1 = serializers.CharField(min_length=6, write_only=True)
     password2 = serializers.CharField(min_length=6, write_only=True)
@@ -119,3 +118,29 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('password1', 'password2', 'old_password')
+
+
+class ChangePhoneSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(min_length=6, write_only=True)
+    current_phone = serializers.CharField(write_only=True)
+    new_phone = serializers.CharField(write_only=True)
+
+    def validate_password(self, value):
+        if not self.instance.check_password(value):
+            raise serializers.ValidationError({'password': 'Wrong password'})
+
+        return value
+
+    def validate_current_phone(self, value):
+        if self.instance.phone != value:
+            raise serializers.ValidationError({'current_phone': 'Wrong current phone number'})
+
+        return value
+
+    def save(self, **kwargs):
+        self.instance.phone = self.validated_data['new_phone']
+        super().save(**kwargs)
+
+    class Meta:
+        model = User
+        fields = ('password', 'current_phone', 'new_phone',)

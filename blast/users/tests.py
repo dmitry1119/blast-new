@@ -139,7 +139,6 @@ class UpdateProfileTest(BaseTestCase):
         self.assertEqual(self.user.birthday, self.birthday)
 
 
-
 class TestResetPasswordAuthorized(BaseTestCase):
     """Test case for authorized user"""
 
@@ -159,3 +158,21 @@ class TestResetPasswordAuthorized(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(self.user.check_password(self.new_password))
+
+
+class TestChangePhoneNumber(BaseTestCase):
+    url = reverse_lazy('user-phone')
+    new_phone = '+79551234567'
+
+    def test_change_phone(self):
+        data = {
+            'password': self.password,
+            'current_phone': self.phone,
+            'new_phone': self.new_phone
+        }
+
+        response = self.patch_json(self.url, data)
+
+        self.user.refresh_from_db()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user.phone, self.new_phone)
