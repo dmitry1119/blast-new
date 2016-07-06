@@ -3,7 +3,7 @@ from rest_framework import viewsets, mixins, permissions, generics
 from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
-                               NotificationSettingsSerializer)
+                               NotificationSettingsSerializer, ChangePasswordSerializer)
 
 
 class UserViewSet(mixins.CreateModelMixin,
@@ -98,3 +98,23 @@ class UserSettingsView(generics.RetrieveUpdateAPIView):
         instance, _ = UserSettings.objects.get_or_create(user=self.request.user)
         return instance
 
+
+class UserPasswordResetView(generics.UpdateAPIView):
+    """
+    Changes password for authorized user
+
+    ---
+    PUT:
+        - name: old_password
+          description: old user password
+        - name: password1
+          description: new password
+        - name: password2
+          description: new password confirmation
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = ChangePasswordSerializer
+
+    def get_object(self):
+        return self.request.user

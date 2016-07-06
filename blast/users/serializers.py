@@ -94,3 +94,28 @@ class NotificationSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSettings
         exclude = ('user',)
+
+
+class ChangePasswordSerializer(serializers.ModelSerializer):
+    """Serializer for authorized user"""
+    old_password = serializers.CharField(min_length=6, write_only=True)
+    password1 = serializers.CharField(min_length=6, write_only=True)
+    password2 = serializers.CharField(min_length=6, write_only=True)
+
+    def validate_old_password(self, value):
+        if not self.instance.check_password(value):
+            raise serializers.ValidationError({'old_password': 'Wrong old password'})
+
+    def validate(self, data):
+        if data['password1'] != data['password2']:
+            raise serializers.ValidationError({'password1': ['Passwords do not match']})
+
+        return data
+
+    def save(self, **kwargs):
+        self.instance.set_password(self.validated_data['password1'])
+        super().save(**kwargs)
+
+    class Meta:
+        model = User
+        fields = ('password1', 'password2', 'old_password')
