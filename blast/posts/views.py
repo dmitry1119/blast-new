@@ -9,6 +9,7 @@ from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
                                VoteSerializer, VotePublicSerializer, ReportPostSerializer)
+from users.models import User
 
 
 class PerObjectPermissionMixin(object):
@@ -56,7 +57,7 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     def get_queryset(self):
         if 'pinned' in self.request.query_params:
-            return self.request.user.pinned_posts.all()
+            return self.request.user.pinned_posts.all()  # FIXME (VM): What about hidden posts?
         else:
             return self.queryset
 
@@ -72,7 +73,41 @@ class PostsViewSet(PerObjectPermissionMixin,
               paramType: query
               type: int
         """
-        return super().list(request, *args, **kwargs)
+        def attach_users(posts: list):
+            """
+            Attaches user to post dictionary
+            :param posts:
+            :return: modified list of posts
+            """
+            users = [it['user'] for it in posts]
+            users = User.objects.filter(pk__in=users)
+            users = users.values('pk', 'username', 'is_private', 'avatar')
+            users = {it['pk']: it for it in users}
+
+            for post in posts:
+                user = users[post['user']]
+                if user['is_private']:
+                    # TODO (VM): Hide user id from post?
+                    post['username'] = 'Anonymous'
+                    post['avatar'] = None
+                else:
+                    post['username'] = user['username']
+                    post['avatar'] = user['avatar']
+
+            return posts
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            data = attach_users(serializer.data)
+            return self.get_paginated_response(data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        data = attach_users(serializer.data)
+
+        return Response(data)
 
     def destroy(self, request, *args, **kwargs):
         """
