@@ -238,6 +238,10 @@ class PinPost(BaseTestCase):
     def tes_get_pinned_posts(self):
         url = reverse_lazy('post-list') + '?pinned'
 
+        video = create_file('test.mp4', False)
+        for it in range(10):
+            Post.objects.create(user=self.user, video=video, text='text')
+
         self.put_json(reverse_lazy('post-detail', kwargs={'pk': self.post.pk}) + 'pin/')
         self.put_json(url)
 
