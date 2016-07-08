@@ -1,9 +1,25 @@
 import json
+from io import BytesIO
 
+from PIL import Image
+from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy
 
 from users.models import User
+
+
+def create_file(name, content_file=True):
+    image = Image.new('RGBA', size=(50, 50))
+    file = BytesIO(image.tostring())
+    file.name = name
+    file.seek(0)
+
+    if content_file:
+        return ContentFile(file.read(), name=name)
+    else:
+        return SimpleUploadedFile(name, file.read(), content_type='image/png')
 
 
 class BaseTestCaseUnauth(TestCase):

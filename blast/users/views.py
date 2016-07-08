@@ -22,8 +22,7 @@ class UserViewSet(mixins.CreateModelMixin,
 
     def create(self, request, *args, **kwarg):
         """
-        Register user by phone, username, password, country id and confirmation code received by sms.
-        Avatar field is optional and can be set after registration.
+        Register user by phone, username, password, avatar, country id and confirmation code received by sms.
 
         ---
         parameters:

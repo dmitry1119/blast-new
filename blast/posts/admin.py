@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from posts.models import Post, PostComment, PostVote
+from posts.models import Post, PostComment, PostVote, PostReport
+
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
@@ -15,3 +16,8 @@ class PostComment(admin.ModelAdmin):
 @admin.register(PostVote)
 class PostVote(admin.ModelAdmin):
     list_display = ('pk', 'post', 'user', 'is_positive')
+
+
+@admin.register(PostReport)
+class PostReport(admin.ModelAdmin):
+    list_display = ('pk', 'post', 'user', 'reason', 'text')

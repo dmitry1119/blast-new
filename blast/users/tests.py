@@ -7,7 +7,7 @@ from rest_framework import status
 
 from smsconfirmation.models import PhoneConfirmation
 from users.models import User, UserSettings
-from core.tests import BaseTestCase, BaseTestCaseUnauth
+from core.tests import BaseTestCase, BaseTestCaseUnauth, create_file
 
 
 class RegisterTest(TestCase):
@@ -30,7 +30,8 @@ class RegisterTest(TestCase):
             'username': self.username,
             'password': self.password,
             'country': self.country,
-            'code': self.confirmation.code
+            'code': self.confirmation.code,
+            'avatar': create_file('avatar.png', False)
         }
 
         response = self.client.post(self.url, data)

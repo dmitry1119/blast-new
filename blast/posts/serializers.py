@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from posts.models import Post, PostComment, PostVote
+from posts.models import Post, PostComment, PostVote, PostReport
 
 
 class PostPublicSerializer(serializers.ModelSerializer):
@@ -19,6 +19,12 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         read_only = ('user',)
         exclude = ('created_at', 'updated_at', 'user', 'id', 'is_hidden')
+
+
+class ReportPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostReport
+        exclude = ('created_at', 'user', 'post',)
 
 
 class CommentPublicSerializer(serializers.ModelSerializer):

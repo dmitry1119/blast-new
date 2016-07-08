@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
-                               VoteSerializer, VotePublicSerializer)
+                               VoteSerializer, VotePublicSerializer, ReportPostSerializer)
 
 
 class PerObjectPermissionMixin(object):
@@ -105,9 +105,6 @@ class PostsViewSet(PerObjectPermissionMixin,
         omit_serializer: true
         parameters_strategy:
             form: replace
-        responseMessages:
-            - code: 201 if vote does not exist
-            - code: 200 it vote updated
         """
         return self._update_vote(request, True, pk)
 
@@ -158,6 +155,29 @@ class PostsViewSet(PerObjectPermissionMixin,
             form: replace
         """
         return self._update_visibility(pk, False)
+
+    @detail_route(methods=['post'])
+    def report(self, request, pk=None):
+        """
+
+        ---
+        serializer: posts.serializers.ReportPostSerializer
+        parameters:
+            - name: reason
+              description: OTHER = 0, SENSITIVE_CONTENT = 1, SPAM = 2, DUPLICATED_CONTENT = 3,
+                           BULLYING = 4, INTEL_VIOLATION = 5
+        """
+        if request.user.is_anonymous():
+            # TODO: Test this branch
+            self.permission_denied(request,
+                                   message=getattr(permissions.IsAuthenticated, 'message'))
+
+        instance = get_object_or_404(Post, pk=pk)
+        serializer = ReportPostSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user, post=instance)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 # TODO (VM): Check if post is hidden
