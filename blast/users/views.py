@@ -3,7 +3,8 @@ from rest_framework import viewsets, mixins, permissions, generics
 from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
-                               NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer)
+                               NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
+                               ChangePhoneRequestSerializer)
 
 
 class UserViewSet(mixins.CreateModelMixin,
@@ -119,9 +120,10 @@ class UserPasswordResetView(generics.UpdateAPIView):
         return self.request.user
 
 
-class UserChangePhoneView(generics.UpdateAPIView):
+class UserChangePhoneView(generics.UpdateAPIView,
+                          generics.CreateAPIView):
     """
-    Changes phone for authorized user
+    Changes user phone
 
     ---
     PUT:
@@ -131,9 +133,29 @@ class UserChangePhoneView(generics.UpdateAPIView):
           description: old user phone
         - name: new_phone
           description: new user phone
+        - name: code
+          description: code received by sms
     """
     permissions_class = (permissions.IsAuthenticated,)
     serializer_class = ChangePhoneSerializer
 
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return ChangePhoneRequestSerializer
+        elif self.request.method == 'PATCH':
+            return ChangePhoneSerializer
+
     def get_object(self):
         return self.request.user
+
+    def post(self, *args, **kwargs):
+        """
+        Requests new confirmation for phone changing
+
+        ---
+        parameters:
+            - name: phone
+              description: new user phone
+
+        """
+        return super().post(*args, **kwargs)

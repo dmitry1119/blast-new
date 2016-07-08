@@ -203,7 +203,7 @@ class ReportTest(BaseTestCase):
 
         response = self.client.post(url, data=data)
 
-        self.assertEqual(response.status_code, status.HTTP_201_OK)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(PostReport.objects.count(), 1)
 
         report = PostReport.objects.get(user=self.user)

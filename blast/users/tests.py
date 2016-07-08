@@ -31,7 +31,6 @@ class RegisterTest(TestCase):
             'password': self.password,
             'country': self.country,
             'code': self.confirmation.code,
-            'avatar': create_file('avatar.png', False)
         }
 
         response = self.client.post(self.url, data)
@@ -166,10 +165,21 @@ class TestChangePhoneNumber(BaseTestCase):
     new_phone = '+79551234567'
 
     def test_change_phone(self):
+        response = self.client.post(self.url, {
+            'phone': self.new_phone
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        confirmation = PhoneConfirmation.objects.get_actual(self.new_phone)
+        self.assertIsNotNone(confirmation)
+
+        # TODO: Check "bad" cases
         data = {
             'password': self.password,
             'current_phone': self.phone,
-            'new_phone': self.new_phone
+            'new_phone': self.new_phone,
+            'code': confirmation.code
         }
 
         response = self.patch_json(self.url, data)

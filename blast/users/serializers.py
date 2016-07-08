@@ -12,6 +12,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     code = serializers.CharField(max_length=CODE_CONFIRMATION_LEN,
                                  min_length=CODE_CONFIRMATION_LEN,
                                  write_only=True)
+    avatar = serializers.ImageField(required=False)
 
     def validate_password(self, value):
         if not value or len(value) < 6:
@@ -124,10 +125,20 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         fields = ('password1', 'password2', 'old_password')
 
 
+class ChangePhoneRequestSerializer(serializers.ModelSerializer):
+    request_type = serializers.ReadOnlyField(default=PhoneConfirmation.REQUEST_CHANGE_PHONE)
+
+    class Meta:
+        model = PhoneConfirmation
+        fields = ('phone', 'request_type')
+
+
 class ChangePhoneSerializer(serializers.ModelSerializer):
     password = serializers.CharField(min_length=6, write_only=True)
     current_phone = serializers.CharField(write_only=True)
     new_phone = serializers.CharField(write_only=True)
+    code = serializers.CharField(max_length=CODE_CONFIRMATION_LEN,
+                                 min_length=CODE_CONFIRMATION_LEN)
 
     def validate_password(self, value):
         if not self.instance.check_password(value):
@@ -141,10 +152,26 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate(self, attrs):
+        super().validate(attrs)
+
+        try:
+            confirmation = PhoneConfirmation.objects.get(phone=attrs['new_phone'])
+        except:
+            raise serializers.ValidationError({'code': ['confirmation code not found']})
+
+        if confirmation.code != attrs['code']:
+            raise serializers.ValidationError({'code': ['confirmation code is wrong']})
+
+        if not confirmation.is_actual():
+            raise serializers.ValidationError({'code': ['confirmation code is expired']})
+
+        return attrs
+
     def save(self, **kwargs):
         self.instance.phone = self.validated_data['new_phone']
         super().save(**kwargs)
 
     class Meta:
         model = User
-        fields = ('password', 'current_phone', 'new_phone',)
+        fields = ('password', 'current_phone', 'new_phone', 'code')

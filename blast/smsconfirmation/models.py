@@ -30,6 +30,7 @@ class PhoneConfirmationManager(models.Manager):
 class PhoneConfirmation(models.Model):
     REQUEST_PHONE = 1
     REQUEST_PASSWORD = 2
+    REQUEST_CHANGE_PHONE = 3
 
     REQUEST_TYPES = (
         (REQUEST_PHONE, 'Phone confirmation'),
