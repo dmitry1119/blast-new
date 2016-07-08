@@ -1,15 +1,10 @@
-from io import BytesIO
-
-from PIL import Image
-from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.files.base import ContentFile
+from django.test import TestCase
 from rest_framework import status
 
 from core.tests import BaseTestCase, create_file
-from users.models import User
 from posts.models import Post, PostComment, PostReport
+from users.models import User
 
 
 class AnyPermissionTest(TestCase):
@@ -208,3 +203,44 @@ class ReportTest(BaseTestCase):
 
         report = PostReport.objects.get(user=self.user)
         self.assertEqual(report.reason, PostReport.OTHER)
+
+
+class PinPost(BaseTestCase):
+
+    posts_count = 10
+
+    def setUp(self):
+        super().setUp()
+
+        video = create_file('test.png', False)
+
+        self.post = Post.objects.create(user=self.user, video=video, text='text')
+
+    def test_pin_post(self):
+        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk}) + 'pin/'
+
+        self.put_json(url)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.pinned_posts.count(), 1)
+
+    def test_unpin_post(self):
+        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
+
+        self.put_json(url + 'pin/')
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.pinned_posts.count(), 1)
+
+        self.put_json(url + 'unpin/')
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.pinned_posts.count(), 0)
+
+    def tes_get_pinned_posts(self):
+        url = reverse_lazy('post-list') + '?pinned'
+
+        self.put_json(reverse_lazy('post-detail', kwargs={'pk': self.post.pk}) + 'pin/')
+        self.put_json(url)
+
+        response = self.get(url)
+        self.assertEqual(len(response.result), 1)
+        self.assertEqual(response.result[0]['pk'], self.post.pk)

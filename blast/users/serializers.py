@@ -73,7 +73,7 @@ class ProfilePublicSerializer(serializers.ModelSerializer):
     blasts = serializers.ReadOnlyField(source='blasts_count',
                                        help_text='Total count of blasts')
     following = serializers.ReadOnlyField(source='following_count',
-                                          help_text='Total count of followee')
+                                          help_text='Total count of followees')
 
     class Meta:
         model = User

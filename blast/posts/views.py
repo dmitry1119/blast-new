@@ -2,7 +2,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import filters
 from rest_framework import viewsets, mixins, permissions, status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
 from posts.models import Post, PostComment, PostVote
@@ -54,9 +54,17 @@ class PostsViewSet(PerObjectPermissionMixin,
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('user',)
 
+    def get_queryset(self):
+        if 'pinned' in self.request.query_params:
+            return self.request.user.pinned_posts.all()
+        else:
+            return self.queryset
+
     def list(self, request, *args, **kwargs):
         """
         Returns list of posts without hidden posts.
+        Use pinned parameter for getting pinned posts.
+        For example: /api/v1/posts/?pinned
         ---
         parameters:
             - name: user
@@ -163,6 +171,9 @@ class PostsViewSet(PerObjectPermissionMixin,
         ---
         serializer: posts.serializers.ReportPostSerializer
         parameters:
+            - name: pk
+              description: post id
+              type: query
             - name: reason
               description: OTHER = 0, SENSITIVE_CONTENT = 1, SPAM = 2, DUPLICATED_CONTENT = 3,
                            BULLYING = 4, INTEL_VIOLATION = 5
@@ -178,6 +189,38 @@ class PostsViewSet(PerObjectPermissionMixin,
         serializer.save(user=request.user, post=instance)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @detail_route(methods=['put'])
+    def pin(self, request, pk=None):
+        """
+        Adds post to user pinned posts list
+        ---
+        omit_serializer: true
+        parameters_strategy:
+            form: replace
+        """
+        if self.request.user.is_anonymous():
+            return self.permission_denied(request)
+        instance = get_object_or_404(Post, pk=pk)
+        request.user.pinned_posts.add(instance)
+
+        return Response()
+
+    @detail_route(methods=['put'])
+    def unpin(self, request, pk=None):
+        """
+        Removes post from user pinned posts list
+        ---
+        omit_serializer: true
+        parameters_strategy:
+            form: replace
+        """
+        if self.request.user.is_anonymous():
+            return self.permission_denied(request)
+        instance = get_object_or_404(Post, pk=pk)
+        request.user.pinned_posts.remove(instance)
+
+        return Response()
 
 
 # TODO (VM): Check if post is hidden
