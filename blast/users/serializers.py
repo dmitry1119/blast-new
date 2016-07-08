@@ -40,8 +40,12 @@ class RegisterUserSerializer(serializers.ModelSerializer):
                                             password=validated_data['password'],
                                             username=validated_data['username'],
                                             country=validated_data['country'])
-        # TODO (VM): What about avatar?
         instance.set_password(validated_data['password'])
+
+        avatar = validated_data.get('avatar')
+        if avatar:
+            instance.avatar.save(avatar.name, avatar)
+
         instance.save()
         return instance
 
