@@ -40,6 +40,70 @@ class PerObjectPermissionMixin(object):
         serializer.save(user=self.request.user)
 
 
+def attach_users(posts: list, user: User):
+    # TODO (VM): Make test
+    """
+    Attaches user to post dictionary
+    :param posts: list of post dictionaries
+    :return: modified list of posts
+    """
+    if len(posts) == 0:
+        return posts
+
+    users = [it['user'] for it in posts]
+    users = User.objects.filter(pk__in=users)
+    users = users.values('pk', 'username', 'is_private', 'avatar')
+    users = {it['pk']: it for it in users}
+
+    for post in posts:
+        user = users[post['user']]
+        author = {}
+        if user['is_private']:
+            # TODO (VM): Hide user id from post?
+            author['username'] = 'Anonymous'
+            author['avatar'] = None
+        else:
+            author['username'] = user['username']
+            author['avatar'] = user['avatar']
+        post['author'] = author
+
+    return posts
+
+
+def mark_pinned(posts: list, user: User):
+    # TODO (VM): Make test
+    """
+    Adds is_pinned flag to each post dictionary in posts list
+    :return: modified list of posts
+    """
+    if user.is_anonymous() or len(posts) == 0:
+        return posts
+
+    ids = [it['id'] for it in posts]
+    pinned = user.pinned_posts.filter(id__in=ids).values('id')
+    pinned = [it['id'] for it in pinned]
+
+    for post in posts:
+        if post['id'] in pinned:
+            post['is_pinned'] = True
+        else:
+            post['is_pinned'] = False
+
+    return posts
+
+
+def fill_posts(posts: list, user: User):
+    """
+    Adds additional information to raw posts
+    :param posts: list of dictionaries
+    :return: modified posts list
+    """
+    data = mark_pinned(posts, user)
+    data = attach_users(posts, user)
+
+    return data
+
+
 class PostsViewSet(PerObjectPermissionMixin,
                    mixins.CreateModelMixin,
                    mixins.RetrieveModelMixin,
@@ -61,11 +125,17 @@ class PostsViewSet(PerObjectPermissionMixin,
         else:
             return self.queryset
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+
+        data = fill_posts([serializer.data], self.request.user)
+
+        return Response(data[0])
+
     def list(self, request, *args, **kwargs):
         """
         Returns list of posts without hidden posts.
-        Use pinned parameter for getting pinned posts.
-        For example: /api/v1/posts/?pinned
         ---
         parameters:
             - name: user
@@ -73,39 +143,18 @@ class PostsViewSet(PerObjectPermissionMixin,
               paramType: query
               type: int
         """
-        def attach_users(posts: list):
-            """
-            Attaches user to post dictionary
-            :param posts:
-            :return: modified list of posts
-            """
-            users = [it['user'] for it in posts]
-            users = User.objects.filter(pk__in=users)
-            users = users.values('pk', 'username', 'is_private', 'avatar')
-            users = {it['pk']: it for it in users}
-
-            for post in posts:
-                user = users[post['user']]
-                if user['is_private']:
-                    # TODO (VM): Hide user id from post?
-                    post['username'] = 'Anonymous'
-                    post['avatar'] = None
-                else:
-                    post['username'] = user['username']
-                    post['avatar'] = user['avatar']
-
-            return posts
-
+        # return Response(self._list(request, self.get_queryset(),
+        #                            self.get_serializer, fill_posts))
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            data = attach_users(serializer.data)
+            data = fill_posts(serializer.data, request.user)
             return self.get_paginated_response(data)
 
         serializer = self.get_serializer(queryset, many=True)
-        data = attach_users(serializer.data)
+        data = fill_posts([serializer.data], request.user)
 
         return Response(data)
 
@@ -138,6 +187,24 @@ class PostsViewSet(PerObjectPermissionMixin,
 
         serializer = VoteSerializer(instance=vote)
         return Response(serializer.data, status=status_code)
+
+    def _build_voted_response(self, is_positive):
+        # Get votes for getting list of posts
+        user = self.request.user
+        qs = PostVote.objects.filter(user=user, is_positive=is_positive)
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            # Get list of identifiers of voted posts
+            ids = [it.pk for it in page]
+            posts = Post.objects.filter(id__in=ids)
+
+            serializer = PostPublicSerializer(posts, many=True)
+            # TODO: mark posts as voted or downvoted in fill_posts?
+            posts = fill_posts(serializer.data, user)
+
+            return self.get_paginated_response(posts)
+        else:
+            return Response()
 
     @detail_route(methods=['put'])
     def vote(self, request, pk=None):
@@ -256,6 +323,40 @@ class PostsViewSet(PerObjectPermissionMixin,
         request.user.pinned_posts.remove(instance)
 
         return Response()
+
+
+class VotedPostBaseView(mixins.ListModelMixin,
+                        viewsets.GenericViewSet):
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    serializer_class = PostPublicSerializer
+
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.get_queryset())
+        if page is not None:
+            # Get list of identifiers of voted posts
+            ids = [it.post_id for it in page]
+            posts = Post.objects.filter(id__in=ids)
+
+            serializer = self.get_serializer(posts, many=True)
+            posts = fill_posts(serializer.data, request.user)
+
+            return self.get_paginated_response(posts)
+        else:
+            return Response()
+
+
+# TODO: Add tests?
+class VotedPostsViewSet(VotedPostBaseView):
+    def get_queryset(self):
+        return PostVote.objects.filter(user=self.request.user, is_positive=True)
+
+
+# TODO: Add tests?
+class DonwvotedPostsViewSet(VotedPostBaseView):
+    def get_queryset(self):
+        return PostVote.objects.filter(user=self.request.user, is_positive=False)
 
 
 # TODO (VM): Check if post is hidden
