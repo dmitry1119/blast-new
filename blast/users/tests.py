@@ -2,6 +2,7 @@ import json
 
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy, reverse
+from django.test.client import MULTIPART_CONTENT
 from django.utils import timezone
 from rest_framework import status
 
@@ -109,10 +110,12 @@ class UpdateProfileTest(BaseTestCase):
         self.url = reverse('user-profile')
 
     def test_edit_optional_data(self):
+        # avatar = create_file('avatar.png', False)
         data = json.dumps({
             'bio': self.bio,
             'website': self.website,
             'fullname': self.fullname,
+            # 'avatar': avatar
         })
 
         response = self.client.patch(self.url, data, content_type='application/json')

@@ -51,6 +51,9 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
               description: user website
             - name: gender
               description: 0 - female, 1 - male.
+            - name: avatar
+              required: false
+              type: file
     PUT:
         parameters:
             - name: website

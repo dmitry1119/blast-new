@@ -22,11 +22,12 @@ from countries.views import CountryViewSet
 
 from users.views import UserViewSet, UserProfileView, UserSettingsView, UserPasswordResetView, UserChangePhoneView
 from smsconfirmation.views import PhoneConfirmView, ResetPasswordView
-from posts.views import PostsViewSet, CommentsViewSet, VotedPostsViewSet, DonwvotedPostsViewSet
+from posts.views import PostsViewSet, CommentsViewSet, VotedPostsViewSet, DonwvotedPostsViewSet, PinnedPostsViewSet
 
 api_1 = DefaultRouter()
 api_1.register('users', UserViewSet)
 api_1.register('countries', CountryViewSet)
+api_1.register('posts/pinned', PinnedPostsViewSet, base_name='pinned')
 api_1.register('posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
 api_1.register('posts/voted', VotedPostsViewSet, base_name='voted')
 api_1.register('posts', PostsViewSet)

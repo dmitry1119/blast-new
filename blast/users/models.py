@@ -63,7 +63,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Profile information
     username = models.CharField(max_length=15, unique=True)
-    fullname = models.CharField(max_length=50, blank=False)
+    fullname = models.CharField(max_length=50, blank=True)
     bio = models.CharField(max_length=100, blank=True)
     avatar = models.ImageField(upload_to=avatars_upload_dir, blank=True)
     website = models.CharField(max_length=50, blank=True)

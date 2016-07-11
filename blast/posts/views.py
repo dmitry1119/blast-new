@@ -110,20 +110,21 @@ class PostsViewSet(PerObjectPermissionMixin,
                    mixins.DestroyModelMixin,
                    mixins.ListModelMixin,
                    viewsets.GenericViewSet):
+    """
+    ---
+    create:
+        parameters:
+            - name: video
+              type: file
+    """
     queryset = Post.objects.filter(is_hidden=False)  # FIXME(VM): What about private users?
-    serializer_class = PostSerializer
+    # serializer_class = PostSerializer
 
     public_serializer_class = PostPublicSerializer
     private_serializer_class = PostSerializer
 
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('user',)
-
-    def get_queryset(self):
-        if 'pinned' in self.request.query_params:
-            return self.request.user.pinned_posts.all()  # FIXME (VM): What about hidden posts?
-        else:
-            return self.queryset
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -183,28 +184,10 @@ class PostsViewSet(PerObjectPermissionMixin,
         vote.is_positive = is_positive
         vote.save()
 
-        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        status_code = status.HTTP_200_OK
 
         serializer = VoteSerializer(instance=vote)
         return Response(serializer.data, status=status_code)
-
-    def _build_voted_response(self, is_positive):
-        # Get votes for getting list of posts
-        user = self.request.user
-        qs = PostVote.objects.filter(user=user, is_positive=is_positive)
-        page = self.paginate_queryset(qs)
-        if page is not None:
-            # Get list of identifiers of voted posts
-            ids = [it.pk for it in page]
-            posts = Post.objects.filter(id__in=ids)
-
-            serializer = PostPublicSerializer(posts, many=True)
-            # TODO: mark posts as voted or downvoted in fill_posts?
-            posts = fill_posts(serializer.data, user)
-
-            return self.get_paginated_response(posts)
-        else:
-            return Response()
 
     @detail_route(methods=['put'])
     def vote(self, request, pk=None):
@@ -226,9 +209,6 @@ class PostsViewSet(PerObjectPermissionMixin,
         omit_serializer: true
         parameters_strategy:
             form: replace
-        responseMessages:
-            - code: 201 if vote does not exist
-            - code: 200 it vote updated
         """
         return self._update_vote(request, False, pk)
 
@@ -303,7 +283,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         """
         if self.request.user.is_anonymous():
             return self.permission_denied(request)
-        instance = get_object_or_404(Post, pk=pk)
+        instance = get_object_or_404(Post, pk=pk) # FIXME: Is hidden?
         request.user.pinned_posts.add(instance)
 
         return Response()
@@ -323,6 +303,41 @@ class PostsViewSet(PerObjectPermissionMixin,
         request.user.pinned_posts.remove(instance)
 
         return Response()
+
+
+class PinnedPostsViewSet(mixins.ListModelMixin,
+                         viewsets.GenericViewSet):
+
+    serializer_class = PostPublicSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return self.request.user.pinned_posts.all()  # FIXME (VM): What about hidden posts?
+
+    def list(self, request, *args, **kwargs):
+        """
+        Returns list of posts without hidden posts.
+        ---
+        parameters:
+            - name: user
+              description: filter result by user id
+              paramType: query
+              type: int
+        """
+        # return Response(self._list(request, self.get_queryset(),
+        #                            self.get_serializer, fill_posts))
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            data = fill_posts(serializer.data, request.user)
+            return self.get_paginated_response(data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        data = fill_posts([serializer.data], request.user)
+
+        return Response(data)
 
 
 class VotedPostBaseView(mixins.ListModelMixin,

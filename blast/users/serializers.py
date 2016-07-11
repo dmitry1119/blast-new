@@ -59,6 +59,8 @@ class ProfileUserSerializer(serializers.ModelSerializer):
     """
     Serializer for updating user model
     """
+    avatar = serializers.ImageField(required=False)
+
     class Meta:
         model = User
         fields = ('fullname', 'avatar', 'bio', 'website', 'gender', 'birthday',)
