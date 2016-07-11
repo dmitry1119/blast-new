@@ -158,7 +158,7 @@ class AuthorizedPermissionsTest(BaseTestCase):
         response = self.put_json(url + 'vote/')
         self.post.refresh_from_db()
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.post.votes_count(), 1)
         self.assertEqual(self.post.downvoted_count(), 0)
 
