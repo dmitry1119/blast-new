@@ -115,7 +115,7 @@ class UpdateProfileTest(BaseTestCase):
             'bio': self.bio,
             'website': self.website,
             'fullname': self.fullname,
-            # 'avatar': avatar
+            'avatar': None
         })
 
         response = self.client.patch(self.url, data, content_type='application/json')
@@ -124,6 +124,7 @@ class UpdateProfileTest(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.user.bio, self.bio)
+        self.assertEqual(self.user.avatar.name, '')
         self.assertEqual(self.user.website, self.website)
         self.assertEqual(self.user.fullname, self.fullname)
 

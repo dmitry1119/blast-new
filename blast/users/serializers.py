@@ -12,8 +12,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     code = serializers.CharField(max_length=CODE_CONFIRMATION_LEN,
                                  min_length=CODE_CONFIRMATION_LEN,
                                  write_only=True)
-    avatar = serializers.ImageField(required=False)
-
+    
     def validate_password(self, value):
         if not value or len(value) < 6:
             raise serializers.ValidationError('Your password must be at least 6 characters')
@@ -59,7 +58,6 @@ class ProfileUserSerializer(serializers.ModelSerializer):
     """
     Serializer for updating user model
     """
-    avatar = serializers.ImageField(required=False)
 
     class Meta:
         model = User
