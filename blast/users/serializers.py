@@ -158,7 +158,7 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
 
         return value
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict):
         super().validate(attrs)
 
         try:
@@ -172,10 +172,13 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
         if not confirmation.is_actual():
             raise serializers.ValidationError({'code': ['confirmation code is expired']})
 
+        del attrs['password']
+
         return attrs
 
     def save(self, **kwargs):
         self.instance.phone = self.validated_data['new_phone']
+        # self.instance.save()
         super().save(**kwargs)
 
     class Meta:

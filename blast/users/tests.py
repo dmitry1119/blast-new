@@ -197,5 +197,6 @@ class TestChangePhoneNumber(BaseTestCase):
         response = self.patch_json(self.url, data)
 
         self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.password))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.user.phone, self.new_phone)
