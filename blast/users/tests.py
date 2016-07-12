@@ -168,6 +168,14 @@ class TestChangePhoneNumber(BaseTestCase):
     url = reverse_lazy('user-phone')
     new_phone = '+79551234567'
 
+    def test_change_busy_number(self):
+        response = self.client.post(self.url, {
+            'phone': self.phone
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNotNone(response.data.get('phone'))
+
     def test_change_phone(self):
         response = self.client.post(self.url, {
             'phone': self.new_phone

@@ -128,6 +128,12 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 class ChangePhoneRequestSerializer(serializers.ModelSerializer):
     request_type = serializers.ReadOnlyField(default=PhoneConfirmation.REQUEST_CHANGE_PHONE)
 
+    def validate_phone(self, value):
+        if User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError({'phone': 'This phone is taken. Try another.'})
+
+        return value
+
     class Meta:
         model = PhoneConfirmation
         fields = ('phone', 'request_type')
