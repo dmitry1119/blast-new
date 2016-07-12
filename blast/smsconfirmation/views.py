@@ -145,3 +145,9 @@ class ResetPasswordView(PhoneConfirmBase):
         user.set_password(request.data['password1'])
         user.save()
 
+
+# class SinchVerificationCallback(APIView):
+#
+#     def post(self, reuqest, *args, **kwargs):
+#
+#         return Response()

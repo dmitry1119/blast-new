@@ -162,7 +162,7 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
         super().validate(attrs)
 
         try:
-            confirmation = PhoneConfirmation.objects.get(phone=attrs['new_phone'])
+            confirmation = PhoneConfirmation.objects.get_actual(attrs['new_phone'])
         except:
             raise serializers.ValidationError({'code': ['confirmation code not found']})
 

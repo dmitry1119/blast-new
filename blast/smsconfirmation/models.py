@@ -60,7 +60,7 @@ class PhoneConfirmation(models.Model):
         return True
 
     class Meta:
-        ordering = ('created_at',)
+        ordering = ('-created_at',)
 
 
 @receiver(post_save, sender=PhoneConfirmation)
