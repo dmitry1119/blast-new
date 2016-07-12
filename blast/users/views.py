@@ -1,10 +1,12 @@
 from rest_framework import viewsets, mixins, permissions, generics
+from rest_framework.decorators import list_route
+from rest_framework.response import Response
 
 from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
-                               ChangePhoneRequestSerializer)
+                               ChangePhoneRequestSerializer, CheckUsernameAndPassword)
 
 
 class UserViewSet(mixins.CreateModelMixin,
@@ -39,6 +41,13 @@ class UserViewSet(mixins.CreateModelMixin,
               description: user country id.
         """
         return super().create(request, *args, **kwarg)
+
+    @list_route(['get'])
+    def check(self, request, *args, **kwargs):
+        serializer = CheckUsernameAndPassword(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        return Response()
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):

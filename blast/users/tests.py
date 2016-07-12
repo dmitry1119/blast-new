@@ -11,6 +11,44 @@ from users.models import User, UserSettings
 from core.tests import BaseTestCase, BaseTestCaseUnauth, create_file
 
 
+class CheckUsernameAndPasswordTest(BaseTestCase):
+
+    url = reverse_lazy('user-list') + 'check/'
+
+    def test_taken_phone_and_username(self):
+        data = {
+            'username': self.username,
+            'phone': self.phone
+        }
+
+        response = self.client.get(self.url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data.get('phone')[0], 'This phone is taken')
+        self.assertEqual(response.data.get('username')[0], 'This username is taken')
+
+    def test_taken_phone(self):
+        data = {
+            'username': self.username + '_555',
+            'phone': self.phone
+        }
+
+        response = self.client.get(self.url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNotNone(response.data.get('phone'))
+        self.assertIsNone(response.data.get('username'))
+
+    def test_untaken_phone_and_username(self):
+        data = {
+            'username': self.username + '_555',
+            'phone': self.phone + '999'
+        }
+
+        response = self.client.get(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
 class RegisterTest(TestCase):
 
     fixtures = ('countries',)
