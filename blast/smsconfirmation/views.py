@@ -61,7 +61,7 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({'code': ['Invalid confirmation code']}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'code': ['Wrong confirmation code']}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PhoneConfirmView(PhoneConfirmBase):

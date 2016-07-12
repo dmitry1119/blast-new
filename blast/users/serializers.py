@@ -167,7 +167,7 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'code': ['confirmation code not found']})
 
         if confirmation.code != attrs['code']:
-            raise serializers.ValidationError({'code': ['confirmation code is wrong']})
+            raise serializers.ValidationError({'code': ['Wrong confirmation code']})
 
         if not confirmation.is_actual():
             raise serializers.ValidationError({'code': ['confirmation code is expired']})
