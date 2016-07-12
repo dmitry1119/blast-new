@@ -143,3 +143,24 @@ class TestResetPassword(BaseTestCaseUnauth):
 
         self.assertFalse(self.password_request.is_confirmed)
         self.assertTrue(self.user.check_password(new_password))
+
+
+class TestSinchVerification(BaseTestCase):
+    url = reverse_lazy('sinch-phone-confirmation')
+
+    def test_sinch_request_confirmation(self):
+        self.client.post(self.url, {'phone': self.phone})
+
+        confirm = PhoneConfirmation.objects.get(phone=self.phone)
+
+        self.assertEqual(PhoneConfirmation.objects.count(), 1)
+        self.assertEqual(confirm.is_confirmed, False)
+
+    def test_sinch_confirm_phone(self):
+
+        self.client.post(self.url, {'phone': self.phone})
+
+        confirm = PhoneConfirmation.objects.get(phone=self.phone)
+
+        self.client.put(self.url, {'phone': self.phone, 'code': '1111'})
+

@@ -4,6 +4,20 @@ from smsconfirmation.models import PhoneConfirmation
 from users.models import User
 
 
+class SinchVerificationSerializer(serializers.Serializer):
+    id = serializers.CharField(max_length=10)
+    event = serializers.CharField(max_length=25)
+    method = serializers.CharField(max_length=10)
+    status = serializers.CharField(max_length=15)
+    reason = serializers.CharField(max_length=50)
+
+
+class SinchPhoneConfirmationSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=20)
+    code = serializers.CharField(max_length=4,
+                                 min_length=4)
+
+
 class PhoneConfirmationSerializer(serializers.ModelSerializer):
 
     class Meta:

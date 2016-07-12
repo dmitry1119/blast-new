@@ -63,8 +63,8 @@ class PhoneConfirmation(models.Model):
         ordering = ('created_at',)
 
 
-@receiver(post_save, sender=PhoneConfirmation)
-def post_confirmation(sender, instance, *args, **kwargs):
-    from blast.celery import send_sms
+# @receiver(post_save, sender=PhoneConfirmation)
+# def post_confirmation(sender, instance, *args, **kwargs):
+#     from blast.celery import send_sms
 
-    send_sms.delay(instance.phone, instance.code)
+    # send_sms.delay(instance.phone, instance.code)

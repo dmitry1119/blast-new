@@ -20,8 +20,11 @@ from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
 
-from users.views import UserViewSet, UserProfileView, UserSettingsView, UserPasswordResetView, UserChangePhoneView
-from smsconfirmation.views import PhoneConfirmView, ResetPasswordView
+from users.views import (UserViewSet, UserProfileView, UserSettingsView,
+                         UserPasswordResetView, UserChangePhoneView)
+from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
+                                   SinchPhoneConfirmationView, SinchResponseView)
+
 from posts.views import PostsViewSet, CommentsViewSet, VotedPostsViewSet, DonwvotedPostsViewSet, PinnedPostsViewSet
 
 api_1 = DefaultRouter()
@@ -46,5 +49,11 @@ urlpatterns = [
     url(r'^api/v1/token/$', obtain_jwt_token, name='get-auth-token'),
     url(r'^api/v1/sms/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),
     url(r'^api/v1/sms/password/', ResetPasswordView.as_view(), name='reset-password'),
+
+    url(r'^api/v1/phone/confirmation', SinchPhoneConfirmationView.as_view(),
+        name='sinch-phone-confirmation'),
+
+    # url(r'^sinch/callback/$', SinchResponseView.as_view(), name='sinch-callback'),
+
     url(r'^api/v1/', include(api_1.urls)),
 ]

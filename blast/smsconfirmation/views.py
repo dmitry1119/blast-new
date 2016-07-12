@@ -7,8 +7,12 @@ from rest_framework.response import Response
 
 from smsconfirmation.models import PhoneConfirmation
 from smsconfirmation.serializers import (PhoneConfirmationSerializer, ChangePasswordSerializer,
-                                         RequestChangePasswordSerializer)
+                                         RequestChangePasswordSerializer, SinchVerificationSerializer,
+                                         SinchPhoneConfirmationSerializer)
 from users.models import User
+
+from smsconfirmation.tasks import (send_verification_request,
+                                   send_code_confirmation_request)
 
 logger = logging.getLogger(__name__)
 
@@ -145,3 +149,56 @@ class ResetPasswordView(PhoneConfirmBase):
         user.set_password(request.data['password1'])
         user.save()
 
+
+class SinchPhoneConfirmationView(views.APIView):
+
+    def post(self, request):
+        """
+        Requests new phone verification code
+
+        ---
+        serializer: smsconfirmation.serializers.PhoneConfirmationSerializer
+        """
+        serializer = PhoneConfirmationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(request_type=PhoneConfirmation.REQUEST_PHONE)
+
+        send_verification_request.delay(serializer.data['phone'])
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def put(self, request):
+        """
+
+
+        ---
+        serializer: smsconfirmation.serializers.SinchPhoneConfirmationSerializer
+        """
+        serializer = SinchPhoneConfirmationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        send_code_confirmation_request.delay(serializer.data['code'],
+                                             serializer.data['phone'])
+
+        return Response()
+
+
+class SinchResponseView(views.APIView):
+
+    serializer_class = SinchVerificationSerializer
+
+    def post(self, request, *args, **kwargs):
+        print('Request data is', request.data)
+        if request.data['method'] != 'sms':
+            print('Wrong sinch method')
+            return Response()
+
+        is_successfull = request.data['status'] == 'SUCCESSFUL'
+
+        number = request.data['identity']['number']
+
+        confirm = PhoneConfirmation.objects.get_actual(phone=number)
+        confirm.is_confirmed = is_successfull
+        confirm.save()
+
+        return Response()
