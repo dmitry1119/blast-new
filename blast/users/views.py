@@ -44,6 +44,11 @@ class UserViewSet(mixins.CreateModelMixin,
 
     @list_route(['get'])
     def check(self, request, *args, **kwargs):
+        """
+
+        ---
+        serializer: users.serializers.CheckUsernameAndPassword
+        """
         serializer = CheckUsernameAndPassword(data=request.query_params)
         serializer.is_valid(raise_exception=True)
 
