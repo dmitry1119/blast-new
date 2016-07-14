@@ -50,7 +50,7 @@ urlpatterns = [
     url(r'^api/v1/sms/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),
     url(r'^api/v1/sms/password/', ResetPasswordView.as_view(), name='reset-password'),
 
-    url(r'^api/v1/phone/confirmation', SinchPhoneConfirmationView.as_view(),
+    url(r'^api/v1/phone/verification', SinchPhoneConfirmationView.as_view(),
         name='sinch-phone-confirmation'),
 
     # url(r'^sinch/callback/$', SinchResponseView.as_view(), name='sinch-callback'),
