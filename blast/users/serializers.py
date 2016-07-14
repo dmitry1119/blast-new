@@ -4,6 +4,23 @@ from smsconfirmation.models import CODE_CONFIRMATION_LEN, PhoneConfirmation
 from users.models import User, UserSettings
 
 
+class CheckUsernameAndPassword(serializers.Serializer):
+    phone = serializers.CharField(max_length=20, required=False)
+    username = serializers.CharField(max_length=15, required=False)
+
+    def validate_phone(self, value):
+        if User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError('This phone is taken')
+
+        return value
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError('This username is taken')
+
+        return value
+
+
 class RegisterUserSerializer(serializers.ModelSerializer):
     """
     Serializer for registration method.
@@ -108,10 +125,12 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
     def validate_old_password(self, value):
         if not self.instance.check_password(value):
+            # TODO: Get rid of field name
             raise serializers.ValidationError({'old_password': 'Wrong old password'})
 
     def validate(self, data):
         if data['password1'] != data['password2']:
+            # TODO: Get rid of field name
             raise serializers.ValidationError({'password1': ['Passwords do not match']})
 
         return data
@@ -148,34 +167,37 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
 
     def validate_password(self, value):
         if not self.instance.check_password(value):
-            raise serializers.ValidationError({'password': 'Wrong password'})
+            raise serializers.ValidationError('Wrong password')
 
         return value
 
     def validate_current_phone(self, value):
         if self.instance.phone != value:
-            raise serializers.ValidationError({'current_phone': 'Wrong current phone number'})
+            raise serializers.ValidationError('Wrong current phone number')
 
         return value
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict):
         super().validate(attrs)
 
         try:
-            confirmation = PhoneConfirmation.objects.get(phone=attrs['new_phone'])
+            confirmation = PhoneConfirmation.objects.get_actual(attrs['new_phone'])
         except:
             raise serializers.ValidationError({'code': ['confirmation code not found']})
 
         if confirmation.code != attrs['code']:
-            raise serializers.ValidationError({'code': ['confirmation code is wrong']})
+            raise serializers.ValidationError({'code': ['Wrong confirmation code']})
 
         if not confirmation.is_actual():
             raise serializers.ValidationError({'code': ['confirmation code is expired']})
+
+        del attrs['password']
 
         return attrs
 
     def save(self, **kwargs):
         self.instance.phone = self.validated_data['new_phone']
+        # self.instance.save()
         super().save(**kwargs)
 
     class Meta:

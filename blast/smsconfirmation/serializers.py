@@ -28,13 +28,39 @@ class PhoneConfirmationSerializer(serializers.ModelSerializer):
 class RequestChangePasswordSerializer(serializers.ModelSerializer):
     def validate_phone(self, value):
         if not User.objects.filter(phone=value).exists():
-            raise serializers.ValidationError({'phone': ['Phone does not exist']})
+            raise serializers.ValidationError('Phone does not exist')
 
         return value
 
     class Meta:
         model = PhoneConfirmation
         fields = ('phone',)
+
+
+class RequestChangePasswordSerializerUnauth(serializers.ModelSerializer):
+    username = serializers.CharField(max_length=15, write_only=True)
+
+    def validate_username(self, value):
+        if not User.objects.filter(username=value).exists():
+            raise serializers.ValidationError('Username does not exist')
+
+        return value
+
+    def validate_phone(self, value):
+        if not User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError('Phone does not exist')
+
+        return value
+
+    def validate(self, data):
+        super().validate(data)
+        del data['username']
+
+        return data
+
+    class Meta:
+        model = PhoneConfirmation
+        fields = ('phone', 'username')
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
@@ -45,6 +71,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['password1'] != data['password2']:
             raise serializers.ValidationError('Passwords do not match')
+
         return data
 
     class Meta:

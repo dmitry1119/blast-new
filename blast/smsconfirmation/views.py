@@ -7,8 +7,9 @@ from rest_framework.response import Response
 
 from smsconfirmation.models import PhoneConfirmation
 from smsconfirmation.serializers import (PhoneConfirmationSerializer, ChangePasswordSerializer,
-                                         RequestChangePasswordSerializer, SinchVerificationSerializer,
-                                         SinchPhoneConfirmationSerializer)
+                                         RequestChangePasswordSerializer,
+                                         SinchVerificationSerializer, SinchPhoneConfirmationSerializer,
+                                         RequestChangePasswordSerializer, RequestChangePasswordSerializerUnauth)
 from users.models import User
 
 from smsconfirmation.tasks import (send_verification_request,
@@ -65,7 +66,7 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({'code': ['Invalid confirmation code']}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'code': ['Wrong confirmation code']}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PhoneConfirmView(PhoneConfirmBase):
@@ -107,7 +108,10 @@ class ResetPasswordView(PhoneConfirmBase):
 
     def get_serializer(self, data):
         if self.request.method == 'POST':
-            return RequestChangePasswordSerializer(data=data)
+            if self.request.user.is_authenticated():
+                return RequestChangePasswordSerializer(data=data)
+            else:
+                return RequestChangePasswordSerializerUnauth(data=data)
         else:
             return ChangePasswordSerializer(data=data)
 
@@ -201,4 +205,4 @@ class SinchResponseView(views.APIView):
         confirm.is_confirmed = is_successfull
         confirm.save()
 
-        return Response()
+        return Response()   
