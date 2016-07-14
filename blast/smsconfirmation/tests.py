@@ -28,7 +28,10 @@ class TestResetPassword(BaseTestCaseUnauth):
     def setUp(self):
         super().setUp()
 
-        self.client.post(self.url, data={'phone': self.user.phone})
+        self.client.post(self.url, data={
+            'username':self.user.username,
+            'phone': self.user.phone
+        })
         self.password_request = PhoneConfirmation.objects.get(phone=self.user.phone,
                                                               request_type=PhoneConfirmation.REQUEST_PASSWORD)
 
@@ -123,7 +126,10 @@ class TestResetPassword(BaseTestCaseUnauth):
         self.assertIsNone(response.data.get('errors'))
 
     def test_two_confirmation_requests(self):
-        self.client.post(self.url, data={'phone': self.user.phone})
+        self.client.post(self.url, data={
+            'username': self.user.username,
+            'phone': self.user.phone
+        })
 
         confirmations = PhoneConfirmation.objects.get_actual(phone=self.phone,
                                                              request_type=PhoneConfirmation.REQUEST_PASSWORD)
@@ -143,3 +149,27 @@ class TestResetPassword(BaseTestCaseUnauth):
 
         self.assertFalse(self.password_request.is_confirmed)
         self.assertTrue(self.user.check_password(new_password))
+
+    def test_wrong_username(self):
+        data = {
+            'username': self.username + '1',
+            'phone': self.user.phone
+        }
+
+        response = self.client.post(self.url, data=data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNotNone(response.data.get('username'))
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.phone, self.phone)
+
+    def test_change_password(self):
+        data = {
+            'username': self.username,
+            'phone': self.user.phone
+        }
+
+        response = self.client.post(self.url, data=data)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

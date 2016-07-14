@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from smsconfirmation.models import PhoneConfirmation
 from smsconfirmation.serializers import (PhoneConfirmationSerializer, ChangePasswordSerializer,
-                                         RequestChangePasswordSerializer)
+                                         RequestChangePasswordSerializer, RequestChangePasswordSerializerUnauth)
 from users.models import User
 
 logger = logging.getLogger(__name__)
@@ -103,7 +103,10 @@ class ResetPasswordView(PhoneConfirmBase):
 
     def get_serializer(self, data):
         if self.request.method == 'POST':
-            return RequestChangePasswordSerializer(data=data)
+            if self.request.user.is_authenticated():
+                return RequestChangePasswordSerializer(data=data)
+            else:
+                return RequestChangePasswordSerializerUnauth(data=data)
         else:
             return ChangePasswordSerializer(data=data)
 
@@ -144,10 +147,3 @@ class ResetPasswordView(PhoneConfirmBase):
 
         user.set_password(request.data['password1'])
         user.save()
-
-
-# class SinchVerificationCallback(APIView):
-#
-#     def post(self, reuqest, *args, **kwargs):
-#
-#         return Response()
