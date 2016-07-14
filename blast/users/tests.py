@@ -220,27 +220,10 @@ class TestChangePhoneNumber(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        PhoneConfirmation.objects.create(phone=self.phone, is_confirmed=True,
+        PhoneConfirmation.objects.create(phone=self.new_phone, is_confirmed=True,
                                          request_type=PhoneConfirmation.REQUEST_PHONE)
 
-    def test_change_busy_number(self):
-        response = self.client.post(self.url, {
-            'phone': self.phone
-        })
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIsNotNone(response.data.get('phone'))
-
     def test_change_phone(self):
-        response = self.client.post(self.url, {
-            'phone': self.new_phone
-        })
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        confirmation = PhoneConfirmation.objects.get_actual(self.new_phone)
-        self.assertIsNotNone(confirmation)
-
         # TODO: Check "bad" cases
         data = {
             'password': self.password,
@@ -254,3 +237,17 @@ class TestChangePhoneNumber(BaseTestCase):
         self.assertTrue(self.user.check_password(self.password))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.user.phone, self.new_phone)
+
+    def test_change_unconfirmed_phone(self):
+        data = {
+            'passwrod': self.password,
+            'current_phone': self.phone + '1',
+            'new_phone': self.new_phone + '1'
+        }
+
+        response = self.patch_json(self.url, data)
+
+        self.user.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.user.phone, self.phone)
