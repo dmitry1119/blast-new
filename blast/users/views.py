@@ -29,8 +29,6 @@ class UserViewSet(mixins.CreateModelMixin,
 
         ---
         parameters:
-            - name: code
-              description: code received by sms.
             - name: phone
               description: user phone number with country code (e.g. +79131234567, +1-492-9131234567)
             - name: username
@@ -150,8 +148,6 @@ class UserChangePhoneView(generics.UpdateAPIView,
           description: old user phone
         - name: new_phone
           description: new user phone
-        - name: code
-          description: code received by sms
     """
     permissions_class = (permissions.IsAuthenticated,)
     serializer_class = ChangePhoneSerializer

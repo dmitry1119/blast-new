@@ -26,10 +26,6 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     Serializer for registration method.
     It allows set up very limited field set.
     """
-    code = serializers.CharField(max_length=CODE_CONFIRMATION_LEN,
-                                 min_length=CODE_CONFIRMATION_LEN,
-                                 write_only=True)
-
     def validate_password(self, value):
         if not value or len(value) < 6:
             raise serializers.ValidationError('Your password must be at least 6 characters')
@@ -41,17 +37,9 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        confirmation = PhoneConfirmation.objects.get_actual(validated_data['phone'],
-                                                            request_type=PhoneConfirmation.REQUEST_PHONE)
-
-        if not confirmation:
-            raise serializers.ValidationError({'code': ['Confirmation code was not found']})
-
-        if not confirmation.is_actual():
-            raise serializers.ValidationError({'code': ['You phone code is expired']})
-
-        if confirmation.code != validated_data['code']:
-            raise serializers.ValidationError({'code': ['Wrong confirmation code']})
+        is_confirmed, message = PhoneConfirmation.check_phone(validated_data['phone'])
+        if not is_confirmed:
+            raise serializers.ValidationError({'phone': [message]})
 
         instance = User.objects.create_user(phone=validated_data['phone'],
                                             password=validated_data['password'],
@@ -68,7 +56,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('phone', 'username', 'password', 'country', 'avatar', 'code')
+        fields = ('phone', 'username', 'password', 'country', 'avatar',)
 
 
 class ProfileUserSerializer(serializers.ModelSerializer):
@@ -126,11 +114,10 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     def validate_old_password(self, value):
         if not self.instance.check_password(value):
             # TODO: Get rid of field name
-            raise serializers.ValidationError({'old_password': 'Wrong old password'})
+            raise serializers.ValidationError('Wrong old password')
 
     def validate(self, data):
         if data['password1'] != data['password2']:
-            # TODO: Get rid of field name
             raise serializers.ValidationError({'password1': ['Passwords do not match']})
 
         return data
@@ -149,7 +136,7 @@ class ChangePhoneRequestSerializer(serializers.ModelSerializer):
 
     def validate_phone(self, value):
         if User.objects.filter(phone=value).exists():
-            raise serializers.ValidationError({'phone': 'This phone is taken. Try another.'})
+            raise serializers.ValidationError('This phone is taken. Try another.')
 
         return value
 
@@ -162,8 +149,6 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
     password = serializers.CharField(min_length=6, write_only=True)
     current_phone = serializers.CharField(write_only=True)
     new_phone = serializers.CharField(write_only=True)
-    code = serializers.CharField(max_length=CODE_CONFIRMATION_LEN,
-                                 min_length=CODE_CONFIRMATION_LEN)
 
     def validate_password(self, value):
         if not self.instance.check_password(value):
@@ -180,16 +165,9 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict):
         super().validate(attrs)
 
-        try:
-            confirmation = PhoneConfirmation.objects.get_actual(attrs['new_phone'])
-        except:
-            raise serializers.ValidationError({'code': ['confirmation code not found']})
-
-        if confirmation.code != attrs['code']:
-            raise serializers.ValidationError({'code': ['Wrong confirmation code']})
-
-        if not confirmation.is_actual():
-            raise serializers.ValidationError({'code': ['confirmation code is expired']})
+        is_confirmed, message = PhoneConfirmation.check_phone(attrs['new_phone'])
+        if not is_confirmed:
+            raise serializers.ValidationError({'code': [message]})
 
         del attrs['password']
 
@@ -202,4 +180,4 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('password', 'current_phone', 'new_phone', 'code')
+        fields = ('password', 'current_phone', 'new_phone',)

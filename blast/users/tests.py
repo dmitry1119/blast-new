@@ -60,7 +60,20 @@ class RegisterTest(TestCase):
 
     def setUp(self):
         self.confirmation = PhoneConfirmation.objects.create(phone=self.phone,
+                                                             is_confirmed=True,
                                                              request_type=PhoneConfirmation.REQUEST_PHONE)
+    def test_user_unconfirmed_phone(self):
+        data = {
+            'phone': self.phone + '1',
+            'username': self.username,
+            'password': self.password,
+            'country': self.country
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # TODO: Check that user does not exist
 
     def test_user_register(self):
         """Should register user"""
@@ -69,7 +82,6 @@ class RegisterTest(TestCase):
             'username': self.username,
             'password': self.password,
             'country': self.country,
-            'code': self.confirmation.code,
         }
 
         response = self.client.post(self.url, data)
@@ -92,7 +104,6 @@ class RegisterTest(TestCase):
         """Checks that password length greater or equal 6"""
 
         data = {
-            'code': self.confirmation.code,
             'phone': self.phone,
             'username': self.username,
             'password': '1234',
@@ -206,6 +217,12 @@ class TestChangePhoneNumber(BaseTestCase):
     url = reverse_lazy('user-phone')
     new_phone = '+79551234567'
 
+    def setUp(self):
+        super().setUp()
+
+        PhoneConfirmation.objects.create(phone=self.phone, is_confirmed=True,
+                                         request_type=PhoneConfirmation.REQUEST_PHONE)
+
     def test_change_busy_number(self):
         response = self.client.post(self.url, {
             'phone': self.phone
@@ -229,7 +246,6 @@ class TestChangePhoneNumber(BaseTestCase):
             'password': self.password,
             'current_phone': self.phone,
             'new_phone': self.new_phone,
-            'code': confirmation.code
         }
 
         response = self.patch_json(self.url, data)
