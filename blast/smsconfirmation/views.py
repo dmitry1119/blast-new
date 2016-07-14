@@ -7,7 +7,6 @@ from rest_framework.response import Response
 
 from smsconfirmation.models import PhoneConfirmation
 from smsconfirmation.serializers import (PhoneConfirmationSerializer, ChangePasswordSerializer,
-                                         RequestChangePasswordSerializer,
                                          SinchVerificationSerializer, SinchPhoneConfirmationSerializer,
                                          RequestChangePasswordSerializer, RequestChangePasswordSerializerUnauth)
 from users.models import User
@@ -42,31 +41,16 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        phone = serializer.validated_data['phone']
+        is_confirmed, message = PhoneConfirmation.check_phone(request.data['phone'])
 
-        confirmation = PhoneConfirmation.objects.get_actual(phone,
-                                                            request_type=self.REQUEST_TYPE)
+        if not is_confirmed:
+            return Response({'code': [message]}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not confirmation:
-            logger.error('Confirmation request for {} was not found'.format(phone))
-            return Response({'code': ['confirmation request was not found']},
-                            status=status.HTTP_404_NOT_FOUND)
+        self.on_code_confirmed(request, request.data['phone'])
 
-        if not confirmation.is_actual():
-            logger.info('Confirmation code is expired {}'.format(confirmation.pk))
-            return Response({
-                'code': ['Confirmation code is expired']
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        if confirmation.code == serializer.data['code']:
-            confirmation.is_confirmed = True
-            confirmation.save()
-
-            self.on_code_confirmed(request, confirmation)
-
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response({'code': ['Wrong confirmation code']}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        # else:
+        #     return Response({'code': ['Wrong confirmation code']}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PhoneConfirmView(PhoneConfirmBase):
@@ -93,9 +77,10 @@ class PhoneConfirmView(PhoneConfirmBase):
 
     def perform_create(self, serializer):
         serializer.save(request_type=self.REQUEST_TYPE)
+        send_verification_request.delay(phone=serializer.data['phone'])
 
     def on_code_confirmed(self, request, confirmation: PhoneConfirmation):
-        user = User.objects.get(phone=confirmation.phone)
+        user = User.objects.get(phone=request.data.get('phone'))
         user.is_verified = True
         user.save()
 
@@ -127,8 +112,15 @@ class ResetPasswordView(PhoneConfirmBase):
         parameters:
             - name: phone
               description: phone number (+79528048941 for e.g)
+            - name: username
         """
-        return super().post(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(request_type=PhoneConfirmation.REQUEST_PASSWORD)
+
+        send_verification_request.delay(serializer.data['phone'])
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def patch(self, request, *args, **kwargs):
         """
@@ -138,8 +130,6 @@ class ResetPasswordView(PhoneConfirmBase):
         ---
         serializer: smsconfirmation.serializers.ChangePasswordSerializer
         parameters:
-            - name: code
-              description: Code received by SMS
             - name: password1
               description: New password. Must be great than 5.
             - name: password2
@@ -147,8 +137,8 @@ class ResetPasswordView(PhoneConfirmBase):
         """
         return self.update(request, *args, **kwargs)
 
-    def on_code_confirmed(self, request, confirmation):
-        user = User.objects.get(phone=confirmation.phone)
+    def on_code_confirmed(self, request, phone):
+        user = User.objects.get(phone=phone)
 
         user.set_password(request.data['password1'])
         user.save()
@@ -174,15 +164,13 @@ class SinchPhoneConfirmationView(views.APIView):
     def put(self, request):
         """
 
-
         ---
         serializer: smsconfirmation.serializers.SinchPhoneConfirmationSerializer
         """
         serializer = SinchPhoneConfirmationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        send_code_confirmation_request.delay(serializer.data['code'],
-                                             serializer.data['phone'])
+        send_code_confirmation_request.delay(serializer.data['code'], serializer.data['phone'])
 
         return Response()
 
@@ -205,4 +193,4 @@ class SinchResponseView(views.APIView):
         confirm.is_confirmed = is_successfull
         confirm.save()
 
-        return Response()   
+        return Response()

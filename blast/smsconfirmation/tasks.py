@@ -5,6 +5,8 @@ import hmac
 import json
 import requests
 
+import blast.celery
+
 from django.conf import settings
 
 from celery import shared_task
@@ -63,21 +65,6 @@ def sinch_request(resource, data, method):
 
 
 @shared_task(bind=False)
-def send_sms(number, text):
-    client = SinchSMS(app_key=settings.SINCH['APP_KEY'],
-                      app_secret=settings.SINCH['APP_SECRET'])
-
-    message = 'Sending sms to {} with text "{}"'.format(number, text)
-    logger.info(message)
-
-    try:
-        response = client.send_message(number, text)
-        print(response)
-    except Exception as e:
-        logging.error('Failed to send sms {} {} {}'.format(number, text, e))
-
-
-@shared_task(bind=False)
 def send_code_confirmation_request(code, phone):
     print('confirm code {} {}'.format(code, phone))
 
@@ -85,6 +72,16 @@ def send_code_confirmation_request(code, phone):
         "sms": {"code": str(code)},
         "method": "sms",
     }, method='PUT')
+
+    data = response.json()
+
+    print(data, code, phone)
+
+    if data.get('status') == 'SUCCESSFUL':
+        confirm = PhoneConfirmation.objects.get_actual(phone=phone)
+        confirm.is_confirmed = True
+        confirm.save()
+
     print('send_code_confirmation_request', code, phone, response.content)
 
 
@@ -97,7 +94,4 @@ def send_verification_request(phone):
         "method": "sms",
     }, method='POST')
 
-    confirm = PhoneConfirmation.objects.get_actual(phone=phone)
-    confirm.is_confirmed = response.json['status'] == 'SUCCESSFUL'
-
-    print('send_verification_request', phone, response.content, confirm)
+    print('send_verification_request', phone, response.content)

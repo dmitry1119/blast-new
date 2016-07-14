@@ -76,4 +76,4 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PhoneConfirmation
-        fields = ('phone', 'code', 'password1', 'password2')
+        fields = ('phone', 'password1', 'password2')
