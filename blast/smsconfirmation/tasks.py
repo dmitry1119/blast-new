@@ -64,7 +64,6 @@ def sinch_request(resource, data, method):
     # return response
 
 
-@shared_task(bind=False)
 def send_code_confirmation_request(code, phone):
     print('confirm code {} {}'.format(code, phone))
 
@@ -82,7 +81,13 @@ def send_code_confirmation_request(code, phone):
         confirm.is_confirmed = True
         confirm.save()
 
+    return data
+
     print('send_code_confirmation_request', code, phone, response.content)
+
+@shared_task(bind=False)
+def send_code_confirmation_request_async(code, phone):
+    send_code_confirmation_request(code, phone)
 
 
 @shared_task(bind=False)
