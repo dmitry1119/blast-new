@@ -171,11 +171,13 @@ class SinchPhoneConfirmationView(views.APIView):
         serializer.is_valid(raise_exception=True)
 
         response = send_code_confirmation_request(serializer.data['code'], serializer.data['phone'])
+        print(response)
         response_status = response.get('status')
         if response_status != 'SUCCESSFUL':
             return Response({
                 'status': [response_status],
-                'reason': [response_status.get('reason')]
+                'reason': [response.get('reason')],
+                'message': [response.get('message')]
             }, status.HTTP_400_BAD_REQUEST)
 
         return Response()
