@@ -87,10 +87,9 @@ class TestResetPassword(BaseTestCaseUnauth):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(self.user.check_password(self.password))
 
-    def test_change_password(self):
+    def test_change_password_by_phone(self):
         new_password = 'new_password'
         data = {
-            'code': self.password_request.code,
             'phone': self.user.phone,
             'password1': new_password,
             'password2': new_password,
@@ -119,16 +118,6 @@ class TestResetPassword(BaseTestCaseUnauth):
 
         self.user.refresh_from_db()
         self.assertEqual(self.user.phone, self.phone)
-
-    def test_change_password(self):
-        data = {
-            'username': self.username,
-            'phone': self.user.phone
-        }
-
-        response = self.client.post(self.url, data=data)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
 class TestSinchVerification(BaseTestCase):

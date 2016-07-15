@@ -54,6 +54,10 @@ class RequestChangePasswordSerializerUnauth(serializers.ModelSerializer):
 
     def validate(self, data):
         super().validate(data)
+
+        if not User.objects.filter(phone=data['phone'], username=data['username']).exists():
+            return serializers.ValidationError({'user': 'User does not exist'})
+
         del data['username']
 
         return data

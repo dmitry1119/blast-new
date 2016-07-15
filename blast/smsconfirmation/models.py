@@ -14,7 +14,7 @@ from users.models import User
 logger = logging.getLogger(__name__)
 
 CODE_CONFIRMATION_LEN = 4
-PHONE_CONFIRMATION_LIFE_TIME_IN_SECONDS = 3 * 60
+PHONE_CONFIRMATION_LIFE_TIME_IN_SECONDS = 5 * 60
 
 def get_phone_confirmation_code():
     return ''.join([random.choice(string.digits) for _ in range(CODE_CONFIRMATION_LEN)])
