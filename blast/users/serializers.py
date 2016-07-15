@@ -151,15 +151,20 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict):
         super().validate(attrs)
 
+        if User.objects.filter(phone=attrs['new_phone']).exists():
+            raise serializers.ValidationError({'new_phone': 'This phone taken'})
+
         is_confirmed, message = PhoneConfirmation.check_phone(attrs['new_phone'])
         if not is_confirmed:
             raise serializers.ValidationError({'code': [message]})
 
         del attrs['password']
 
+
         return attrs
 
     def save(self, **kwargs):
+
         self.instance.phone = self.validated_data['new_phone']
         # self.instance.save()
         super().save(**kwargs)

@@ -251,3 +251,17 @@ class TestChangePhoneNumber(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(self.user.phone, self.phone)
+
+    def test_change_phone_taken_number(self):
+        phone = self.phone + '1'
+        User.objects.create_user(username=self.username + '1', phone=phone, password=self.password)
+        data = {
+            'password': self.password,
+            'current_phone': self.phone,
+            'new_phone': phone
+        }
+
+        response = self.patch_json(self.url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNotNone(response.data.get('new_phone'))
