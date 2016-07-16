@@ -27,6 +27,7 @@ class Post(models.Model):
     user = models.ForeignKey(User)
     video = models.FileField(upload_to=post_upload_dir)
 
+    is_anonymous = models.BooleanField(default=False)
     is_hidden = models.BooleanField(default=False)
 
     def comments_count(self):

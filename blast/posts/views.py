@@ -58,7 +58,7 @@ def attach_users(posts: list, user: User):
     for post in posts:
         user = users[post['user']]
         author = {}
-        if user['is_private']:
+        if post['is_anonymous']:
             # TODO (VM): Hide user id from post?
             author['username'] = 'Anonymous'
             author['avatar'] = None
@@ -117,7 +117,8 @@ class PostsViewSet(PerObjectPermissionMixin,
             - name: video
               type: file
     """
-    queryset = Post.objects.filter(is_hidden=False)  # FIXME(VM): What about private users?
+    queryset = Post.objects.filter(is_hidden=False,
+                                   user__is_private=False)  # FIXME(VM): What about private users?
     # serializer_class = PostSerializer
 
     public_serializer_class = PostPublicSerializer
