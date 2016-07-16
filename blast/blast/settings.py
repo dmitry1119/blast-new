@@ -153,15 +153,15 @@ JWT_AUTH = {
     'JWT_ALLOW_REFRESH': False,
 }
 
-# SINCH = {
-#     'APP_KEY': '155edefb-991d-4e14-864e-4e9451a21bd6',
-#     'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
-# }
-
 SINCH = {
-    'APP_KEY': 'd59459a7-a98e-415f-b600-39ca9f59bbac',
-    'APP_SECRET': 'aoSu8vzQ0Ue5iogg3ZTEag==',
+    'APP_KEY': '155edefb-991d-4e14-864e-4e9451a21bd6',
+    'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
 }
+
+# SINCH = {
+#     'APP_KEY': 'd59459a7-a98e-415f-b600-39ca9f59bbac',
+#     'APP_SECRET': 'aoSu8vzQ0Ue5iogg3ZTEag==',
+# }
 
 # CELERY SETTINGS
 BROKER_URL = 'redis://localhost:6379/0'
