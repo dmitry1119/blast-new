@@ -153,9 +153,14 @@ JWT_AUTH = {
     'JWT_ALLOW_REFRESH': False,
 }
 
+# SINCH = {
+#     'APP_KEY': '155edefb-991d-4e14-864e-4e9451a21bd6',
+#     'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
+# }
+
 SINCH = {
-    'APP_KEY': '155edefb-991d-4e14-864e-4e9451a21bd6',
-    'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
+    'APP_KEY': 'd59459a7-a98e-415f-b600-39ca9f59bbac',
+    'APP_SECRET': 'aoSu8vzQ0Ue5iogg3ZTEag==',
 }
 
 # CELERY SETTINGS
@@ -191,3 +196,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(PARENT_DIR, 'media/')
 
 AUTH_USER_MODEL = 'users.User'
+
+ADMINS = [('vlmihnevich', 'vlmihnevich@gmail.com')]
+
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = 'djangomailservice@gmail.com'
+EMAIL_HOST_PASSWORD = 'w_sp[q12uQmZ36cjQ'

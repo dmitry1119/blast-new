@@ -65,16 +65,12 @@ def sinch_request(resource, data, method):
 
 
 def send_code_confirmation_request(code, phone):
-    print('confirm code {} {}'.format(code, phone))
-
     response = sinch_request('/verification/v1/verifications/number/{}'.format(phone), data={
         "sms": {"code": str(code)},
         "method": "sms",
     }, method='PUT')
 
     data = response.json()
-
-    print(data, code, phone)
 
     if data.get('status') == 'SUCCESSFUL':
         confirm = PhoneConfirmation.objects.get_actual(phone=phone)
@@ -83,7 +79,6 @@ def send_code_confirmation_request(code, phone):
 
     return data
 
-    print('send_code_confirmation_request', code, phone, response.content)
 
 @shared_task(bind=False)
 def send_code_confirmation_request_async(code, phone):

@@ -41,16 +41,20 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        is_confirmed, message = PhoneConfirmation.check_phone(request.data['phone'])
+        phone = request.data.get('phone')
+        if not phone:
+            return Response({'phone': 'Invalid phone number'}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_confirmed, message = PhoneConfirmation.check_phone(phone)
 
         if not is_confirmed:
             return Response({'code': [message]}, status=status.HTTP_400_BAD_REQUEST)
 
-        self.on_code_confirmed(request, request.data['phone'])
+        error = self.on_code_confirmed(request, phone)
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
-        # else:
-        #     return Response({'code': ['Wrong confirmation code']}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PhoneConfirmView(PhoneConfirmBase):
@@ -80,9 +84,12 @@ class PhoneConfirmView(PhoneConfirmBase):
         send_verification_request.delay(phone=serializer.data['phone'])
 
     def on_code_confirmed(self, request, confirmation: PhoneConfirmation):
-        user = User.objects.get(phone=request.data.get('phone'))
-        user.is_verified = True
-        user.save()
+        try:
+            user = User.objects.get(phone=request.data.get('phone'))
+            user.is_verified = True
+            user.save()
+        except User.DoesNotExist:
+            return {'phone': 'User with given phone does not exist'}
 
 
 class ResetPasswordView(PhoneConfirmBase):
@@ -130,6 +137,8 @@ class ResetPasswordView(PhoneConfirmBase):
         ---
         serializer: smsconfirmation.serializers.ChangePasswordSerializer
         parameters:
+            - name: phone
+              description: confirmed phone number
             - name: password1
               description: New password. Must be great than 5.
             - name: password2
@@ -138,10 +147,13 @@ class ResetPasswordView(PhoneConfirmBase):
         return self.update(request, *args, **kwargs)
 
     def on_code_confirmed(self, request, phone):
-        user = User.objects.get(phone=phone)
+        try:
+            user = User.objects.get(phone=phone)
 
-        user.set_password(request.data['password1'])
-        user.save()
+            user.set_password(request.data['password1'])
+            user.save()
+        except User.DoesNotExist:
+            return {'phone': 'User with given phone does not exist'}
 
 
 class SinchPhoneConfirmationView(views.APIView):
@@ -170,8 +182,9 @@ class SinchPhoneConfirmationView(views.APIView):
         serializer = SinchPhoneConfirmationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        response = send_code_confirmation_request(serializer.data['code'], serializer.data['phone'])
-        print(response)
+        response = send_code_confirmation_request(serializer.data['code'],
+                                                  serializer.data['phone'])
+        logger.info(response)
         response_status = response.get('status')
         if response_status != 'SUCCESSFUL':
             return Response({
