@@ -23,7 +23,7 @@ from countries.views import CountryViewSet
 from users.views import (UserViewSet, UserProfileView, UserSettingsView,
                          UserPasswordResetView, UserChangePhoneView)
 from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
-                                   SinchPhoneConfirmationView, SinchResponseView)
+                                   SinchPhoneConfirmationView)
 
 from posts.views import PostsViewSet, CommentsViewSet, VotedPostsViewSet, DonwvotedPostsViewSet, PinnedPostsViewSet
 
@@ -52,8 +52,6 @@ urlpatterns = [
 
     url(r'^api/v1/phone/verification', SinchPhoneConfirmationView.as_view(),
         name='sinch-phone-confirmation'),
-
-    # url(r'^sinch/callback/$', SinchResponseView.as_view(), name='sinch-callback'),
 
     url(r'^api/v1/', include(api_1.urls)),
 ]

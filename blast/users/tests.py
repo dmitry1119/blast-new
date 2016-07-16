@@ -160,14 +160,18 @@ class UpdateProfileTest(BaseTestCase):
 
     def test_edit_optional_data(self):
         # avatar = create_file('avatar.png', False)
-        data = json.dumps({
+        data = {
             'bio': self.bio,
             'website': self.website,
             'fullname': self.fullname,
-            'avatar': None
-        })
+            'is_private': not self.user.is_private,
+            'is_safe_mode': not self.user.is_safe_mode,
+            'avatar': None,
+            'save_original_content': not self.user.save_original_content
+        }
 
-        response = self.client.patch(self.url, data, content_type='application/json')
+        response = self.client.patch(self.url, json.dumps(data),
+                                     content_type='application/json')
 
         self.user.refresh_from_db()
 
@@ -175,6 +179,9 @@ class UpdateProfileTest(BaseTestCase):
         self.assertEqual(self.user.bio, self.bio)
         self.assertEqual(self.user.avatar.name, '')
         self.assertEqual(self.user.website, self.website)
+        self.assertEqual(self.user.is_private, data['is_private'])
+        self.assertEqual(self.user.is_safe_mode, data['is_safe_mode'])
+        self.assertEqual(self.user.save_original_content, data['save_original_content'])
         self.assertEqual(self.user.fullname, self.fullname)
 
     def test_edit_private_data(self):

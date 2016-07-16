@@ -181,24 +181,3 @@ class SinchPhoneConfirmationView(views.APIView):
             }, status.HTTP_400_BAD_REQUEST)
 
         return Response()
-
-
-class SinchResponseView(views.APIView):
-
-    serializer_class = SinchVerificationSerializer
-
-    def post(self, request, *args, **kwargs):
-        print('Request data is', request.data)
-        if request.data['method'] != 'sms':
-            print('Wrong sinch method')
-            return Response()
-
-        is_successfull = request.data['status'] == 'SUCCESSFUL'
-
-        number = request.data['identity']['number']
-
-        confirm = PhoneConfirmation.objects.get_actual(phone=number)
-        confirm.is_confirmed = is_successfull
-        confirm.save()
-
-        return Response()

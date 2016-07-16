@@ -66,7 +66,9 @@ class ProfileUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('fullname', 'avatar', 'bio', 'website', 'gender', 'birthday',)
+        fields = ('fullname', 'avatar', 'bio', 'website', 'gender', 'birthday',
+                  'save_original_content', 'is_private', 'save_original_content',
+                  'is_safe_mode')
 
 
 class ProfilePublicSerializer(serializers.ModelSerializer):
