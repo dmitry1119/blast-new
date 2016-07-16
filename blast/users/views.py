@@ -95,12 +95,16 @@ class UserSettingsView(generics.RetrieveUpdateAPIView):
     ---
     PATCH:
         parameters:
+            - name: notify_new_followers
+              description: 0 - off, 1 - people I follow, 2 - everyone.
             - name: notify_comments
               description: 0 - off, 1 - people I follow, 2 - everyone.
             - name: notify_reblasts
               description: 0 - off, 1 - people I follow, 2 - everyone.
     PUT:
         parameters:
+            - name: notify_new_followers
+              description: 0 - off, 1 - people I follow, 2 - everyone.
             - name: notify_comments
               description: 0 - off, 1 - people I follow, 2 - everyone.
             - name: notify_reblasts

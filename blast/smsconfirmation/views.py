@@ -36,6 +36,7 @@ class PhoneConfirmBase(mixins.CreateModelMixin,
 
     # TODO: Make tests
     def update(self, request, *args, **kwargs):
+        # FIXME: Replace by get_serializer?
         serializer = self.serializer_class(data=request.data)
 
         if not serializer.is_valid():
