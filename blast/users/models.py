@@ -141,5 +141,6 @@ class UserSettings(models.Model):
 
     notify_votes = models.BooleanField(default=True)
 
+    notify_new_followers = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
     notify_comments = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
     notify_reblasts = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)

@@ -272,3 +272,37 @@ class TestChangePhoneNumber(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIsNotNone(response.data.get('new_phone'))
+
+
+class TestUserSettings(BaseTestCase):
+
+    def test_user_settings(self):
+        url = reverse_lazy('user-settings')
+
+        settings = UserSettings.objects.get(user=self.user)
+        data = {
+            'notify_my_blasts': not settings.notify_my_blasts,
+            'notify_upvoted_blasts': not settings.notify_upvoted_blasts,
+            'notify_downvoted_blasts': not settings.notify_downvoted_blasts,
+            'notify_pinned_blasts': not settings.notify_pinned_blasts,
+
+            'notify_votes': not settings.notify_votes,
+
+            'notify_new_followers': UserSettings.OFF,
+            'notify_comments': UserSettings.OFF,
+            'notify_reblasts': UserSettings.EVERYONE,
+        }
+
+        response = self.patch_json(url, data)
+
+        settings.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEquals(settings.notify_my_blasts, data['notify_my_blasts'])
+        self.assertEquals(settings.notify_upvoted_blasts, data['notify_upvoted_blasts'])
+        self.assertEquals(settings.notify_downvoted_blasts, data['notify_downvoted_blasts'])
+        self.assertEquals(settings.notify_pinned_blasts, data['notify_pinned_blasts'])
+        self.assertEquals(settings.notify_votes, data['notify_votes'])
+        self.assertEquals(settings.notify_new_followers, data['notify_new_followers'])
+        self.assertEquals(settings.notify_comments, data['notify_comments'])
+        self.assertEquals(settings.notify_reblasts, data['notify_reblasts'])
