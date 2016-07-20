@@ -77,6 +77,31 @@ class PostTest(BaseTestCase):
         self.assertEqual(Post.objects.all().count(), 0)
 
 
+class TestAnonymousPost(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.post = Post.objects.create(is_anonymous=True, user=self.user)
+
+    def test_get_anonymous_post(self):
+        url = reverse_lazy('post-list')
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['author']['username'], 'Anonymous')
+        self.assertEqual(response.data['results'][0]['author']['avatar'], None)
+
+        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
+
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['author']['username'], 'Anonymous')
+        self.assertEqual(response.data['author']['avatar'], None)
+
+
 class CommentTest(BaseTestCase):
     url = reverse_lazy('comment-list')
 

@@ -58,10 +58,11 @@ def attach_users(posts: list, user: User):
     for post in posts:
         user = users[post['user']]
         author = {}
-        if post['is_anonymous']:
+        if post.get('is_anonymous'):
             # TODO (VM): Hide user id from post?
             author['username'] = 'Anonymous'
             author['avatar'] = None
+            del post['user']
         else:
             author['username'] = user['username']
             author['avatar'] = user['avatar']
