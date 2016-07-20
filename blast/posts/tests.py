@@ -96,10 +96,27 @@ class TestAnonymousPost(BaseTestCase):
         url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
 
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['author']['username'], 'Anonymous')
         self.assertEqual(response.data['author']['avatar'], None)
+
+
+class TestIsPinnedPost(BaseTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.post = Post.objects.create(user=self.user)
+        self.user.pinned_posts.add(self.post)
+
+    def test_is_pinned_flag(self):
+        url = reverse_lazy('post-list')
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['is_pinned'], True)
 
 
 class CommentTest(BaseTestCase):
