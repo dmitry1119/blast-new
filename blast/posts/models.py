@@ -25,7 +25,8 @@ class Post(models.Model):
     text = models.CharField(max_length=256, blank=True)
 
     user = models.ForeignKey(User)
-    video = models.FileField(upload_to=post_upload_dir)
+    image = models.ImageField(upload_to=post_upload_dir, blank=True, null=True)
+    video = models.FileField(upload_to=post_upload_dir, blank=True, null=True)
 
     is_anonymous = models.BooleanField(default=False)
     is_hidden = models.BooleanField(default=False)

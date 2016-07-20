@@ -116,6 +116,8 @@ class PostsViewSet(PerObjectPermissionMixin,
         parameters:
             - name: video
               type: file
+            - name: image
+              type: file
     """
     queryset = Post.objects.filter(is_hidden=False,
                                    user__is_private=False)  # FIXME(VM): What about private users?

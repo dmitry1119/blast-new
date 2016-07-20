@@ -10,8 +10,8 @@ class PostPublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        read_only = ('votes_count',)
-        exclude = ('is_hidden',)
+        read_only = ('comments', 'votes', 'downvotes')
+        exclude = ('is_hidden', 'is_anonymous')
 
 
 class PostSerializer(serializers.ModelSerializer):
