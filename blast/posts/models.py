@@ -22,7 +22,7 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    text = models.CharField(max_length=256)
+    text = models.CharField(max_length=256, blank=True)
 
     user = models.ForeignKey(User)
     video = models.FileField(upload_to=post_upload_dir)

@@ -18,7 +18,7 @@ class AnyPermissionTest(TestCase):
         user = User.objects.create_user(phone='+1234567', password='123456', username='username')
 
         file = create_file('test.png')
-        self.post = Post.objects.create(user=user, text='some_text', video=file)
+        self.post = Post.objects.create(user=user, video=file)
 
     def test_any_view_posts(self):
         url = reverse_lazy('post-list')
