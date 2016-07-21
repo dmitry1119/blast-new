@@ -7,14 +7,14 @@ from users.models import User
 def post_image_upload_dir(instance: User, filename: str):
     """Returns unique path for uploading image by user and filename"""
     name, ext = os.path.splitext(filename)
-    filename = u'{}_{}{}'.format(instance.pk, str(uuid.uuid4()), ext)
+    filename = u'{}{}'.format(str(uuid.uuid4()), ext)
     return u'/'.join([u'user', u'images', filename])
 
 
-def post_upload_dir(instance: User, filename: str):
+def post_upload_dir(instance, filename: str):
     """Returns unique path for uploading image by user and filename"""
     name, ext = os.path.splitext(filename)
-    filename = u'{}_{}{}'.format(instance.pk, str(uuid.uuid4()), ext)
+    filename = u'{}{}'.format(str(uuid.uuid4()), ext)
     return u'/'.join([u'user', u'videos', filename])
 
 
@@ -25,7 +25,7 @@ class Post(models.Model):
     text = models.CharField(max_length=256, blank=True)
 
     user = models.ForeignKey(User)
-    image = models.ImageField(upload_to=post_upload_dir, blank=True, null=True)
+    image = models.ImageField(upload_to=post_image_upload_dir, blank=True, null=True)
     video = models.FileField(upload_to=post_upload_dir, blank=True, null=True)
 
     is_anonymous = models.BooleanField(default=False)
