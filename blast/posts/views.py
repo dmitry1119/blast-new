@@ -9,6 +9,9 @@ from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
                                VoteSerializer, VotePublicSerializer, ReportPostSerializer)
+
+from django.conf import settings
+
 from users.models import User
 
 
@@ -40,7 +43,7 @@ class PerObjectPermissionMixin(object):
         serializer.save(user=self.request.user)
 
 
-def attach_users(posts: list, user: User):
+def attach_users(posts: list, user: User, request):
     # TODO (VM): Make test
     """
     Attaches user to post dictionary
@@ -52,8 +55,8 @@ def attach_users(posts: list, user: User):
 
     users = [it['user'] for it in posts]
     users = User.objects.filter(pk__in=users)
-    users = users.values('pk', 'username', 'avatar')
-    users = {it['pk']: it for it in users}
+    # users = users.values('pk', 'username', 'avatar')
+    users = {it.pk: it for it in users}
 
     for post in posts:
         user = users[post['user']]
@@ -63,8 +66,11 @@ def attach_users(posts: list, user: User):
             author['avatar'] = None
             del post['user']
         else:
-            author['username'] = user['username']
-            author['avatar'] = user['avatar']
+            author['username'] = user.username
+            if user.avatar:
+                author['avatar'] = request.build_absolute_uri(user.avatar.url)
+            else:
+                author['avatar'] = None
         post['author'] = author
 
     return posts
@@ -92,14 +98,14 @@ def mark_pinned(posts: list, user: User):
     return posts
 
 
-def fill_posts(posts: list, user: User):
+def fill_posts(posts: list, user: User, request):
     """
     Adds additional information to raw posts
     :param posts: list of dictionaries
     :return: modified posts list
     """
     data = mark_pinned(posts, user)
-    data = attach_users(posts, user)
+    data = attach_users(data, user, request)
 
     return data
 
@@ -133,7 +139,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         instance = self.get_object()
         serializer = self.get_serializer(instance)
 
-        data = fill_posts([serializer.data], self.request.user)
+        data = fill_posts([serializer.data], self.request.user, request)
 
         return Response(data[0])
 
@@ -147,18 +153,16 @@ class PostsViewSet(PerObjectPermissionMixin,
               paramType: query
               type: int
         """
-        # return Response(self._list(request, self.get_queryset(),
-        #                            self.get_serializer, fill_posts))
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            data = fill_posts(serializer.data, request.user)
+            data = fill_posts(serializer.data, request.user, request)
             return self.get_paginated_response(data)
 
         serializer = self.get_serializer(queryset, many=True)
-        data = fill_posts([serializer.data], request.user)
+        data = fill_posts([serializer.data], request.user, request)
 
         return Response(data)
 
@@ -334,11 +338,11 @@ class PinnedPostsViewSet(mixins.ListModelMixin,
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            data = fill_posts(serializer.data, request.user)
+            data = fill_posts(serializer.data, request.user, request)
             return self.get_paginated_response(data)
 
         serializer = self.get_serializer(queryset, many=True)
-        data = fill_posts([serializer.data], request.user)
+        data = fill_posts([serializer.data], request.user, request)
 
         return Response(data)
 
@@ -358,7 +362,7 @@ class VotedPostBaseView(mixins.ListModelMixin,
             posts = Post.objects.filter(id__in=ids)
 
             serializer = self.get_serializer(posts, many=True)
-            posts = fill_posts(serializer.data, request.user)
+            posts = fill_posts(serializer.data, request.user, request)
 
             return self.get_paginated_response(posts)
         else:
