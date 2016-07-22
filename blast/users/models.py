@@ -84,9 +84,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    pinned_posts = models.ManyToManyField('posts.Post',
-                                          blank=True,
-                                          related_name='users')
+    pinned_posts = models.ManyToManyField('posts.Post', blank=True,
+                                          related_name='pinned_users')
+    hidden_posts = models.ManyToManyField('posts.Post', blank=True,
+                                          related_name='hidden_users')
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']

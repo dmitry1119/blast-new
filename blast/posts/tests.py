@@ -57,17 +57,15 @@ class PostTest(BaseTestCase):
     def test_hide_post(self):
         url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
 
-        response = self.patch_json(url + 'hide/')
-        self.post.refresh_from_db()
+        response = self.client.put(url + 'hide/', content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(self.user.hidden_posts.filter(pk=self.post.pk).exists())
+
+        response = self.client.put(url + 'show/', content_type='application/json')
+        self.user.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.post.is_hidden)
-
-        response = self.patch_json(url + 'show/')
-        self.post.refresh_from_db()
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(self.post.is_hidden)
+        self.assertFalse(self.user.hidden_posts.filter(pk=self.post.pk).exists())
 
     # TODO: Add permission test
     def test_delete_post(self):
@@ -193,15 +191,6 @@ class AuthorizedPermissionsTest(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Post.objects.count(), 1)
-
-    def test_hide_permissions_post(self):
-        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
-
-        response = self.patch_json(url + 'hide/')
-        self.post.refresh_from_db()
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertFalse(self.post.is_hidden)
 
 
 class VoteTest(BaseTestCase):

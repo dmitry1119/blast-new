@@ -36,7 +36,6 @@ class Post(models.Model):
     video = models.FileField(upload_to=post_upload_dir, blank=True, null=True)
 
     is_anonymous = models.BooleanField(default=False)
-    is_hidden = models.BooleanField(default=False)
 
     def comments_count(self):
         # TODO (VM): Cache this value to redis

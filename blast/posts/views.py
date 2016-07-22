@@ -128,10 +128,8 @@ class PostsViewSet(PerObjectPermissionMixin,
             - name: image
               type: file
     """
-    queryset = Post.objects.filter(is_hidden=False,
-                                   user__is_private=False,
+    queryset = Post.objects.filter(user__is_private=False,
                                    expired_at__gte=datetime.now())  # FIXME(VM): What about private users?
-    # serializer_class = PostSerializer
 
     public_serializer_class = PostPublicSerializer
     private_serializer_class = PostSerializer
@@ -243,15 +241,18 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     def _update_visibility(self, pk, is_hidden):
         post = get_object_or_404(Post, pk=pk)
-        if post.user != self.request.user:
-            self.permission_denied(self.request, 'You are not owner of this object')
+        user = self.request.user
+        exists = user.hidden_posts.filter(pk=post.pk).exists()
 
-        post.is_hidden = is_hidden
-        post.save()
+        if is_hidden and not exists:
+            user.hidden_posts.add(post)
+
+        if not is_hidden and exists:
+            user.hidden_posts.remove(post)
 
         return Response()
 
-    @detail_route(methods=['patch'])
+    @detail_route(methods=['put'])
     def hide(self, request, pk=None):
         """
         Hide post
@@ -263,7 +264,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         """
         return self._update_visibility(pk, True)
 
-    @detail_route(methods=['patch'])
+    @detail_route(methods=['put'])
     def show(self, request, pk=None):
         """
         Show post
