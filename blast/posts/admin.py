@@ -5,7 +5,7 @@ from posts.models import Post, PostComment, PostVote, PostReport
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'user', 'text', 'video',)
+    list_display = ('pk', 'user', 'text', 'image', 'video',)
 
 
 @admin.register(PostComment)

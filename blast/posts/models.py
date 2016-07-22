@@ -2,6 +2,8 @@ import os, uuid
 
 from django.db import models
 from users.models import User
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 
 def post_image_upload_dir(instance: User, filename: str):
@@ -18,9 +20,14 @@ def post_upload_dir(instance, filename: str):
     return u'/'.join([u'user', u'videos', filename])
 
 
+def get_expiration_date():
+    return timezone.now() + timedelta(days=1)
+
+
 class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    expired_at = models.DateTimeField(default=get_expiration_date)
 
     text = models.CharField(max_length=256, blank=True)
 

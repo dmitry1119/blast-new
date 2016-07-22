@@ -1,3 +1,4 @@
+from django.db.models import F
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import filters
@@ -9,6 +10,8 @@ from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
                                VoteSerializer, VotePublicSerializer, ReportPostSerializer)
+
+from datetime import timedelta, datetime
 
 from django.conf import settings
 
@@ -126,7 +129,8 @@ class PostsViewSet(PerObjectPermissionMixin,
               type: file
     """
     queryset = Post.objects.filter(is_hidden=False,
-                                   user__is_private=False)  # FIXME(VM): What about private users?
+                                   user__is_private=False,
+                                   expired_at__gte=datetime.now())  # FIXME(VM): What about private users?
     # serializer_class = PostSerializer
 
     public_serializer_class = PostPublicSerializer
@@ -201,6 +205,13 @@ class PostsViewSet(PerObjectPermissionMixin,
         vote, created = PostVote.objects.get_or_create(user=request.user, post=post)
         vote.is_positive = is_positive
         vote.save()
+
+        if is_positive:
+            post.expired_at += timedelta(minutes=5)
+            post.save()
+        else:
+            post.expired_at -= timedelta(minutes=10)
+            post.save()
 
         status_code = status.HTTP_200_OK
 

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.core.urlresolvers import reverse_lazy
 from django.test import TestCase
 from rest_framework import status
@@ -193,23 +194,6 @@ class AuthorizedPermissionsTest(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Post.objects.count(), 1)
 
-    def test_vote_post(self):
-
-        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
-
-        response = self.put_json(url + 'vote/')
-        self.post.refresh_from_db()
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.post.votes_count(), 1)
-        self.assertEqual(self.post.downvoted_count(), 0)
-
-        response = self.put_json(url + 'downvote/')
-        self.post.refresh_from_db()
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.post.votes_count(), 0)
-        self.assertEqual(self.post.downvoted_count(), 1)
-
     def test_hide_permissions_post(self):
         url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
 
@@ -218,6 +202,34 @@ class AuthorizedPermissionsTest(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(self.post.is_hidden)
+
+
+class VoteTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.post = Post.objects.create(user=self.user)
+        self.expired_at = self.post.expired_at
+
+        self.url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
+
+    def test_vote_post(self):
+        response = self.put_json(self.url + 'vote/')
+
+        self.post.refresh_from_db()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.post.votes_count(), 1)
+        self.assertEqual(self.post.downvoted_count(), 0)
+        self.assertEqual(self.post.expired_at, self.expired_at + timedelta(minutes=5))
+
+    def test_downvote_post(self):
+        response = self.put_json(self.url + 'downvote/')
+
+        self.post.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.post.votes_count(), 0)
+        self.assertEqual(self.post.downvoted_count(), 1)
+        self.assertEqual(self.post.expired_at, self.expired_at - timedelta(minutes=10))
 
 
 class ReportTest(BaseTestCase):
