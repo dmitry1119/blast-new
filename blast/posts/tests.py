@@ -4,7 +4,7 @@ from django.test import TestCase
 from rest_framework import status
 
 from core.tests import BaseTestCase, create_file
-from posts.models import Post, PostComment, PostReport, PostVote
+from posts.models import Post, PostComment, PostReport, PostVote, Tag
 from users.models import User
 
 
@@ -347,3 +347,21 @@ class FeedsTest(BaseTestCase):
         should_be_hidden = [self.posts[0].pk, self.posts[1]]
         self.assertNotIn(should_be_hidden[0], response.data['results'])
         self.assertNotIn(should_be_hidden[1], response.data['results'])
+
+
+class PostTagsTest(BaseTestCase):
+
+    def test_post_tags(self):
+        url = reverse_lazy('post-list')
+        text = u'Post text with #hashtag1, #hashtag2'
+
+        post = Post.objects.create(text=text, user=self.user)
+
+        tags = Tag.objects.all()
+
+        self.assertEqual(len(tags), 2)
+        self.assertEqual(len(post.tags.all()), 2)
+
+        tags = [it.title for it in tags]
+        self.assertIn('hashtag1', tags)
+        self.assertIn('hashtag2', tags)

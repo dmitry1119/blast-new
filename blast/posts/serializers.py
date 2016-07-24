@@ -17,7 +17,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         read_only = ('user',)
-        exclude = ('created_at', 'updated_at', 'user', 'id',)
+        exclude = ('created_at', 'updated_at', 'user', 'id', 'tags')
 
 
 class ReportPostSerializer(serializers.ModelSerializer):
