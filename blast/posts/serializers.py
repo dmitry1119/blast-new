@@ -11,13 +11,14 @@ class PostPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         read_only = ('comments', 'votes', 'downvotes')
+        exclude = ('tags',)
 
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         read_only = ('user',)
-        exclude = ('created_at', 'updated_at', 'user', 'id', 'tags')
+        fields = ('text', 'video', 'image', 'is_anonymous')
 
 
 class ReportPostSerializer(serializers.ModelSerializer):
