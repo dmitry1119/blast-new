@@ -89,13 +89,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     hidden_posts = models.ManyToManyField('posts.Post', blank=True,
                                           related_name='hidden_users')
 
+    followers = models.ManyToManyField('User', blank=True,
+                                       related_name='folowees')
+
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']
 
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.
-        import random
-        return random.randint(0, 100000)
+        return self.followers.count()
 
     def blasts_count(self):
         # TODO (VM): Use cached value from Redis.
@@ -104,8 +106,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def following_count(self):
         # TODO (VM): Use cached value from Redis.
-        import random
-        return random.randint(0, 100000)
+        return self.folowees.count()
 
     def get_full_name(self):
         return self.fullname
