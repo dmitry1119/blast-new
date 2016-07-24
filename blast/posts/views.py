@@ -135,7 +135,7 @@ class PostsViewSet(PerObjectPermissionMixin,
     private_serializer_class = PostSerializer
 
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('user',)
+    filter_fields = ('user', 'tags',)
 
     def get_queryset(self):
         user = self.request.user
