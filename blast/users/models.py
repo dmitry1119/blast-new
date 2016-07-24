@@ -90,7 +90,7 @@ class User(AbstractBaseUser, PermissionsMixin):
                                           related_name='hidden_users')
 
     followers = models.ManyToManyField('User', blank=True,
-                                       related_name='folowees')
+                                       related_name='followees')
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']
@@ -106,7 +106,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def following_count(self):
         # TODO (VM): Use cached value from Redis.
-        return self.folowees.count()
+        return self.followees.count()
 
     def get_full_name(self):
         return self.fullname

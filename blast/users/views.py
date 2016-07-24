@@ -1,5 +1,6 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, mixins, permissions, generics
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
 from users.models import User, UserSettings
@@ -7,6 +8,20 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
                                CheckUsernameAndPassword)
+
+
+def fill_follower(users: list, request):
+    user = request.user
+
+    if not user.is_authenticated():
+        return
+
+    user_ids = {it['id'] for it in users}
+    followes = user.followees.filter(pk__in=user_ids).values('id')
+    followes = {it['id']: it for it in followes}
+
+    for it in users:
+        it['is_following'] = it['id'] in followes
 
 
 class UserViewSet(mixins.CreateModelMixin,
@@ -22,6 +37,11 @@ class UserViewSet(mixins.CreateModelMixin,
             return PublicUserSerializer
         else:
             return RegisterUserSerializer
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        fill_follower(response.data['results'], request)
+        return response
 
     def create(self, request, *args, **kwarg):
         """
@@ -52,6 +72,39 @@ class UserViewSet(mixins.CreateModelMixin,
 
         return Response()
 
+    @detail_route(['put'])
+    def follow(self, request, pk=None):
+        """
+        Adds authorized user to list of followers of user with id equal to pk
+
+        ---
+        omit_serializer: true
+        """
+        if not self.request.user.is_authenticated():
+            return self.permission_denied(request, 'You should be authorized')
+
+        user = get_object_or_404(User, pk=pk)
+        if not user.followers.filter(pk=pk).exists():
+            user.followers.add(request.user)
+
+        return Response()
+
+    @detail_route(['put'])
+    def unfollow(self, request, pk):
+        """
+        Removes authorized user from list of followers of user with id equal to pk
+
+        ---
+        omit_serializer: true
+        """
+        if not self.request.user.is_authenticated:
+            return self.permission_denied(request, 'You should be authorized')
+
+        user = get_object_or_404(User, pk=pk)
+        if user.followers.filter(pk=pk).exists():
+            user.followers.remove(request.user)
+
+        return Response()
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     """

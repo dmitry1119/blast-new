@@ -306,3 +306,39 @@ class TestUserSettings(BaseTestCase):
         self.assertEquals(settings.notify_new_followers, data['notify_new_followers'])
         self.assertEquals(settings.notify_comments, data['notify_comments'])
         self.assertEquals(settings.notify_reblasts, data['notify_reblasts'])
+
+
+class TestUserFollower(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.other = User.objects.create_user(username='other_user',
+            password=self.password, phone='-7')
+
+    def test_user_follow(self):
+        url = reverse_lazy('user-detail', kwargs={'pk': self.other.pk})
+
+        response = self.client.put(url + 'follow/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.other.refresh_from_db()
+        self.user.refresh_from_db()
+
+        self.assertEqual(self.other.followers.count(), 1)
+        self.assertEqual(self.user.followees.count(), 1)
+
+        # Check user list
+        url = reverse_lazy('user-list')
+
+        response = self.client.get(url)
+        users = {it['id']: it for it in response.data['results']}
+
+        user = users[self.user.pk]
+        other = users[self.other.pk]
+
+        self.assertEqual(user['followers'], 0)
+        self.assertEqual(user['following'], 1)
+
+        self.assertEqual(other['followers'], 1)
+        self.assertEqual(other['following'], 0)
