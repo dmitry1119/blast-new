@@ -129,13 +129,30 @@ class PostsViewSet(PerObjectPermissionMixin,
               type: file
     """
     queryset = Post.objects.filter(user__is_private=False,
-                                   expired_at__gte=datetime.now())  # FIXME(VM): What about private users?
+                                   expired_at__gte=datetime.now())
 
     public_serializer_class = PostPublicSerializer
     private_serializer_class = PostSerializer
 
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('user',)
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if not user.is_authenticated():
+            return self.queryset
+
+        # Excludes hidden and voted posts for authorized user
+        hidden_ids = [it['pk'] for it in user.hidden_posts.all().values('pk')]
+
+        # FIXME (VM): votes list can be very large
+        voted = PostVote.objects.filter(user=user.pk).values('post')
+        voted = [it['post'] for it in voted]
+
+        hidden_ids.extend(voted)
+
+        return self.queryset.exclude(pk__in=hidden_ids)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

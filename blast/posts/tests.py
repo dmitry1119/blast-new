@@ -4,7 +4,7 @@ from django.test import TestCase
 from rest_framework import status
 
 from core.tests import BaseTestCase, create_file
-from posts.models import Post, PostComment, PostReport
+from posts.models import Post, PostComment, PostReport, PostVote
 from users.models import User
 
 
@@ -291,3 +291,59 @@ class PinPost(BaseTestCase):
         response = self.get(url)
         self.assertEqual(len(response.result), 1)
         self.assertEqual(response.result[0]['pk'], self.post.pk)
+
+
+class FeedsTest(BaseTestCase):
+    url = reverse_lazy('post-list')
+
+    def setUp(self):
+        super().setUp()
+
+        posts = []
+        for it in range(10):
+            posts.append(Post(user=self.user))
+
+        Post.objects.bulk_create(posts)
+        posts = Post.objects.all()
+        self.posts = posts
+
+    def test_feeds(self):
+        response = self.client.get(self.url)
+        self.assertEqual(len(response.data['results']), len(self.posts))
+
+    def test_hidden_post(self):
+        self.user.hidden_posts.add(self.posts[5])
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), len(self.posts)-1)
+
+        should_be_hidden = self.posts[5].pk
+        ids = [it['id'] for it in response.data['results']]
+
+        self.assertNotIn(should_be_hidden, ids)
+
+    def test_voted_post(self):
+        PostVote.objects.create(user=self.user, post=self.posts[0])
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(len(response.data['results']), len(self.posts)-1)
+
+        should_be_hidden = self.posts[0].pk
+        ids = [it['id'] for it in response.data['results']]
+
+        self.assertNotIn(should_be_hidden, ids)
+
+    def test_voted_and_hidden(self):
+        PostVote.objects.create(user=self.user, post=self.posts[0])
+        self.user.hidden_posts.add(self.posts[1])
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(len(response.data['results']), len(self.posts)-2)
+
+        should_be_hidden = [self.posts[0].pk, self.posts[1]]
+        self.assertNotIn(should_be_hidden[0], response.data['results'])
+        self.assertNotIn(should_be_hidden[1], response.data['results'])
