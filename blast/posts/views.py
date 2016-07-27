@@ -17,7 +17,7 @@ from django.conf import settings
 
 from users.models import User
 
-# Replace by custom permission class
+# FIXME: Replace by custom permission class
 class PerObjectPermissionMixin(object):
 
     public_serializer_class = None
@@ -427,7 +427,15 @@ class CommentsViewSet(PerObjectPermissionMixin,
             - name: post
               description: comment post id
         """
-        return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+
+        # Changes response use PostPublicSerializer
+        data = self.public_serializer_class(serializer.instance).data
+        data = attach_users([data], request.user, request)
+        return Response(data[0], status=status.HTTP_201_CREATED, headers=headers)
 
     def list(self, request, *args, **kwargs):
         """
