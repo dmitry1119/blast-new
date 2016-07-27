@@ -379,6 +379,13 @@ class VotedPostBaseView(mixins.ListModelMixin,
 
     serializer_class = PostPublicSerializer
 
+    def get_queryset(self):
+        voted_ids = PostVote.objects.filter(user=self.request.user,
+                                            is_positive=self.is_positive)
+        voted_ids = {it.pk for it in voted_ids}
+
+        return Post.objects.filter(pk__in=voted_ids)
+
     def list(self, request, *args, **kwargs):
         response = super().list(self, request, *args, **kwargs)
         fill_posts(response.data['results'], request.user, request)
@@ -388,14 +395,12 @@ class VotedPostBaseView(mixins.ListModelMixin,
 
 # TODO: Add tests?
 class VotedPostsViewSet(VotedPostBaseView):
-    def get_queryset(self):
-        return PostVote.objects.filter(user=self.request.user, is_positive=True)
+    is_positive = True
 
 
 # TODO: Add tests?
 class DonwvotedPostsViewSet(VotedPostBaseView):
-    def get_queryset(self):
-        return PostVote.objects.filter(user=self.request.user, is_positive=False)
+    is_positive = False
 
 
 # TODO (VM): Check if post is hidden
