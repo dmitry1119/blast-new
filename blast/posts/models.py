@@ -91,6 +91,9 @@ class Post(models.Model):
         for it in tags:
             self.tags.add(it)
 
+    def __str__(self):
+        return u'{}'.format(self.id)
+
     class Meta:
         ordering = ('-created_at',)
 

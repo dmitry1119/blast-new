@@ -385,6 +385,7 @@ class VotedPostBaseView(mixins.ListModelMixin,
         voted_ids = PostVote.objects.filter(user=self.request.user,
                                             is_positive=self.is_positive)
         voted_ids = {it.pk for it in voted_ids}
+        print(voted_ids)
         return Post.objects.filter(pk__in=voted_ids, expired_at__gte=datetime.now(),)
 
     def list(self, request, *args, **kwargs):
@@ -416,7 +417,7 @@ class CommentsViewSet(PerObjectPermissionMixin,
     private_serializer_class = CommentSerializer
 
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('user',)
+    filter_fields = ('user', 'post',)
 
     def create(self, request, *args, **kwargs):
         """
