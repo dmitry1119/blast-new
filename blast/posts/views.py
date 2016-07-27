@@ -17,7 +17,7 @@ from django.conf import settings
 
 from users.models import User
 
-
+# Replace by custom permission class
 class PerObjectPermissionMixin(object):
 
     public_serializer_class = None
@@ -46,6 +46,7 @@ class PerObjectPermissionMixin(object):
         serializer.save(user=self.request.user)
 
 
+# TODO: It is using in PostComment.list method and must be refactored.
 def attach_users(posts: list, user: User, request):
     # TODO (VM): Make test
     """
@@ -437,7 +438,18 @@ class CommentsViewSet(PerObjectPermissionMixin,
               paramType: query
               type: int
         """
-        return super().list(request, *args, **kwargs)
+        response = super().list(request, *args, **kwargs)
+        # TODO: Add tests
+        attach_users(response.data.get('results'), request.user, request)
+        return response
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+
+        data = fill_posts([serializer.data], self.request.user, request)
+
+        return Response(data[0])
 
     def destroy(self, request, *args, **kwargs):
         """
