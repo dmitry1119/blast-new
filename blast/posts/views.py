@@ -379,12 +379,12 @@ class VotedPostBaseView(mixins.ListModelMixin,
 
     serializer_class = PostPublicSerializer
 
+    # TODO: Exclude hidden posts
     def get_queryset(self):
         voted_ids = PostVote.objects.filter(user=self.request.user,
                                             is_positive=self.is_positive)
         voted_ids = {it.pk for it in voted_ids}
-
-        return Post.objects.filter(pk__in=voted_ids)
+        return Post.objects.filter(pk__in=voted_ids, expired_at__gte=datetime.now(),)
 
     def list(self, request, *args, **kwargs):
         response = super().list(self, request, *args, **kwargs)

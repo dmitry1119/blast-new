@@ -52,6 +52,10 @@ class Post(models.Model):
 
     tags = models.ManyToManyField(Tag, blank=True)
 
+    @property
+    def time_remains(self):
+        return self.expired_at - timezone.now()
+
     def comments_count(self):
         # TODO (VM): Cache this value to redis
         return PostComment.objects.filter(post=self.pk).count()
