@@ -360,7 +360,7 @@ class PinnedPostsViewSet(mixins.ListModelMixin,
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return self.request.user.pinned_posts.all()
+        return self.request.user.pinned_posts.filter(expired_at__gte=datetime.now()).all()
 
     def list(self, request, *args, **kwargs):
         """
