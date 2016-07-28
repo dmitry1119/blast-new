@@ -6,6 +6,8 @@ from rest_framework import viewsets, mixins, permissions, status
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
+from core.views import ExtandableModelMixin
+
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
@@ -47,22 +49,20 @@ class PerObjectPermissionMixin(object):
 
 
 # TODO: It is using in PostComment.list method and must be refactored.
-def attach_users(posts: list, user: User, request):
-    # TODO (VM): Make test
+def attach_users(items: list, user: User, request):
     """
     Attaches user to post dictionary
-    :param posts: list of post dictionaries
-    :return: modified list of posts
+    :param items: list of post dictionaries
+    :return: modified list of items
     """
-    if len(posts) == 0:
-        return posts
+    if len(items) == 0:
+        return items
 
-    users = [it['user'] for it in posts]
+    users = {it['user'] for it in items}
     users = User.objects.filter(pk__in=users)
-    # users = users.values('pk', 'username', 'avatar')
     users = {it.pk: it for it in users}
 
-    for post in posts:
+    for post in items:
         user = users[post['user']]
         author = {}
         if post.get('is_anonymous'):
@@ -77,7 +77,7 @@ def attach_users(posts: list, user: User, request):
                 author['avatar'] = None
         post['author'] = author
 
-    return posts
+    return items
 
 
 def mark_pinned(posts: list, user: User):
@@ -120,11 +120,8 @@ def fill_posts(posts: list, user: User, request):
 
 
 class PostsViewSet(PerObjectPermissionMixin,
-                   mixins.CreateModelMixin,
-                   mixins.RetrieveModelMixin,
-                   mixins.DestroyModelMixin,
-                   mixins.ListModelMixin,
-                   viewsets.GenericViewSet):
+                   ExtandableModelMixin,
+                   viewsets.ModelViewSet):
     """
     ---
     create:
@@ -143,6 +140,9 @@ class PostsViewSet(PerObjectPermissionMixin,
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('user', 'tags',)
 
+    def extend_response_data(self, data):
+        fill_posts(data, self.request.user, self.request)
+
     def get_queryset(self):
         user = self.request.user
 
@@ -160,37 +160,7 @@ class PostsViewSet(PerObjectPermissionMixin,
 
         return self.queryset.exclude(pk__in=hidden_ids)
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-
-        data = fill_posts([serializer.data], self.request.user, request)
-
-        return Response(data[0])
-
-    def list(self, request, *args, **kwargs):
-        """
-        Returns list of posts without hidden and voted posts.
-        ---
-        parameters:
-            - name: user
-              description: filter result by user id
-              paramType: query
-              type: int
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            data = fill_posts(serializer.data, request.user, request)
-            return self.get_paginated_response(data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        data = fill_posts([serializer.data], request.user, request)
-
-        return Response(data)
-
+    # TODO: Move to mixin
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -352,30 +322,25 @@ class PostsViewSet(PerObjectPermissionMixin,
         """
         if self.request.user.is_anonymous():
             return self.permission_denied(request)
+
         instance = get_object_or_404(Post, pk=pk)
         request.user.pinned_posts.remove(instance)
 
         return Response()
 
 
-class PinnedPostsViewSet(mixins.ListModelMixin,
+class PinnedPostsViewSet(ExtandableModelMixin,
+                         mixins.ListModelMixin,
                          viewsets.GenericViewSet):
 
     serializer_class = PostPublicSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    def extend_response_data(self, data):
+        fill_posts(data, self.request.user, self.request)    
+
     def get_queryset(self):
         return self.request.user.pinned_posts.filter(expired_at__gte=datetime.now()).all()
-
-    def list(self, request, *args, **kwargs):
-        """
-        Returns list of pinned posts.
-        ---
-        """
-        response = super().list(self, request, *args, **kwargs)
-        fill_posts(response.data['results'], request.user, request)
-
-        return response
 
 
 class VotedPostBaseView(mixins.ListModelMixin,
@@ -399,29 +364,28 @@ class VotedPostBaseView(mixins.ListModelMixin,
         return response
 
 
-# TODO: Add tests?
 class VotedPostsViewSet(VotedPostBaseView):
     is_positive = True
 
 
-# TODO: Add tests?
 class DonwvotedPostsViewSet(VotedPostBaseView):
     is_positive = False
 
 
 # TODO (VM): Check if post is hidden
+# TODO (VM): Remove Update actions
 class CommentsViewSet(PerObjectPermissionMixin,
-                      mixins.CreateModelMixin,
-                      mixins.RetrieveModelMixin,
-                      mixins.DestroyModelMixin,
-                      mixins.ListModelMixin,
-                      viewsets.GenericViewSet):
+                      ExtandableModelMixin,
+                      viewsets.ModelViewSet):
     queryset = PostComment.objects.all()
     public_serializer_class = CommentPublicSerializer
     private_serializer_class = CommentSerializer
 
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('user', 'post',)
+
+    def extend_response_data(self, data):
+        attach_users(data, self.request.user, self.request)
 
     def create(self, request, *args, **kwargs):
         """
@@ -431,38 +395,7 @@ class CommentsViewSet(PerObjectPermissionMixin,
             - name: post
               description: comment post id
         """
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-
-        # Changes response use PostPublicSerializer
-        data = self.public_serializer_class(serializer.instance).data
-        data = attach_users([data], request.user, request)
-        return Response(data[0], status=status.HTTP_201_CREATED, headers=headers)
-
-    def list(self, request, *args, **kwargs):
-        """
-
-        ---
-        parameters:
-            - name: user
-              description: filter result by user id
-              paramType: query
-              type: int
-        """
-        response = super().list(request, *args, **kwargs)
-        # TODO: Add tests
-        attach_users(response.data.get('results'), request.user, request)
-        return response
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-
-        data = fill_posts([serializer.data], self.request.user, request)
-
-        return Response(data[0])
+        return super().create(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         """
