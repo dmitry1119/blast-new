@@ -210,6 +210,16 @@ class VoteTest(BaseTestCase):
         self.assertEqual(self.post.downvoted_count(), 0)
         self.assertEqual(self.post.expired_at, self.expired_at + timedelta(minutes=5))
 
+        url = reverse_lazy('post-list') + 'voted/'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data.get('results')), 1)
+
+        result = response.data.get('results')[0]
+        self.assertEqual(result['id'], self.post.id)
+        self.assertEqual(result['author']['username'], self.user.username)
+
     def test_downvote_post(self):
         response = self.put_json(self.url + 'downvote/')
 
@@ -219,6 +229,16 @@ class VoteTest(BaseTestCase):
         self.assertEqual(self.post.votes_count(), 0)
         self.assertEqual(self.post.downvoted_count(), 1)
         self.assertEqual(self.post.expired_at, self.expired_at - timedelta(minutes=10))
+
+        url = reverse_lazy('post-list') + 'downvoted/'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data.get('results')), 1)
+
+        result = response.data.get('results')[0]
+        self.assertEqual(result['id'], self.post.id)
+        self.assertEqual(result['author']['username'], self.user.username)
 
 
 class ReportTest(BaseTestCase):
@@ -324,7 +344,7 @@ class FeedsTest(BaseTestCase):
 
         self.assertNotIn(should_be_hidden, ids)
 
-    def test_voted_post(self):
+    def test_hide_voted_post(self):
         PostVote.objects.create(user=self.user, post=self.posts[0])
 
         response = self.client.get(self.url)
