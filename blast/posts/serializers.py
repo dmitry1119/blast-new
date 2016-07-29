@@ -36,10 +36,11 @@ class CommentPublicSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField()
 
     class Meta:
         model = PostComment
-        fields = ('text', 'post', 'parent',)
+        fields = ('id', 'text', 'post', 'parent',)
 
 
 class VoteSerializer(serializers.ModelSerializer):

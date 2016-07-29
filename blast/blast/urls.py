@@ -25,9 +25,11 @@ from users.views import (UserViewSet, UserProfileView, UserSettingsView,
 from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
                                    SinchPhoneConfirmationView)
 
-from posts.views import PostsViewSet, CommentsViewSet, VotedPostsViewSet, DonwvotedPostsViewSet, PinnedPostsViewSet
+from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
+                         DonwvotedPostsViewSet, PinnedPostsViewSet, FeedsView)
 
 api_1 = DefaultRouter()
+api_1.register('feeds', FeedsView, base_name='feed')
 api_1.register('users', UserViewSet)
 api_1.register('countries', CountryViewSet)
 api_1.register('posts/pinned', PinnedPostsViewSet, base_name='pinned')

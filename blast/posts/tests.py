@@ -340,7 +340,7 @@ class PinPost(BaseTestCase):
 
 
 class FeedsTest(BaseTestCase):
-    url = reverse_lazy('post-list')
+    url = reverse_lazy('feed-list')
 
     def setUp(self):
         super().setUp()

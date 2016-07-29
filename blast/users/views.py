@@ -24,6 +24,7 @@ def fill_follower(users: list, request):
         it['is_following'] = it['id'] in followes
 
 
+# TODO: Use class from core.views
 class UserViewSet(mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.ListModelMixin,

@@ -19,6 +19,7 @@ from django.conf import settings
 
 from users.models import User
 
+
 # FIXME: Replace by custom permission class
 class PerObjectPermissionMixin(object):
 
@@ -118,6 +119,30 @@ def fill_posts(posts: list, user: User, request):
 
     return data
 
+# TODO: Add feeds test
+class FeedsView(viewsets.ReadOnlyModelViewSet):
+    queryset = Post.objects.filter(user__is_private=False,
+                                   expired_at__gte=datetime.now())
+
+    serializer_class = PostPublicSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if not user.is_authenticated():
+            return self.queryset
+
+        # Excludes hidden and voted posts for authorized user
+        hidden_ids = [it['pk'] for it in user.hidden_posts.all().values('pk')]
+
+        # FIXME (VM): votes list can be very large
+        voted = PostVote.objects.filter(user=user.pk).values('post')
+        voted = [it['post'] for it in voted]
+
+        hidden_ids.extend(voted)
+
+        return self.queryset.exclude(pk__in=hidden_ids)
+
 
 class PostsViewSet(PerObjectPermissionMixin,
                    ExtandableModelMixin,
@@ -142,23 +167,6 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     def extend_response_data(self, data):
         fill_posts(data, self.request.user, self.request)
-
-    def get_queryset(self):
-        user = self.request.user
-
-        if not user.is_authenticated():
-            return self.queryset
-
-        # Excludes hidden and voted posts for authorized user
-        hidden_ids = [it['pk'] for it in user.hidden_posts.all().values('pk')]
-
-        # FIXME (VM): votes list can be very large
-        voted = PostVote.objects.filter(user=user.pk).values('post')
-        voted = [it['post'] for it in voted]
-
-        hidden_ids.extend(voted)
-
-        return self.queryset.exclude(pk__in=hidden_ids)
 
     # TODO: Move to mixin
     def create(self, request, *args, **kwargs):
