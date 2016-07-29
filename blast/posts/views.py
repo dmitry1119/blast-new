@@ -120,12 +120,15 @@ def fill_posts(posts: list, user: User, request):
     return data
 
 
-# TODO: Add feeds test
-class FeedsView(viewsets.ReadOnlyModelViewSet):
+# TODO: Add feeds test, check author, hidden posts and voted posts
+class FeedsView(ExtandableModelMixin, viewsets.ReadOnlyModelViewSet):
     queryset = Post.objects.filter(user__is_private=False,
                                    expired_at__gte=datetime.now())
 
     serializer_class = PostPublicSerializer
+
+    def extend_response_data(self, data):
+        fill_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
         user = self.request.user
