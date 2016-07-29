@@ -139,6 +139,32 @@ class CommentTest(BaseTestCase):
         self.assertEqual(comment.user, self.user)
         self.assertEqual(comment.post, self.post)
 
+    def test_create_reply_comment(self):
+        parent_text = 'parent comment text'
+        reply_text = 'reply comment text'
+        response = self.client.post(self.url, data={
+            'post': self.post.pk,
+            'text': parent_text
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['text'], parent_text)
+        self.assertEqual(response.data['post'], self.post.pk)
+
+        parent_id = response.data['id']
+        response = self.client.post(self.url, data={
+            'parent': parent_id,
+            'post': self.post.pk,
+            'text': reply_text
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.get(self.url + '?parent=' + str(parent_id))
+        results = response.data['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['text'], reply_text)
+
     # TODO: Check permissions on delete method
     def test_delete_comment(self):
         text = 'comment text'

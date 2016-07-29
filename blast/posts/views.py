@@ -383,7 +383,7 @@ class CommentsViewSet(PerObjectPermissionMixin,
     private_serializer_class = CommentSerializer
 
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('user', 'post',)
+    filter_fields = ('user', 'post', 'parent',)
 
     def extend_response_data(self, data):
         attach_users(data, self.request.user, self.request)

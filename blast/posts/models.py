@@ -112,9 +112,18 @@ class PostVote(models.Model):
 class PostComment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
+    parent = models.ForeignKey('PostComment', db_index=True,
+                               blank=True, null=True)
     user = models.ForeignKey(User, db_index=True)
     post = models.ForeignKey(Post, db_index=True)
     text = models.CharField(max_length=256)
+
+    def replies_count(self):
+        # TODO (VM): Add redis cache
+        return PostComment.objects.filter(parent=self.pk).count()
+
+    def __str__(self):
+        return u'{} for post {}'.format(self.pk, self.post)
 
 
 class PostReport(models.Model):

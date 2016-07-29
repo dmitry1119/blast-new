@@ -28,15 +28,18 @@ class ReportPostSerializer(serializers.ModelSerializer):
 
 
 class CommentPublicSerializer(serializers.ModelSerializer):
+    replies = serializers.ReadOnlyField(source='replies_count')
+
     class Meta:
         model = PostComment
-        read_only = ('created_at', 'user', 'text', 'post',)
+        read_only = ('id', 'created_at', 'user', 'text', 'post', 'parent', 'replies_count')
 
 
 class CommentSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = PostComment
-        fields = ('text', 'post',)
+        fields = ('text', 'post', 'parent',)
 
 
 class VoteSerializer(serializers.ModelSerializer):
