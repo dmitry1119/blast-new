@@ -138,6 +138,7 @@ class CommentTest(BaseTestCase):
         self.assertEqual(comment.text, text)
         self.assertEqual(comment.user, self.user)
         self.assertEqual(comment.post, self.post)
+        self.assertIsNotNone(response.data.get('author'))
 
     def test_create_reply_comment(self):
         parent_text = 'parent comment text'

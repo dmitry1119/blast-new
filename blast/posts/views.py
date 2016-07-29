@@ -119,6 +119,7 @@ def fill_posts(posts: list, user: User, request):
 
     return data
 
+
 # TODO: Add feeds test
 class FeedsView(viewsets.ReadOnlyModelViewSet):
     queryset = Post.objects.filter(user__is_private=False,
@@ -397,14 +398,15 @@ class CommentsViewSet(PerObjectPermissionMixin,
         attach_users(data, self.request.user, self.request)
 
     def create(self, request, *args, **kwargs):
-        """
-        Creates new comment
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
 
-        parameters:
-            - name: post
-              description: comment post id
-        """
-        return super().create(request, *args, **kwargs)
+        # Changes response use PostPublicSerializer
+        data = self.public_serializer_class(serializer.instance).data
+        data = attach_users([data], request.user, request)
+        return Response(data[0], status=status.HTTP_201_CREATED, headers=headers)
 
     def destroy(self, request, *args, **kwargs):
         """
