@@ -6,6 +6,7 @@ from django.test.client import MULTIPART_CONTENT
 from django.utils import timezone
 from rest_framework import status
 
+from countries.models import Country
 from smsconfirmation.models import PhoneConfirmation
 from users.models import User, UserSettings
 from core.tests import BaseTestCase, BaseTestCaseUnauth, create_file
@@ -144,6 +145,28 @@ class RegisterTest(TestCase):
 
         self.assertIsNone(user)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_username_taken(self):
+        phone = self.phone + '1'
+        country = Country.objects.get(pk=self.country)
+        User.objects.create_user(username=self.username, password=self.password,
+                                 country=country, phone=self.phone)
+
+        self.confirmation = PhoneConfirmation.objects.create(phone=phone,
+                                                             is_confirmed=True,
+                                                             request_type=PhoneConfirmation.REQUEST_PHONE)
+        data = {
+            'phone': phone,
+            'username': self.username.upper(),
+            'password': self.password,
+            'country': self.country,
+        }
+
+        response = self.client.post(self.url, data)
+
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['username'], 'This username is taken')
 
 
 class UpdateProfileTest(BaseTestCase):

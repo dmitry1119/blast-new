@@ -15,7 +15,7 @@ class CheckUsernameAndPassword(serializers.Serializer):
         return value
 
     def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
+        if User.objects.filter(username__iexact=value).exists():
             raise serializers.ValidationError('This username is taken')
 
         return value
@@ -26,6 +26,8 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     Serializer for registration method.
     It allows set up very limited field set.
     """
+    password = serializers.CharField(write_only=True)
+
     def validate_password(self, value):
         if not value or len(value) < 6:
             raise serializers.ValidationError('Your password must be at least 6 characters')
@@ -34,6 +36,10 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     def validate_username(self, value):
         if not value or len(value) > 15:
             raise serializers.ValidationError('Your username must be 15 characters or less')
+
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('This username is taken')
+
         return value
 
     def create(self, validated_data):
