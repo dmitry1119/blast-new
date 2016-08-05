@@ -80,7 +80,16 @@ class TestAnonymousPost(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        self.post = Post.objects.create(is_anonymous=True, user=self.user)
+        url = reverse_lazy('post-list')
+        response = self.client.post(url, data={
+            'video': create_file('test_01.png'),
+            'user': self.user.pk,
+            'text': 'spam',
+            'is_anonymous': True,
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.post = Post.objects.get(pk=response.data['id'])
 
     def test_get_anonymous_post(self):
         url = reverse_lazy('post-list')
@@ -99,6 +108,13 @@ class TestAnonymousPost(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['author']['username'], 'Anonymous')
         self.assertEqual(response.data['author']['avatar'], None)
+
+    def test_is_anonymous_post_pinned(self):
+        """
+        Checks is_anonymous post in pinned list.
+        :return:
+        """
+        self.assertTrue(self.user.pinned_posts.filter(pk=self.post.pk).exists())
 
 
 class TestIsPinnedPost(BaseTestCase):

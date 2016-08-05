@@ -1,6 +1,10 @@
+import django_filters
+
 from django.db.models import F
+
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+
 from rest_framework import filters
 from rest_framework import viewsets, mixins, permissions, status
 from rest_framework.decorators import detail_route, list_route
@@ -183,6 +187,12 @@ class PostsViewSet(PerObjectPermissionMixin,
         data = PostPublicSerializer(serializer.instance).data
         data = fill_posts([data], request.user, request)
         return Response(data[0], status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        post = serializer.instance
+        if post.is_anonymous:
+            self.request.user.pinned_posts.add(post)
 
     def destroy(self, request, *args, **kwargs):
         """

@@ -164,9 +164,8 @@ class RegisterTest(TestCase):
 
         response = self.client.post(self.url, data)
 
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['username'], 'This username is taken')
+        self.assertEqual(response.data['username'][0], 'This username is taken')
 
 
 class UpdateProfileTest(BaseTestCase):
