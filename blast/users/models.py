@@ -7,6 +7,7 @@ from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser, PermissionsMixin
 )
 from django.db import models
+from django.utils import timezone
 
 from countries.models import Country
 
@@ -102,7 +103,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def blasts_count(self):
         # TODO (VM): Use cached value from Redis.
         from posts.models import Post
-        return Post.objects.filter(user=self.pk).count()
+        return Post.objects.filter(user=self.pk, expired_at__gte=timezone.now()).count()
 
     def following_count(self):
         # TODO (VM): Use cached value from Redis.
