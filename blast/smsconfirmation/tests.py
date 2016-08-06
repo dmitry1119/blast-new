@@ -120,6 +120,18 @@ class TestResetPassword(BaseTestCaseUnauth):
         self.user.refresh_from_db()
         self.assertEqual(self.user.phone, self.phone)
 
+    def test_username_case_insensitive(self):
+        data = {
+            'username': self.user.username.upper(),
+            'phone': self.user.phone,
+        }
+        response = self.client.post(self.url, data=data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        confirm = PhoneConfirmation.objects.get(phone=self.phone)
+        # TODO:
+
+
     def test_validate_user(self):
         other_username = self.username + '2'
         other_phone = self.phone + '2'

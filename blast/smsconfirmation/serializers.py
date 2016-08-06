@@ -41,7 +41,7 @@ class RequestChangePasswordSerializerUnauth(serializers.ModelSerializer):
     username = serializers.CharField(max_length=15, write_only=True)
 
     def validate_username(self, value):
-        if not User.objects.filter(username=value).exists():
+        if not User.objects.filter(username__iexact=value).exists():
             raise serializers.ValidationError('Username does not exist')
 
         return value
@@ -55,7 +55,7 @@ class RequestChangePasswordSerializerUnauth(serializers.ModelSerializer):
     def validate(self, data):
         super().validate(data)
 
-        if not User.objects.filter(phone=data['phone'], username=data['username']).exists():
+        if not User.objects.filter(phone=data['phone'], username__iexact=data['username']).exists():
             raise serializers.ValidationError({'user': 'User does not exist'})
 
         del data['username']

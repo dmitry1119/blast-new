@@ -3,7 +3,7 @@ from rest_framework import serializers
 from smsconfirmation.models import CODE_CONFIRMATION_LEN, PhoneConfirmation
 from users.models import User, UserSettings
 
-
+# TODO: Rename
 class CheckUsernameAndPassword(serializers.Serializer):
     phone = serializers.CharField(max_length=20, required=False)
     username = serializers.CharField(max_length=15, required=False)
@@ -121,7 +121,6 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
     def validate_old_password(self, value):
         if not self.instance.check_password(value):
-            # TODO: Get rid of field name
             raise serializers.ValidationError('Wrong old password')
 
     def validate(self, data):
