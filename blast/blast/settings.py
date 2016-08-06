@@ -46,6 +46,10 @@ INSTALLED_APPS = [
     'users'
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'users.backends.UsernameCaseInsensitiveBackend'
+]
+
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

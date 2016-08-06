@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, mixins, permissions, generics
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
+from rest_framework_jwt.views import JSONWebTokenAPIView
 
 from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
