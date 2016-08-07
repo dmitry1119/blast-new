@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from posts.models import Post, PostComment, PostVote, PostReport
+from posts.models import Post, PostComment, PostVote, PostReport, Tag
 
 
 @admin.register(Post)
@@ -9,15 +9,20 @@ class PostAdmin(admin.ModelAdmin):
 
 
 @admin.register(PostComment)
-class PostComment(admin.ModelAdmin):
+class PostCommentAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'post', 'text', 'created_at')
 
 
 @admin.register(PostVote)
-class PostVote(admin.ModelAdmin):
+class PostVoteAdmin(admin.ModelAdmin):
     list_display = ('pk', 'post', 'user', 'is_positive', 'created_at')
 
 
 @admin.register(PostReport)
-class PostReport(admin.ModelAdmin):
+class PostReportAdmin(admin.ModelAdmin):
     list_display = ('pk', 'post', 'user', 'reason', 'text', 'created_at')
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ('title',)
