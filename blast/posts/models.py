@@ -54,7 +54,9 @@ class Post(models.Model):
 
     @property
     def time_remains(self):
-        return self.expired_at - timezone.now()
+        delta = self.expired_at - timezone.now()
+        delta = delta - timedelta(microseconds=delta.microseconds)
+        return delta
 
     def comments_count(self):
         # TODO (VM): Cache this value to redis
