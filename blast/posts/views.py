@@ -1,7 +1,5 @@
 import django_filters
 
-from django.db.models import F
-
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
@@ -12,10 +10,10 @@ from rest_framework.response import Response
 
 from core.views import ExtandableModelMixin
 
-from posts.models import Post, PostComment, PostVote, Tag
+from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
-                               VoteSerializer, VotePublicSerializer, ReportPostSerializer, TagPublicSerializer)
+                               VoteSerializer, VotePublicSerializer, ReportPostSerializer)
 
 from datetime import timedelta, datetime
 
@@ -431,13 +429,3 @@ class CommentsViewSet(PerObjectPermissionMixin,
               description: comment id
         """
         return super().destroy(request, *args, **kwargs)
-
-
-class TagsViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Tag.objects.all()
-    search_fields = ('title',)
-
-
-# class TagsSearchViewSet(generics.ListAPIView,
-#                         generics.GenericAPIView):
-#     serializer_class = TagPublicSerializer

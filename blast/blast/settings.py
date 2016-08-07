@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'core',
     'smsconfirmation',
     'posts',
+    'tags',
     'countries',
     'users'
 ]

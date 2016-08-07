@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from posts.models import Post, PostComment, PostVote, PostReport, Tag
+from posts.models import Post, PostComment, PostVote, PostReport
 
 
 @admin.register(Post)
@@ -22,8 +22,3 @@ class PostVoteAdmin(admin.ModelAdmin):
 class PostReportAdmin(admin.ModelAdmin):
     list_display = ('pk', 'post', 'user', 'reason', 'text', 'created_at')
 
-
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    list_display = ('title', 'total_posts')
-    readonly_fields = ('title', 'total_posts')
