@@ -19,6 +19,7 @@ from django.contrib import admin
 from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
+from tags.views import TagsViewSet
 
 from users.views import (UserViewSet, UserProfileView, UserSettingsView,
                          UserPasswordResetView, UserChangePhoneView)
@@ -37,6 +38,8 @@ api_1.register('posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
 api_1.register('posts/voted', VotedPostsViewSet, base_name='voted')
 api_1.register('posts', PostsViewSet)
 api_1.register('comments', CommentsViewSet, base_name='comment')
+api_1.register('tags', TagsViewSet, base_name='tag')
+
 
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
