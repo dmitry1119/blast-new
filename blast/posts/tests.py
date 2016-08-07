@@ -413,18 +413,48 @@ class FeedsTest(BaseTestCase):
 
 
 class PostTagsTest(BaseTestCase):
+    text = u'Post text with #hashtag1, #hashtag2, #hashtag3'
+
+    def setUp(self):
+        super().setUp()
+        Tag.objects.create(title='hashtag1')
 
     def test_post_tags(self):
-        url = reverse_lazy('post-list')
-        text = u'Post text with #hashtag1, #hashtag2'
-
-        post = Post.objects.create(text=text, user=self.user)
+        post = Post.objects.create(text=self.text,
+                                   user=self.user)
 
         tags = Tag.objects.all()
 
-        self.assertEqual(len(tags), 2)
-        self.assertEqual(len(post.tags.all()), 2)
+        self.assertEqual(len(tags), 3)
+        self.assertEqual(len(post.tags.all()), 3)
 
-        tags = [it.title for it in tags]
-        self.assertIn('hashtag1', tags)
-        self.assertIn('hashtag2', tags)
+        titles = [it.title for it in tags]
+        self.assertIn('hashtag1', titles)
+        self.assertIn('hashtag2', titles)
+        self.assertIn('hashtag3', titles)
+
+        for it in tags:
+            self.assertEqual(it.total_posts, 1)
+
+    def test_post_deleted(self):
+        total = 5
+
+        for it in range(total):
+            Post.objects.create(text=self.text, user=self.user)
+
+        tags = Tag.objects.all()
+        for it in tags:
+            self.assertEqual(it.total_posts, total)
+
+        Post.objects.first().delete()
+
+        tags = Tag.objects.all()
+        for it in tags:
+            self.assertEqual(it.total_posts, total - 1)
+
+        Post.objects.all().delete()
+        tags = Tag.objects.all()
+
+        self.assertEqual(len(tags), 3)
+        for it in tags:
+            self.assertEqual(it.total_posts, 0)

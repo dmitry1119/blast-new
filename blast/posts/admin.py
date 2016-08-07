@@ -25,4 +25,5 @@ class PostReportAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('title',)
+    list_display = ('title', 'total_posts')
+    readonly_fields = ('title', 'total_posts')

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from posts.models import Post, PostComment, PostVote, PostReport
+from posts.models import Post, PostComment, PostVote, PostReport, Tag
 
 
 class PostPublicSerializer(serializers.ModelSerializer):
@@ -52,3 +52,9 @@ class VoteSerializer(serializers.ModelSerializer):
 class VotePublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostVote
+
+
+class TagPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = '__all__'
