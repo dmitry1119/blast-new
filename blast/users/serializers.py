@@ -179,3 +179,9 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('password', 'current_phone', 'new_phone',)
+
+
+class UsernameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username',)

@@ -1,14 +1,14 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, mixins, permissions, generics
+from rest_framework import viewsets, mixins, permissions, generics, filters
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
-from rest_framework_jwt.views import JSONWebTokenAPIView
+
 
 from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
-                               CheckUsernameAndPassword)
+                               CheckUsernameAndPassword, UsernameSerializer)
 
 
 def fill_follower(users: list, request):
@@ -212,3 +212,12 @@ class UserChangePhoneView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UsernameSearchView(viewsets.ReadOnlyModelViewSet):
+    queryset = User.objects.all()
+    permissions = (permissions.IsAuthenticated,)
+    serializer_class = UsernameSerializer
+
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
