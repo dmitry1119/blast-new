@@ -249,8 +249,8 @@ class VoteTest(BaseTestCase):
 
         self.post.refresh_from_db()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.post.votes_count(), 1)
-        self.assertEqual(self.post.downvoted_count(), 0)
+        self.assertEqual(self.post.voted_count, 1)
+        self.assertEqual(self.post.downvoted_count, 0)
         self.assertEqual(self.post.expired_at, self.expired_at + timedelta(minutes=5))
 
         url = reverse_lazy('post-list') + 'voted/'
@@ -269,8 +269,8 @@ class VoteTest(BaseTestCase):
         self.post.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.post.votes_count(), 0)
-        self.assertEqual(self.post.downvoted_count(), 1)
+        self.assertEqual(self.post.voted_count, 0)
+        self.assertEqual(self.post.downvoted_count, 1)
         self.assertEqual(self.post.expired_at, self.expired_at - timedelta(minutes=10))
 
         url = reverse_lazy('post-list') + 'downvoted/'

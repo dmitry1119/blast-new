@@ -85,11 +85,15 @@ class PostVote(models.Model):
 
 @receiver(post_save, sender=PostVote, dispatch_uid='post_save_vote_handler')
 def post_save_vote(sender, **kwargs):
-    if not kwargs['created']:
-        # TODO: update post instance by refreshing cache from db?
-        return
+    # if not kwargs['created']:
+    # TODO: update post instance by refreshing cache from db?
+    # pass
 
     instance = kwargs['instance']
+
+    if instance.is_positive is None:
+        return
+
     if instance.is_positive:
         Post.objects.filter(pk=instance.post.pk).update(voted_count=F('voted_count') + 1)
     else:

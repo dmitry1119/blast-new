@@ -213,7 +213,6 @@ class PostsViewSet(PerObjectPermissionMixin,
 
         vote, created = PostVote.objects.get_or_create(user=request.user, post=post)
         vote.is_positive = is_positive
-        vote.save()
 
         if is_positive:
             post.expired_at += timedelta(minutes=5)
@@ -222,6 +221,7 @@ class PostsViewSet(PerObjectPermissionMixin,
             post.expired_at -= timedelta(minutes=10)
             post.save()
 
+        vote.save()
         status_code = status.HTTP_200_OK
 
         serializer = VoteSerializer(instance=vote)
