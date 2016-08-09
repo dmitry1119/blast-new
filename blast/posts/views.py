@@ -1,11 +1,9 @@
-import django_filters
-
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
-from rest_framework import filters, views, generics
+from rest_framework import filters
 from rest_framework import viewsets, mixins, permissions, status
-from rest_framework.decorators import detail_route, list_route
+from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 
 from core.views import ExtandableModelMixin
@@ -13,12 +11,12 @@ from core.views import ExtandableModelMixin
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
-                               VoteSerializer, VotePublicSerializer, ReportPostSerializer)
+                               VoteSerializer, ReportPostSerializer)
 
 from datetime import timedelta, datetime
 
-from django.conf import settings
 
+from tags.models import Tag
 from users.models import User
 
 
@@ -352,7 +350,6 @@ class PostsViewSet(PerObjectPermissionMixin,
 class PinnedPostsViewSet(ExtandableModelMixin,
                          mixins.ListModelMixin,
                          viewsets.GenericViewSet):
-
     serializer_class = PostPublicSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -429,3 +426,29 @@ class CommentsViewSet(PerObjectPermissionMixin,
               description: comment id
         """
         return super().destroy(request, *args, **kwargs)
+
+
+class PostSearchViewSet(mixins.ListModelMixin,
+                        viewsets.GenericViewSet):
+    serializer_class = PostPublicSerializer
+
+    queryset = Post.objects.all()
+
+    def get_queryset(self):
+        tag = self.request.query_params.get('tag', '')
+        tags = Tag.objects.filter(title__istartswith=tag)
+        tags = tags.order_by('-total_posts')[:100]
+
+        # Select first 100 posts assume that search output will be short
+        pinned = self.request.user.pinned_posts
+        pinned = pinned.filter(tags__in=tags, expired_at__gte=datetime.now())
+        pinned = pinned.order_by('-expired_at').distinct()[:100]
+
+        posts = Post.objects.filter(tags__in=tags, expired_at__gte=datetime.now())
+        posts = posts.exclude(pk__in={it.pk for it in pinned}).distinct()
+        posts = posts.order_by('-expired_at')
+
+        return posts
+        # result = chain(pinned, posts)
+        #
+        # return result
