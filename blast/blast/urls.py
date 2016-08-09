@@ -32,7 +32,7 @@ from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
 api_1 = DefaultRouter()
 api_1.register('feeds', FeedsView, base_name='feed')
 api_1.register('users', UserViewSet)
-api_1.register('usernames', UsernameSearchView)
+api_1.register('usernames', UsernameSearchView, base_name='usernames')
 api_1.register('countries', CountryViewSet)
 api_1.register('posts/pinned', PinnedPostsViewSet, base_name='pinned')
 api_1.register('posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
