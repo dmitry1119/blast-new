@@ -1,4 +1,6 @@
+from django.core.urlresolvers import reverse_lazy
 from django.test import TestCase
+from rest_framework import status
 
 from core.tests import BaseTestCase
 from posts.models import Post
@@ -51,3 +53,32 @@ class PostTagsTest(BaseTestCase):
         self.assertEqual(len(tags), 3)
         for it in tags:
             self.assertEqual(it.total_posts, 0)
+
+
+class TagSearchTest(BaseTestCase):
+
+    url = reverse_lazy('tag-search')
+
+    def setUp(self):
+        super().setUp()
+        #
+        # posts = []
+        # for it in range(10):
+        #     posts.append(Post(user=self.user, text='post with @hashtag {}'.format(it)))
+        #
+        # Post.objects.create(posts)
+        # self.posts = Post.objects.all()
+        # for it in range(3):
+        #     self.user.pinned_posts.add(self.posts[it])
+
+    def test_tag_search(self):
+        pass
+        # url = self.url + '?title={}'.format('hashtag')
+        # response = self.client.get(self.url)
+        #
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        #
+        # result = response.data['result']
+        # self.assertEqual(len(result), 10)
+        #
+        # # TODO: Check first free is pinned posts.
