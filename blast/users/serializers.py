@@ -182,6 +182,15 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
 
 
 class UsernameSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('username',)
+        fields = ('username', 'avatar')
+
+    def get_avatar(self, obj):
+        request = self.context['request']
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        else:
+            return None
