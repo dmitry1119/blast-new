@@ -8,18 +8,8 @@ from tags.serializers import TagPublicSerializer
 
 
 class TagsViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Tag.objects.all()
+    queryset = Tag.objects.all().order_by('-total_posts')
     serializer_class = TagPublicSerializer
 
     filter_backends = (filters.SearchFilter,)
     search_fields = ('title',)
-
-
-class TagsSearchViewSet(generics.ListAPIView,
-                        generics.GenericAPIView):
-    serializer_class = TagPublicSerializer
-
-    def search(self, query):
-        tags = Tag.objects.filter(titile__istratwith=query)
-
-        return tags

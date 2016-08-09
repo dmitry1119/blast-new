@@ -4,7 +4,11 @@ import uuid
 from datetime import timedelta
 
 from django.db import models
+from django.db.models import F
 from django.utils import timezone
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from users.models import User
 
@@ -42,6 +46,15 @@ class Post(models.Model):
 
     tags = models.ManyToManyField('tags.Tag', blank=True)
 
+    # Cache for voted and downvoted lists.
+    # Uses for
+    downvoted_count = models.PositiveIntegerField(default=0)
+    voted_count = models.PositiveIntegerField(default=0)
+
+    def get_tag_titles(self):
+        reg = re.compile(r'(?:(?<=\s)|^)#(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
+        return reg.findall(self.text)
+
     @property
     def time_remains(self):
         delta = self.expired_at - timezone.now()
@@ -51,14 +64,6 @@ class Post(models.Model):
     def comments_count(self):
         # TODO (VM): Cache this value to redis
         return PostComment.objects.filter(post=self.pk).count()
-
-    def downvoted_count(self):
-        # TODO (VM): Cache this value to redis
-        return PostVote.objects.filter(post=self.pk, is_positive=False).count()
-
-    def votes_count(self):
-        # TODO (VM): Cache this value to redis
-        return PostVote.objects.filter(post=self.pk, is_positive=True).count()
 
     def __str__(self):
         return u'{}'.format(self.id)
@@ -76,6 +81,19 @@ class PostVote(models.Model):
 
     class Meta:
         unique_together = (('user', 'post'),)
+
+
+@receiver(post_save, sender=PostVote, dispatch_uid='post_save_vote_handler')
+def post_save_vote(sender, **kwargs):
+    if not kwargs['created']:
+        # TODO: update post instance by refreshing cache from db?
+        return
+
+    instance = kwargs['instance']
+    if instance.is_positive:
+        Post.objects.filter(pk=instance.post.pk).update(voted_count=F('voted_count') + 1)
+    else:
+        Post.objects.filter(pk=instance.post.pk).update(downvoted_count=F('downvoted_count') + 1)
 
 
 class PostComment(models.Model):

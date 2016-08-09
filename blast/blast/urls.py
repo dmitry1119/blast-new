@@ -27,7 +27,7 @@ from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
                                    SinchPhoneConfirmationView)
 
 from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
-                         DonwvotedPostsViewSet, PinnedPostsViewSet, FeedsView)
+                         DonwvotedPostsViewSet, PinnedPostsViewSet, FeedsView, PostSearchViewSet)
 
 api_1 = DefaultRouter()
 api_1.register('feeds', FeedsView, base_name='feed')
@@ -37,6 +37,7 @@ api_1.register('countries', CountryViewSet)
 api_1.register('posts/pinned', PinnedPostsViewSet, base_name='pinned')
 api_1.register('posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
 api_1.register('posts/voted', VotedPostsViewSet, base_name='voted')
+api_1.register('posts/search', PostSearchViewSet, base_name='post-search')
 api_1.register('posts', PostsViewSet)
 api_1.register('comments', CommentsViewSet, base_name='comment')
 api_1.register('tags', TagsViewSet, base_name='tag')

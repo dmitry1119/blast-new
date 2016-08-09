@@ -6,6 +6,7 @@ from posts.models import Post, PostComment, PostVote, PostReport
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'text', 'image', 'video', 'time_remains', 'created_at')
+    readonly_fields = ('voted_count', 'downvoted_count',)
 
 
 @admin.register(PostComment)

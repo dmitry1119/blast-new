@@ -167,7 +167,6 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
 
         del attrs['password']
 
-
         return attrs
 
     def save(self, **kwargs):

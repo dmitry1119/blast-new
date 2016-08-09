@@ -30,8 +30,7 @@ def post_save_post(sender, **kwargs):
 
     post = kwargs['instance']
 
-    reg = re.compile(r'(?:(?<=\s)|^)#(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
-    tags = reg.findall(post.text)
+    tags = post.get_tag_titles()
 
     if not tags:
         return

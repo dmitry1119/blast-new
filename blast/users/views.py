@@ -108,6 +108,7 @@ class UserViewSet(mixins.CreateModelMixin,
 
         return Response()
 
+
 class UserProfileView(generics.RetrieveUpdateAPIView):
     """
 
