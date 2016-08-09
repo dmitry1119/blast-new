@@ -128,8 +128,8 @@ class TestResetPassword(BaseTestCaseUnauth):
         response = self.client.post(self.url, data=data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        confirm = PhoneConfirmation.objects.get(phone=self.phone)
-        # TODO:
+        # TODO: complete asserts
+        # confirm = PhoneConfirmation.objects.get(phone=self.phone)
 
 
     def test_validate_user(self):
