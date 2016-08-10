@@ -20,6 +20,9 @@ from tags.models import Tag
 from users.models import User
 
 
+from users.serializers import UsernameSerializer
+
+
 # FIXME: Replace by custom permission class
 class PerObjectPermissionMixin(object):
 
@@ -239,6 +242,30 @@ class PostsViewSet(PerObjectPermissionMixin,
         """
         return self._update_vote(request, True, pk)
 
+    @detail_route(methods=['get'])
+    def voters(self, request, pk=None):
+        qs = PostVote.objects.filter(post=pk, is_positive=True)
+        page = self.paginate_queryset(qs)
+        ids = {it.user.pk for it in page}
+        users = User.objects.filter(pk__in=ids)
+
+        if request.user.is_authenticated():
+            users = users.exclude(pk=request.user.pk)
+
+        serializer = UsernameSerializer(users, many=True,
+                                        context=self.get_serializer_context())
+
+        if request.user.is_authenticated():
+            followees = request.user.followees.filter(pk__in=users)
+            followees = {it.pk for it in followees}
+            for it in serializer.data:
+                it['is_followee'] = it['id'] in followees
+        else:
+            for it in serializer.data:
+                it['is_followee'] = False
+
+        return self.get_paginated_response(serializer.data)
+
     @detail_route(methods=['put'])
     def downvote(self, request, pk=None):
         """
@@ -369,6 +396,7 @@ class VotedPostBaseView(mixins.ListModelMixin,
 
     # TODO: Exclude hidden posts
     def get_queryset(self):
+        # FIXME: This list can be big.
         voted_ids = PostVote.objects.filter(user=self.request.user,
                                             is_positive=self.is_positive)
         voted_ids = [it.post_id for it in voted_ids]

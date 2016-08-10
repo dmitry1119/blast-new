@@ -4,6 +4,7 @@ from django.test import TestCase
 from rest_framework import status
 
 from core.tests import BaseTestCase, create_file
+from countries.models import Country
 from posts.models import Post, PostComment, PostReport, PostVote
 from users.models import User
 
@@ -410,3 +411,30 @@ class FeedsTest(BaseTestCase):
         should_be_hidden = [self.posts[0].pk, self.posts[1]]
         self.assertNotIn(should_be_hidden[0], response.data['results'])
         self.assertNotIn(should_be_hidden[1], response.data['results'])
+
+
+class VotersList(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.post = Post.objects.create(text='some text', user=self.user)
+
+        country = Country.objects.get(pk=1)
+        self.user1 = User.objects.create_user(phone='1', username='1', password='1', country=country)
+        self.user2 = User.objects.create_user(phone='2', username='2', password='2', country=country)
+
+        PostVote.objects.create(user=self.user,  post=self.post, is_positive=True)
+        PostVote.objects.create(user=self.user1, post=self.post, is_positive=True)
+        PostVote.objects.create(user=self.user2, post=self.post, is_positive=False)
+
+        self.user.followees.add(self.user1)
+
+    def test_votes_list(self):
+        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
+        url = url + 'voters/'
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['username'], '1')
+        self.assertEqual(response.data['results'][0]['is_followee'], True)
