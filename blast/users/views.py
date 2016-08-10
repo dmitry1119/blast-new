@@ -108,22 +108,31 @@ class UserViewSet(mixins.CreateModelMixin,
 
         return Response()
 
-    @detail_route(['get'])
-    def followers(self, request, pk=None):
-        user = get_object_or_404(User, pk=pk)
-        page = self.paginate_queryset(user.followers.all())
+    def _list_followers(self, request, queryset):
+        # user = get_object_or_404(User, pk=pk)
+        page = self.paginate_queryset(queryset)
 
         context = self.get_serializer_context()
         serializer = FollwersSerializer(page, many=True, context=context)
 
         user_ids = {it.pk for it in page}
-        followes = user.followees.filter(pk__in=user_ids).values('id')
-        followes = {it['id']: it for it in followes}
+        qs = queryset.filter(pk__in=user_ids).values('id')
+        qs = {it['id']: it for it in qs}
 
         for it in serializer.data:
-            it['is_followee'] = it['id'] in followes
+            it['is_followee'] = it['id'] in qs
 
         return self.get_paginated_response(serializer.data)
+
+    @detail_route(['get'])
+    def followers(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+        return self._list_followers(request, user.followees.all())
+
+    @detail_route(['get'])
+    def following(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+        return self._list_followers(request, user.followers.all())
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
