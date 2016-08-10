@@ -22,7 +22,7 @@ def fill_follower(users: list, request):
     followes = {it['id']: it for it in followes}
 
     for it in users:
-        it['is_following'] = it['id'] in followes
+        it['is_followee'] = it['id'] in followes
 
 
 # TODO: Use class from core.views

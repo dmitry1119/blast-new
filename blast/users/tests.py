@@ -335,7 +335,7 @@ class TestUserFollower(BaseTestCase):
         super().setUp()
 
         self.other = User.objects.create_user(username='other_user',
-            password=self.password, phone='-7')
+                                              password=self.password, phone='-7')
 
     def test_user_follow(self):
         url = reverse_lazy('user-detail', kwargs={'pk': self.other.pk})
