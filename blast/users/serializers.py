@@ -200,7 +200,7 @@ class FollwersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'avatar')
+        fields = ('id', 'username', 'avatar', 'fullname')
 
     def get_avatar(self, obj):
         request = self.context['request']
