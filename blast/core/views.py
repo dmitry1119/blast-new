@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import viewsets
 
 
-class ExtandableModelMixin:
+class ExtandableModelMixin(object):
     def extend_response_data(self, data):
         raise NotImplementedError()
 

@@ -10,6 +10,8 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
                                CheckUsernameAndPassword, UsernameSerializer, FollwersSerializer)
 
+from core.views import ExtandableModelMixin
+
 
 def fill_follower(users: list, request):
     user = request.user
@@ -26,7 +28,8 @@ def fill_follower(users: list, request):
 
 
 # TODO: Use class from core.views
-class UserViewSet(mixins.CreateModelMixin,
+class UserViewSet(ExtandableModelMixin,
+                  mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.ListModelMixin,
                   viewsets.GenericViewSet):
@@ -40,10 +43,13 @@ class UserViewSet(mixins.CreateModelMixin,
         else:
             return RegisterUserSerializer
 
-    def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        fill_follower(response.data['results'], request)
-        return response
+    def extend_response_data(self, data):
+        fill_follower(data, self.request)
+
+    # def list(self, request, *args, **kwargs):
+    #     response = super().list(request, *args, **kwargs)
+    #     fill_follower(response.data['results'], request)
+    #     return response
 
     def create(self, request, *args, **kwarg):
         """

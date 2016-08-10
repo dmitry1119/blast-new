@@ -3,6 +3,7 @@ from rest_framework import serializers
 from smsconfirmation.models import CODE_CONFIRMATION_LEN, PhoneConfirmation
 from users.models import User, UserSettings
 
+
 # TODO: Rename
 class CheckUsernameAndPassword(serializers.Serializer):
     phone = serializers.CharField(max_length=20, required=False)
