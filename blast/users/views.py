@@ -8,7 +8,7 @@ from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
-                               CheckUsernameAndPassword, UsernameSerializer)
+                               CheckUsernameAndPassword, UsernameSerializer, FollwersSerializer)
 
 
 def fill_follower(users: list, request):
@@ -107,6 +107,23 @@ class UserViewSet(mixins.CreateModelMixin,
             user.followers.remove(request.user)
 
         return Response()
+
+    @detail_route(['get'])
+    def followers(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+        page = self.paginate_queryset(user.followers.all())
+
+        context = self.get_serializer_context()
+        serializer = FollwersSerializer(page, many=True, context=context)
+
+        user_ids = {it.pk for it in page}
+        followes = user.followees.filter(pk__in=user_ids).values('id')
+        followes = {it['id']: it for it in followes}
+
+        for it in serializer.data:
+            it['is_followee'] = it['id'] in followes
+
+        return self.get_paginated_response(serializer.data)
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
