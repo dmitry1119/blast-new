@@ -165,7 +165,7 @@ class PostsViewSet(PerObjectPermissionMixin,
               type: file
     """
     queryset = Post.objects.filter(user__is_private=False,
-                                   expired_at__gte=datetime.now())
+                                   expired_at__gte=timezone.now())
 
     public_serializer_class = PostPublicSerializer
     private_serializer_class = PostSerializer
@@ -385,7 +385,7 @@ class PinnedPostsViewSet(ExtandableModelMixin,
         fill_posts(data, self.request.user, self.request)    
 
     def get_queryset(self):
-        return self.request.user.pinned_posts.filter(expired_at__gte=datetime.now()).all()
+        return self.request.user.pinned_posts.filter(expired_at__gte=timezone.now()).all()
 
 
 class VotedPostBaseView(mixins.ListModelMixin,
@@ -402,7 +402,7 @@ class VotedPostBaseView(mixins.ListModelMixin,
                                             is_positive=self.is_positive)
         voted_ids = [it.post_id for it in voted_ids]
         return Post.objects.filter(pk__in=voted_ids, 
-                                   expired_at__gte=datetime.now())
+                                   expired_at__gte=timezone.now())
 
     def list(self, request, *args, **kwargs):
         response = super().list(self, request, *args, **kwargs)
@@ -470,10 +470,10 @@ class PostSearchViewSet(mixins.ListModelMixin,
 
         # Select first 100 posts assume that search output will be short
         pinned = self.request.user.pinned_posts
-        pinned = pinned.filter(tags__in=tags, expired_at__gte=datetime.now())
+        pinned = pinned.filter(tags__in=tags, expired_at__gte=timezone.now())
         pinned = pinned.order_by('-expired_at').distinct()[:100]
 
-        posts = Post.objects.filter(tags__in=tags, expired_at__gte=datetime.now())
+        posts = Post.objects.filter(tags__in=tags, expired_at__gte=timezone.now())
         posts = posts.exclude(pk__in={it.pk for it in pinned}).distinct()
         posts = posts.order_by('-expired_at')
 
