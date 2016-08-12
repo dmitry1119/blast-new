@@ -435,6 +435,7 @@ class VotersList(BaseTestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 1)
-        self.assertEqual(response.data['results'][0]['username'], '1')
-        self.assertEqual(response.data['results'][0]['is_followee'], True)
+        self.assertEqual(len(response.data['results']), 2)
+        # TODO: Improve and check user[0]
+        self.assertEqual(response.data['results'][1]['username'], '1')
+        self.assertEqual(response.data['results'][1]['is_followee'], True)

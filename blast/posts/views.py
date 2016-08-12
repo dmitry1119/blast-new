@@ -250,8 +250,8 @@ class PostsViewSet(PerObjectPermissionMixin,
         ids = {it.user.pk for it in page}
         users = User.objects.filter(pk__in=ids)
 
-        if request.user.is_authenticated():
-            users = users.exclude(pk=request.user.pk)
+        # if request.user.is_authenticated():
+        #     users = users.exclude(pk=request.user.pk)
 
         serializer = UsernameSerializer(users, many=True,
                                         context=self.get_serializer_context())
