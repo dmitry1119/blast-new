@@ -13,8 +13,7 @@ from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
                                VoteSerializer, ReportPostSerializer)
 
-from datetime import timedelta, datetime
-
+from datetime import timedelta, datetime, timezone
 
 from tags.models import Tag
 from users.models import User
@@ -126,7 +125,7 @@ def fill_posts(posts: list, user: User, request):
 # TODO: Add feeds test, check author, hidden posts and voted posts
 class FeedsView(ExtandableModelMixin, viewsets.ReadOnlyModelViewSet):
     queryset = Post.objects.filter(user__is_private=False,
-                                   expired_at__gte=datetime.now())
+                                   expired_at__gte=timezone.now())
 
     serializer_class = PostPublicSerializer
 
