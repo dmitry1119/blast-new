@@ -1,5 +1,6 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from rest_framework import filters
 from rest_framework import viewsets, mixins, permissions, status
@@ -13,7 +14,8 @@ from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
                                VoteSerializer, ReportPostSerializer)
 
-from datetime import timedelta, datetime, timezone
+from datetime import timedelta, datetime
+
 
 from tags.models import Tag
 from users.models import User
