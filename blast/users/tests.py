@@ -364,3 +364,14 @@ class TestUserFollower(BaseTestCase):
 
         self.assertEqual(other['followers'], 1)
         self.assertEqual(other['following'], 0)
+
+    def test_user_unfollow(self):
+        self.other.followers.add(self.user)
+
+        url = reverse_lazy('user-detail', kwargs={'pk': self.other.pk})
+
+        url += 'unfollow/'
+        response = self.client.put(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.other.followers.count(), 0)

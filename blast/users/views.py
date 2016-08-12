@@ -92,7 +92,7 @@ class UserViewSet(ExtandableModelMixin,
             return self.permission_denied(request, 'You should be authorized')
 
         user = get_object_or_404(User, pk=pk)
-        if not user.followers.filter(pk=pk).exists():
+        if not user.followers.filter(pk=request.user.pk).exists():
             user.followers.add(request.user)
 
         return Response()
@@ -109,7 +109,7 @@ class UserViewSet(ExtandableModelMixin,
             return self.permission_denied(request, 'You should be authorized')
 
         user = get_object_or_404(User, pk=pk)
-        if user.followers.filter(pk=pk).exists():
+        if user.followers.filter(pk=request.user.pk).exists():
             user.followers.remove(request.user)
 
         return Response()
