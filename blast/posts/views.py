@@ -53,7 +53,7 @@ class PerObjectPermissionMixin(object):
         serializer.save(user=self.request.user)
 
 
-# TODO: It is using in PostComment.list method and must be refactored.
+# TODO: It uses in PostComment.list method and should be refactored.
 def attach_users(items: list, user: User, request):
     """
     Attaches user to post dictionary
@@ -76,6 +76,7 @@ def attach_users(items: list, user: User, request):
             del post['user']
         else:
             author['username'] = user.username
+            author['id'] = user.pk
             if user.avatar:
                 author['avatar'] = request.build_absolute_uri(user.avatar.url)
             else:
