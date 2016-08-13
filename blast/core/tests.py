@@ -7,6 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy
 
+from countries.models import Country
 from users.models import User
 
 
@@ -23,10 +24,9 @@ def create_file(name, content_file=True):
 
 
 class BaseTestCaseUnauth(TestCase):
-    fixtures = ('countries.json',)
+    # fixtures = ('countries.json',)
 
     phone = '8913123123'
-    country = 1
     password = '111111'
     username = 'username'
 
@@ -37,6 +37,7 @@ class BaseTestCaseUnauth(TestCase):
             'password': self.password,
         }
 
+        self.country = Country.objects.create(name='Russia', code='+7')
         self.user = User.objects.create_user(**data)
 
         data = {

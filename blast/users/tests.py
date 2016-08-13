@@ -375,3 +375,44 @@ class TestUserFollower(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.other.followers.count(), 0)
+
+
+class TestFollowersList(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.other1 = User.objects.create_user(username='username2', phone='+79111234567',
+                                               password='password', country=self.country)
+        self.other2 = User.objects.create_user(username='username3', phone='+79111234568',
+                                               password='password', country=self.country)
+
+        self.user.followers.add(self.other1)
+        self.user.followees.add(self.other2)
+
+    def test_followers_list(self):
+        url = reverse_lazy('user-detail', kwargs={'pk': self.user.pk})
+
+        url += 'followers/'
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        result = response.data.get('results')
+
+        self.assertEqual(len(result), 1)
+        self.assertFalse(result[0]['is_followee'])
+        self.assertEqual(result[0]['username'], 'username2')
+
+    def test_following_list(self):
+        url = reverse_lazy('user-detail', kwargs={'pk': self.user.pk})
+        url += 'following/'
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        result = response.data.get('results')
+        self.assertEqual(len(result), 1)
+        self.assertTrue(result[0]['is_followee'])
+        self.assertEqual(result[0]['username'], 'username3')

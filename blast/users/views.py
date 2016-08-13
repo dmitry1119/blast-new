@@ -114,31 +114,41 @@ class UserViewSet(ExtandableModelMixin,
 
         return Response()
 
-    def _list_followers(self, request, queryset):
-        # user = get_object_or_404(User, pk=pk)
-        page = self.paginate_queryset(queryset)
+    @detail_route(['get'])
+    def followers(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+
+        qs = user.followers.all()
+        page = self.paginate_queryset(qs)
 
         context = self.get_serializer_context()
         serializer = FollwersSerializer(page, many=True, context=context)
 
-        user_ids = {it.pk for it in page}
-        qs = queryset.filter(pk__in=user_ids).values('id')
-        qs = {it['id']: it for it in qs}
+        followers_ids = {it.pk for it in page}
+        followees = user.followees.filter(pk__in=followers_ids)
+        followees_ids = {it.pk for it in followees}
 
+        # TODO: Add last three post to each user
         for it in serializer.data:
-            it['is_followee'] = it['id'] in qs
+            it['is_followee'] = it['id'] in followees_ids
 
         return self.get_paginated_response(serializer.data)
 
     @detail_route(['get'])
-    def followers(self, request, pk=None):
-        user = get_object_or_404(User, pk=pk)
-        return self._list_followers(request, user.followees.all())
-
-    @detail_route(['get'])
     def following(self, request, pk=None):
+        # user = get_object_or_404(User, pk=pk)
         user = get_object_or_404(User, pk=pk)
-        return self._list_followers(request, user.followers.all())
+
+        qs = user.followees.all()
+        page = self.paginate_queryset(qs)
+
+        context = self.get_serializer_context()
+        serializer = FollwersSerializer(page, many=True, context=context)
+
+        for it in serializer.data:
+            it['is_followee'] = True
+
+        return self.get_paginated_response(serializer.data)
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):

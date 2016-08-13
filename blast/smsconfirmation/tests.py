@@ -23,8 +23,6 @@ class TestPhoneConfirmation(BaseTestCase):
 
 
 class TestResetPassword(BaseTestCaseUnauth):
-    fixtures = ('countries.json', )
-
     url = reverse_lazy('reset-password')
 
     def setUp(self):
