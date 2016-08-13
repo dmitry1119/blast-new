@@ -1,9 +1,12 @@
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import viewsets, mixins, permissions, generics, filters
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
-
+from posts.models import Post
+from posts.serializers import PostSerializer, PostPublicSerializer
 from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
@@ -128,9 +131,26 @@ class UserViewSet(ExtandableModelMixin,
         followees = user.followees.filter(pk__in=followers_ids)
         followees_ids = {it.pk for it in followees}
 
-        # TODO: Add last three post to each user
+        # Adds last three post to each user
+        # FIXME: can be slow and huge
+        posts = Post.objects.filter(user__in=followers_ids, expired_at__gte=timezone.now())
+        posts = posts.order_by('user_id', 'voted_count')
+
+        user_post_list = {}
+        for user in serializer.data:
+            user_post_list[user['id']] = []
+
+        for post in posts:
+            user = post.user_id
+            user_posts = user_post_list[user]
+            if len(user_posts) > 3:
+                continue
+
+            user_posts.append(post)
+
         for it in serializer.data:
             it['is_followee'] = it['id'] in followees_ids
+            it['posts'] = PostPublicSerializer(user_post_list[it['id']], many=True).data
 
         return self.get_paginated_response(serializer.data)
 

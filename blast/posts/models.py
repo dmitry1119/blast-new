@@ -66,7 +66,7 @@ class Post(models.Model):
         return PostComment.objects.filter(post=self.pk).count()
 
     def __str__(self):
-        return u'{}'.format(self.id)
+        return u'{} {}'.format(self.id, self.user_id)
 
     class Meta:
         ordering = ('-created_at',)
