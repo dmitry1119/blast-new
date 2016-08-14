@@ -171,8 +171,12 @@ class UserViewSet(ExtandableModelMixin,
         context = self.get_serializer_context()
         serializer = FollwersSerializer(page, many=True, context=context)
 
+        user_ids = {it['id'] for it in serializer.data}
+        user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
+
         for it in serializer.data:
             it['is_followee'] = True
+            it['posts'] = PostPublicSerializer(user_post_list[it['id']], many=True).data
 
         return self.get_paginated_response(serializer.data)
 
