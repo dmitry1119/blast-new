@@ -117,6 +117,27 @@ class UserViewSet(ExtandableModelMixin,
 
         return Response()
 
+    def _get_user_recent_posts(self, data: list, user_ids: set):
+        """Returns dict of last post for users in user_ids"""
+        # Adds last three post to each user
+        # FIXME: can be slow and huge
+        posts = Post.objects.filter(user__in=user_ids, expired_at__gte=timezone.now())
+        posts = posts.order_by('user_id', 'voted_count')
+
+        user_post_list = {}
+        for user in data:
+            user_post_list[user['id']] = []
+
+        for post in posts:
+            user = post.user_id
+            user_posts = user_post_list[user]
+            if len(user_posts) > 3:
+                continue
+
+            user_posts.append(post)
+
+        return user_post_list
+
     @detail_route(['get'])
     def followers(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
@@ -131,22 +152,7 @@ class UserViewSet(ExtandableModelMixin,
         followees = user.followees.filter(pk__in=followers_ids)
         followees_ids = {it.pk for it in followees}
 
-        # Adds last three post to each user
-        # FIXME: can be slow and huge
-        posts = Post.objects.filter(user__in=followers_ids, expired_at__gte=timezone.now())
-        posts = posts.order_by('user_id', 'voted_count')
-
-        user_post_list = {}
-        for user in serializer.data:
-            user_post_list[user['id']] = []
-
-        for post in posts:
-            user = post.user_id
-            user_posts = user_post_list[user]
-            if len(user_posts) > 3:
-                continue
-
-            user_posts.append(post)
+        user_post_list = self._get_user_recent_posts(serializer.data, followers_ids)
 
         for it in serializer.data:
             it['is_followee'] = it['id'] in followees_ids

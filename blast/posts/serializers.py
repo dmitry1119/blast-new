@@ -3,6 +3,7 @@ from rest_framework import serializers
 from posts.models import Post, PostComment, PostVote, PostReport
 
 
+# TODO (VM): Exclude user for anonymous posts
 class PostPublicSerializer(serializers.ModelSerializer):
     comments = serializers.ReadOnlyField(source='comments_count')
 

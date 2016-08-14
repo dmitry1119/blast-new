@@ -73,7 +73,7 @@ def attach_users(items: list, user: User, request):
         if post.get('is_anonymous'):
             author['username'] = 'Anonymous'
             author['avatar'] = None
-            del post['user']
+            # del post['user']
         else:
             author['username'] = user.username
             author['id'] = user.pk

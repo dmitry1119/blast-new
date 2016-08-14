@@ -31,6 +31,7 @@ def get_expiration_date():
     return timezone.now() + timedelta(days=1)
 
 
+# TODO: Make user null for is_anonymous post.
 class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -47,7 +48,6 @@ class Post(models.Model):
     tags = models.ManyToManyField('tags.Tag', blank=True)
 
     # Cache for voted and downvoted lists.
-    # Uses for
     downvoted_count = models.PositiveIntegerField(default=0)
     voted_count = models.PositiveIntegerField(default=0)
 

@@ -432,7 +432,6 @@ class TestFollowersList(BaseTestCase):
         self.assertEqual(result[0]['username'], 'username3')
 
     def test_followers_posts(self):
-
         self.user.followers.add(self.other2)
 
         url = reverse_lazy('user-detail', kwargs={'pk': self.user.pk})
@@ -446,22 +445,10 @@ class TestFollowersList(BaseTestCase):
 
         for it in results:
             user = it['username']
-            data = list(filter(lambda it: it['user'].username == user, self.posts))
+            data = filter(lambda it: it['user'].username == user, self.posts)
+            data = list(data)[0]
             self.assertIsNotNone(it.get('posts'))
             self.assertEqual(len(it['posts']), data['total'])
 
             for post in it['posts']:
                 self.assertEqual(post['user'], it['id'])
-
-        # self.assertEqual(len(result), 1)
-        # self.assertIsNotNone(result[0].get('posts'))
-
-        # posts = result[0].get('posts')
-        # self.assertEqual(len(posts), 3)
-        # for it in posts:
-        #     self.assertEqual(it['user'], self.other1.pk)
-        #
-        # posts = result[1].get('posts', 1)
-        # self.assertEqual(len(posts), 1)
-        # for it in posts:
-        #     self.assertEqual(it['user'], self.other1.pk)
