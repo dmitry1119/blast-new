@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     'posts',
     'tags',
     'countries',
-    'users'
+    'users',
+    'notifications'
 ]
 
 AUTHENTICATION_BACKENDS = [
