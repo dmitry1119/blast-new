@@ -1,8 +1,22 @@
+import logging
+
 from django.db import models
+from django.db.models import F
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+from posts.models import Post
 from users.models import User
 
 
+logger = logging.getLogger(__name__)
+
+
 class Notification(models.Model):
+    STARTED_FOLLOW_PATTERN = 'Started following you.'
+    VOTES_REACHED_PATTERN = 'You blast reached {} votes.'
+    MENTIONED_IN_COMMENT_PATTERN = 'Mentioned you in comment'
+
     STARTED_FOLLOW = 0
     MENTIONED_IN_COMMENT = 1
     VOTES_REACHED = 2
@@ -21,3 +35,20 @@ class Notification(models.Model):
 
     text = models.CharField(max_length=128)
     type = models.PositiveSmallIntegerField(choices=TYPE)
+
+
+@receiver(post_save, sender=Post, dispatch_uid='post_notificaton')
+def post_save_post(sender, **kwargs):
+    if not kwargs['created']:
+        return
+
+    instance = kwargs['instance']
+    votes = instance.voted_count
+    if votes == 0 or votes % 10:
+        return
+
+    if (votes <= 100 and votes % 10 == 0) or (votes >= 1000 and votes % 1000 == 0):
+        logger.info('Post {} reached {} votes', instance, votes)
+        Notification.objects.create(user=instance.user,
+                                    text=Notification.VOTES_REACHED_PATTERN.format(votes),
+                                    type=Notification.VOTES_REACHED)
