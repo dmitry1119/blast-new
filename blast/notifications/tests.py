@@ -1,6 +1,10 @@
+from django.core.urlresolvers import reverse_lazy
+from rest_framework import status
+
 from core.tests import BaseTestCase
 from notifications.models import Notification
 from posts.models import Post
+from users.models import User
 
 
 class TestPostVotesNotification(BaseTestCase):
@@ -34,3 +38,30 @@ class TestPostVotesNotification(BaseTestCase):
         self.assertEqual(notifications.count(), 10)
         for notification, it in zip(notifications, range(1000, 10001, 1000)):
             self.assertEqual(notification.text, Notification.VOTES_REACHED_PATTERN.format(it))
+
+
+class TestFollowingNotification(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.other = User.objects.create_user(phone='123', password='123',
+                                              username='other', country=self.country)
+
+    def test_following_notification(self):
+        """Should create following notification for self.other user"""
+        url = reverse_lazy('user-detail', kwargs={'pk': self.other.pk})
+        url += 'follow/'
+
+        response = self.put_json(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        notifications = Notification.objects.all()
+        notifications = list(notifications)
+        self.assertEqual(len(notifications), 1)
+
+        # User self.user started following from self.other
+        # and self.other got notification
+        notification = notifications[0]
+        self.assertEqual(notification.user.pk, self.other.pk)
+        self.assertEqual(notification.other.pk, self.user.pk)

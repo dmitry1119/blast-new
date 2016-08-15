@@ -1,12 +1,12 @@
 import logging
 
 from django.db import models
-from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from posts.models import Post
 from users.models import User
+from users.signals import start_following
 
 
 logger = logging.getLogger(__name__)
@@ -37,8 +37,9 @@ class Notification(models.Model):
     type = models.PositiveSmallIntegerField(choices=TYPE)
 
 
-@receiver(post_save, sender=Post, dispatch_uid='post_notificaton')
+@receiver(post_save, sender=Post, dispatch_uid='post_notification')
 def post_save_post(sender, **kwargs):
+    """Handles changing of votes counter and creates notification"""
     if not kwargs['created']:
         return
 
@@ -52,3 +53,15 @@ def post_save_post(sender, **kwargs):
         Notification.objects.create(user=instance.user,
                                     text=Notification.VOTES_REACHED_PATTERN.format(votes),
                                     type=Notification.VOTES_REACHED)
+
+
+@receiver(start_following, dispatch_uid='post_follow_notification')
+def start_following_handler(sender, **kwargs):
+    """Handles following event"""
+    followee = kwargs['followee']
+    follower = kwargs['follower']
+
+    logger.info('Create following notification {} {}'.format(follower, followee))
+    Notification.objects.create(text=Notification.STARTED_FOLLOW_PATTERN,
+                                user=followee, other=follower,
+                                type=Notification.STARTED_FOLLOW)

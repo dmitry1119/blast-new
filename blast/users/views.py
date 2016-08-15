@@ -1,19 +1,24 @@
-from django.db.models import Count
+import logging
+
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, mixins, permissions, generics, filters
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
+from core.views import ExtandableModelMixin
 from posts.models import Post
-from posts.serializers import PostSerializer, PostPublicSerializer
+from posts.serializers import PostPublicSerializer
 from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
                                CheckUsernameAndPassword, UsernameSerializer, FollwersSerializer)
 
-from core.views import ExtandableModelMixin
+from users.signals import start_following
+
+
+logger = logging.getLogger(__name__)
 
 
 def fill_follower(users: list, request):
@@ -96,6 +101,8 @@ class UserViewSet(ExtandableModelMixin,
 
         user = get_object_or_404(User, pk=pk)
         if not user.followers.filter(pk=request.user.pk).exists():
+            logger.info('{} stated to follow by {}'.format(request.user, user))
+            start_following.send(sender=user, follower=request.user, followee=user)
             user.followers.add(request.user)
 
         return Response()
