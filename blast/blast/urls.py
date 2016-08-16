@@ -19,7 +19,7 @@ from django.contrib import admin
 from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
-from notifications.views import NotificationsViewSet
+from notifications.views import NotificationsViewSet, FollowRequestViewSet
 from tags.views import TagsViewSet
 
 from users.views import (UserViewSet, UserProfileView, UserSettingsView,
@@ -43,7 +43,7 @@ api_1.register('posts', PostsViewSet)
 api_1.register('comments', CommentsViewSet, base_name='comment')
 api_1.register('tags', TagsViewSet, base_name='tag')
 api_1.register('notifications', NotificationsViewSet, base_name='notifications')
-
+api_1.register('notifications/follow', FollowRequestViewSet, base_name='followrequest')
 
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),

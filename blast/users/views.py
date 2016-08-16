@@ -7,6 +7,7 @@ from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
 from core.views import ExtandableModelMixin
+from notifications.models import FollowRequest
 from posts.models import Post
 from posts.serializers import PostPublicSerializer
 from users.models import User, UserSettings
@@ -101,9 +102,13 @@ class UserViewSet(ExtandableModelMixin,
 
         user = get_object_or_404(User, pk=pk)
         if not user.followers.filter(pk=request.user.pk).exists():
-            logger.info('{} stated to follow by {}'.format(request.user, user))
-            start_following.send(sender=user, follower=request.user, followee=user)
-            user.followers.add(request.user)
+            if user.is_private:
+                logger.info('Send follow request to {} from {}'.format(user, request.user))
+                FollowRequest.objects.create(follower=request.user, followee=user)
+            else:
+                logger.info('{} stated to follow by {}'.format(request.user, user))
+                start_following.send(sender=user, follower=request.user, followee=user)
+                user.followers.add(request.user)
 
         return Response()
 

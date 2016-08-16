@@ -30,6 +30,19 @@ class BaseTestCaseUnauth(TestCase):
     password = '111111'
     username = 'username'
 
+    def login(self, username, password):
+        data = {
+            'username': self.username,
+            'password': self.password
+        }
+
+        response = self.client.post(reverse_lazy('get-auth-token'), data)
+        self.auth_token = response.data.get('token')
+        self.headers = {
+            'HTTP_AUTHORIZATION': 'JWT {0}'.format(self.auth_token)
+        }
+        self.client.defaults.update(self.headers)
+
     def setUp(self):
         data = {
             'phone': self.phone,
@@ -49,7 +62,7 @@ class BaseTestCaseUnauth(TestCase):
         self.auth_token = response.data.get('token')
 
     def put_json(self, url, data=''):
-        return self.client.put(url, data=data)
+        return self.client.put(url, data=data, content_type='application/json')
 
     def patch_json(self, url, data=''):
         return self.client.patch(url, json.dumps(data),

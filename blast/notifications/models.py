@@ -20,6 +20,9 @@ class FollowRequest(models.Model):
     follower = models.ForeignKey(User, related_name='follower_requests', db_index=True)
     followee = models.ForeignKey(User, related_name='followee_requests', db_index=True)
 
+    class Meta:
+        unique_together = ('follower', 'followee',)
+
 
 class Notification(models.Model):
     STARTED_FOLLOW_PATTERN = 'Started following you.'

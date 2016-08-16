@@ -1,7 +1,8 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, mixins, generics
 
-from notifications.models import Notification
-from notifications.serializers import NotificationPublicSerializer
+from notifications.models import Notification, FollowRequest
+from notifications.serializers import NotificationPublicSerializer, FollowRequestPublicSerializer, \
+    FollowRequestSerializer
 
 
 class NotificationsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -11,3 +12,19 @@ class NotificationsViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return Notification.objects.filter(user=self.request.user)
+
+
+class FollowRequestViewSet(mixins.RetrieveModelMixin,
+                           mixins.UpdateModelMixin,
+                           mixins.ListModelMixin,
+                           viewsets.GenericViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return FollowRequest.objects.filter(followee=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return FollowRequestPublicSerializer
+        else:
+            return FollowRequestSerializer
