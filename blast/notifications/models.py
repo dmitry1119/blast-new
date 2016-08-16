@@ -12,6 +12,15 @@ from users.signals import start_following
 logger = logging.getLogger(__name__)
 
 
+class FollowRequest(models.Model):
+    """ Follow request for private user """
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    follower = models.ForeignKey(User, related_name='follower_requests', db_index=True)
+    followee = models.ForeignKey(User, related_name='followee_requests', db_index=True)
+
+
 class Notification(models.Model):
     STARTED_FOLLOW_PATTERN = 'Started following you.'
     VOTES_REACHED_PATTERN = 'You blast reached {} votes.'
@@ -30,7 +39,7 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    user = models.ForeignKey(User, related_name='notifications')
+    user = models.ForeignKey(User, related_name='notifications', db_index=True)
     other = models.ForeignKey(User, null=True, blank=True, related_name='mention_notifications')
 
     text = models.CharField(max_length=128)
