@@ -2,7 +2,7 @@ import logging
 
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import viewsets, mixins, permissions, generics, filters
+from rest_framework import viewsets, mixins, permissions, generics, filters, status
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
@@ -104,7 +104,8 @@ class UserViewSet(ExtandableModelMixin,
         if not user.followers.filter(pk=request.user.pk).exists():
             if user.is_private:
                 logger.info('Send follow request to {} from {}'.format(user, request.user))
-                FollowRequest.objects.create(follower=request.user, followee=user)
+                _, created = FollowRequest.objects.get_or_create(follower=request.user,
+                                                                 followee=user)
             else:
                 logger.info('{} stated to follow by {}'.format(request.user, user))
                 start_following.send(sender=user, follower=request.user, followee=user)
