@@ -116,11 +116,6 @@ def fill_posts(posts: list, user: User, request):
     """
     data = mark_pinned(posts, user)
     data = attach_users(data, user, request)
-    for it in data:
-        if it['image']:
-            it['image'] = request.build_absolute_uri(it['image'])
-        if it['video']:
-            it['video'] = request.build_absolute_uri(it['video'])
 
     return data
 

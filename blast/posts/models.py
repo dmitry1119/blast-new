@@ -11,6 +11,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from users.models import User
+from imagekit.models import ImageSpecField
+from imagekit.processors import ResizeToFill
 
 
 def post_image_upload_dir(instance: User, filename: str):
@@ -42,6 +44,16 @@ class Post(models.Model):
     user = models.ForeignKey(User, db_index=True)
     image = models.ImageField(upload_to=post_image_upload_dir, blank=True, null=True)
     video = models.FileField(upload_to=post_upload_dir, blank=True, null=True)
+
+    image_135 = ImageSpecField(source='image',
+                               processors=[ResizeToFill(135, 135)],
+                               format='PNG',
+                               options={'quality': 90})
+
+    image_248 = ImageSpecField(source='image',
+                               processors=[ResizeToFill(248, 248)],
+                               format='PNG',
+                               options={'quality': 90})
 
     is_anonymous = models.BooleanField(default=False)
 
