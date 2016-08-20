@@ -32,10 +32,11 @@ class PostPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         read_only = ('comments', 'votes', 'downvotes')
-        exclude = ('tags', 'voted_count', 'downvoted_count')
+        exclude = ('tags', 'voted_count', 'downvoted_count',)
 
 
 class PreviewPostSerializer(serializers.ModelSerializer):
+    """Serializer with limited fields set for previewing in Notifications"""
     image_135 = serializers.ImageField()
     image_248 = serializers.ImageField()
 

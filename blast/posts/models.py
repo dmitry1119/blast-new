@@ -41,7 +41,7 @@ class Post(models.Model):
 
     text = models.CharField(max_length=256, blank=True)
 
-    user = models.ForeignKey(User, db_index=True)
+    user = models.ForeignKey(User, db_index=True, blank=True, null=True)
     image = models.ImageField(upload_to=post_image_upload_dir, blank=True, null=True)
     video = models.FileField(upload_to=post_upload_dir, blank=True, null=True)
 
@@ -79,6 +79,12 @@ class Post(models.Model):
 
     def __str__(self):
         return u'{} {}'.format(self.id, self.user_id)
+
+    def save(self, **kwargs):
+        if self.is_anonymous:
+            self.user = None
+
+        return super().save(**kwargs)
 
     class Meta:
         ordering = ('-created_at',)

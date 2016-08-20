@@ -56,7 +56,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
         avatar = validated_data.get('avatar')
         if avatar:
-            instance.avatar.save(avatar.name, avatar)
+            instance.avatar.save()
 
         instance.save()
         return instance
