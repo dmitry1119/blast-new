@@ -55,11 +55,6 @@ class UserViewSet(ExtandableModelMixin,
     def extend_response_data(self, data):
         fill_follower(data, self.request)
 
-    # def list(self, request, *args, **kwargs):
-    #     response = super().list(request, *args, **kwargs)
-    #     fill_follower(response.data['results'], request)
-    #     return response
-
     def create(self, request, *args, **kwarg):
         """
         Register user by phone, username, password, avatar, country id and confirmation code received by sms.
@@ -144,7 +139,7 @@ class UserViewSet(ExtandableModelMixin,
         for post in posts:
             user = post.user_id
             user_posts = user_post_list[user]
-            if len(user_posts) > 3:
+            if len(user_posts) >= 3:  # FIXME: Magic number
                 continue
 
             user_posts.append(post)
