@@ -1,10 +1,12 @@
 from rest_framework import serializers
 
 from notifications.models import Notification, FollowRequest
+from posts.serializers import PreviewPostSerializer
 
 
 class NotificationPublicSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
+    post = PreviewPostSerializer()
 
     # FIXME: Can be expensive
     def get_user(self, obj):
@@ -25,7 +27,7 @@ class NotificationPublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        exclude = ('user', 'other')
+        exclude = ('user', 'post', 'other')
 
 
 class FollowRequestPublicSerializer(serializers.ModelSerializer):

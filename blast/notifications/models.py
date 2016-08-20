@@ -42,6 +42,7 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    post = models.ForeignKey(Post, blank=True, null=True)
     user = models.ForeignKey(User, related_name='notifications', db_index=True)
     other = models.ForeignKey(User, null=True, blank=True, related_name='mention_notifications')
 
@@ -62,7 +63,7 @@ def post_save_post(sender, **kwargs):
 
     if (votes <= 100 and votes % 10 == 0) or (votes >= 1000 and votes % 1000 == 0):
         logger.info('Post {} reached {} votes', instance, votes)
-        Notification.objects.create(user=instance.user,
+        Notification.objects.create(user=instance.user, post=instance,
                                     text=Notification.VOTES_REACHED_PATTERN.format(votes),
                                     type=Notification.VOTES_REACHED)
 

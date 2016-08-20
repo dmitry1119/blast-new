@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from core.views import ExtandableModelMixin
 from notifications.models import FollowRequest
 from posts.models import Post
-from posts.serializers import PostPublicSerializer
+from posts.serializers import PostPublicSerializer, PreviewPostSerializer
 from users.models import User, UserSettings
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
@@ -169,7 +169,8 @@ class UserViewSet(ExtandableModelMixin,
 
         for it in serializer.data:
             it['is_followee'] = it['id'] in followees_ids
-            it['posts'] = PostPublicSerializer(user_post_list[it['id']], many=True).data
+            it['posts'] = PreviewPostSerializer(user_post_list[it['id']], many=True,
+                                                context=context).data
 
         return self.get_paginated_response(serializer.data)
 
@@ -189,7 +190,8 @@ class UserViewSet(ExtandableModelMixin,
 
         for it in serializer.data:
             it['is_followee'] = True
-            it['posts'] = PostPublicSerializer(user_post_list[it['id']], many=True).data
+            it['posts'] = PreviewPostSerializer(user_post_list[it['id']], many=True,
+                                                context=context).data
 
         return self.get_paginated_response(serializer.data)
 

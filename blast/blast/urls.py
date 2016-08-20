@@ -13,8 +13,10 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
+from django.conf.urls.static import static
 
 from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
@@ -42,8 +44,8 @@ api_1.register('posts/search', PostSearchViewSet, base_name='post-search')
 api_1.register('posts', PostsViewSet)
 api_1.register('comments', CommentsViewSet, base_name='comment')
 api_1.register('tags', TagsViewSet, base_name='tag')
-api_1.register('notifications', NotificationsViewSet, base_name='notifications')
 api_1.register('notifications/follow', FollowRequestViewSet, base_name='followrequest')
+api_1.register('notifications', NotificationsViewSet, base_name='notifications')
 
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
@@ -63,4 +65,5 @@ urlpatterns = [
         name='sinch-phone-confirmation'),
 
     url(r'^api/v1/', include(api_1.urls)),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
