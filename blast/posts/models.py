@@ -131,6 +131,10 @@ class PostComment(models.Model):
         # TODO (VM): Add redis cache
         return PostComment.objects.filter(parent=self.pk).count()
 
+    def get_notified_users(self):
+        reg = re.compile(r'(?:(?<=\s)|^)@(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
+        return reg.findall(self.text)
+
     def __str__(self):
         return u'{} for post {}'.format(self.pk, self.post)
 

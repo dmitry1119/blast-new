@@ -1,10 +1,11 @@
 import logging
 
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from posts.models import Post
+from posts.models import Post, PostComment
 from users.models import User
 from users.signals import start_following
 
@@ -48,6 +49,33 @@ class Notification(models.Model):
 
     text = models.CharField(max_length=128)
     type = models.PositiveSmallIntegerField(choices=TYPE)
+
+# TODO: make tests.
+@receiver(post_save, sender=PostComment, dispatch_uid='comment_notification')
+def post_save_comment(sender, **kwargs):
+    if not kwargs['created']:
+        return
+
+    instance = kwargs['instance']
+
+    users = instance.get_notified_users()
+    if not users:
+        return
+
+    query = Q()
+    for it in users:
+        query = query | Q(username__istartswith=it)
+
+    users = User.objects.filter(query)
+    notifications = []
+    for it in users:
+        notification = Notification(user=it, post=instance.post,
+                                    other=instance.user,
+                                    text=Notification.MENTIONED_IN_COMMENT_PATTERN,
+                                    type=Notification.MENTIONED_IN_COMMENT)
+        notifications.append(notification)
+
+    Notification.objects.bulk_create(notifications)
 
 
 @receiver(post_save, sender=Post, dispatch_uid='post_notification')
