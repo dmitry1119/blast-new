@@ -63,12 +63,16 @@ def attach_users(items: list, user: User, request):
     if len(items) == 0:
         return items
 
-    users = {it['user'] for it in items}
+    users = {it['user'] for it in items if it['user']}
     users = User.objects.filter(pk__in=users)
     users = {it.pk: it for it in users}
 
     for post in items:
-        user = users[post['user']]
+        if post['user']:
+            user = users[post['user']]
+        else:
+            continue
+
         author = {}
         if post.get('is_anonymous'):
             author['username'] = 'Anonymous'
@@ -180,7 +184,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         headers = self.get_success_headers(serializer.data)
 
         # Changes response use PostPublicSerializer
-        data = PostPublicSerializer(serializer.instance).data
+        data = PostPublicSerializer(serializer.instance, context=self.get_serializer_context()).data
         data = fill_posts([data], request.user, request)
         return Response(data[0], status=status.HTTP_201_CREATED, headers=headers)
 
