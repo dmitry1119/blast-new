@@ -33,6 +33,14 @@ def get_expiration_date():
     return timezone.now() + timedelta(days=1)
 
 
+USER_REG = reg = re.compile(r'(?:(?<=\s)|^)@(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
+
+
+def get_notified_users(text: str):
+    """returns list of users notified by @"""
+    return USER_REG.findall(text)
+
+
 # TODO: Make user null for is_anonymous post.
 class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -72,6 +80,10 @@ class Post(models.Model):
         delta = self.expired_at - timezone.now()
         delta = delta - timedelta(microseconds=delta.microseconds)
         return delta
+
+    @property
+    def notified_users(self):
+        return get_notified_users(self.text)
 
     def comments_count(self):
         # TODO (VM): Cache this value to redis
@@ -131,9 +143,9 @@ class PostComment(models.Model):
         # TODO (VM): Add redis cache
         return PostComment.objects.filter(parent=self.pk).count()
 
-    def get_notified_users(self):
-        reg = re.compile(r'(?:(?<=\s)|^)@(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
-        return reg.findall(self.text)
+    @property
+    def notified_users(self):
+        return get_notified_users(self.text)
 
     def __str__(self):
         return u'{} for post {}'.format(self.pk, self.post)

@@ -50,15 +50,8 @@ class Notification(models.Model):
     text = models.CharField(max_length=128)
     type = models.PositiveSmallIntegerField(choices=TYPE)
 
-# TODO: make tests.
-@receiver(post_save, sender=PostComment, dispatch_uid='comment_notification')
-def post_save_comment(sender, **kwargs):
-    if not kwargs['created']:
-        return
 
-    instance = kwargs['instance']
-
-    users = instance.get_notified_users()
+def notify_users(users: list, post: Post, author: User):
     if not users:
         return
 
@@ -69,13 +62,24 @@ def post_save_comment(sender, **kwargs):
     users = User.objects.filter(query)
     notifications = []
     for it in users:
-        notification = Notification(user=it, post=instance.post,
-                                    other=instance.user,
+        notification = Notification(user=it, post=post, other=author,
                                     text=Notification.MENTIONED_IN_COMMENT_PATTERN,
                                     type=Notification.MENTIONED_IN_COMMENT)
         notifications.append(notification)
 
     Notification.objects.bulk_create(notifications)
+
+
+# TODO: make tests.
+@receiver(post_save, sender=PostComment, dispatch_uid='comment_notification')
+def post_save_comment(sender, **kwargs):
+    if not kwargs['created']:
+        return
+
+    instance = kwargs['instance']
+
+    users = instance.notified_users
+    notify_users(users, instance.post, instance.user)
 
 
 @receiver(post_save, sender=Post, dispatch_uid='post_notification')
@@ -86,6 +90,10 @@ def post_save_post(sender, **kwargs):
 
     instance = kwargs['instance']
     votes = instance.voted_count
+
+    users = instance.notified_users
+    notify_users(users, instance, instance.user)
+
     if votes == 0 or votes % 10:
         return
 

@@ -42,6 +42,25 @@ class TestPostVotesNotification(BaseTestCase):
             self.assertEqual(notification.text, Notification.VOTES_REACHED_PATTERN.format(it))
 
 
+class TestPostUserNotification(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.other = User.objects.create_user(phone='123', password='password',
+                                              country=self.country, username='other')
+        self.post = Post.objects.create(text='@{}, hello!'.format(self.other.username),
+                                        user=self.user)
+
+    def test_post_noticed_notification(self):
+        self.assertEqual(Notification.objects.count(), 1)
+
+        notification = Notification.objects.get(post=self.post)
+        self.assertEqual(notification.post, self.post)
+        self.assertEqual(notification.user, self.other)
+        self.assertEqual(notification.other, self.user)
+        self.assertEqual(notification.type, Notification.MENTIONED_IN_COMMENT)
+
+
 class TestFollowingNotification(BaseTestCase):
     def setUp(self):
         super().setUp()
