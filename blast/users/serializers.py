@@ -106,7 +106,8 @@ class PublicUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'created_at', 'fullname', 'avatar',
-                  'bio', 'website', 'followers', 'blasts', 'following')
+                  'is_private', 'bio', 'website', 'followers', 'blasts',
+                  'following')
 
 
 class NotificationSettingsSerializer(serializers.ModelSerializer):
