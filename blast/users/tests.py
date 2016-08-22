@@ -253,6 +253,22 @@ class TestChangePhoneNumber(BaseTestCase):
         PhoneConfirmation.objects.create(phone=self.new_phone, is_confirmed=True,
                                          request_type=PhoneConfirmation.REQUEST_PHONE)
 
+    def test_change_phone_wrong_password(self):
+        data = {
+            'password': 'wrong password',
+            'current_phone': 'wrong phone',
+            'new_phone': self.new_phone
+        }
+
+        response = self.patch_json(self.url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNotNone(response.data['password'])
+        self.assertIsNotNone(response.data['current_phone'])
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.phone, self.phone)
+
     def test_change_phone(self):
         # TODO: Check "bad" cases
         data = {
