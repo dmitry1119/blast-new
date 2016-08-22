@@ -135,7 +135,7 @@ class UserSettings(models.Model):
         (EVERYONE, 2)
     )
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
 
     notify_my_blasts = models.BooleanField(default=True)
     notify_upvoted_blasts = models.BooleanField(default=False)
