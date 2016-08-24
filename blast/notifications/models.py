@@ -9,6 +9,7 @@ from posts.models import Post, PostComment
 from users.models import User, UserSettings, Follower
 from users.signals import start_following
 
+from notifications.tasks import send_push_notification
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,9 @@ def notify_users(users: list, post: Post, author: User):
 
     Notification.objects.bulk_create(notifications)
 
+    for it in notifications:
+        send_push_notification.delay(it.user.pk, it.text)
+
 
 # TODO: make tests.
 @receiver(post_save, sender=PostComment, dispatch_uid='comment_notification')
@@ -111,9 +115,10 @@ def post_save_post(sender, **kwargs):
 
     if (votes <= 100 and votes % 10 == 0) or (votes >= 1000 and votes % 1000 == 0):
         logger.info('Post {} reached {} votes', instance, votes)
-        Notification.objects.create(user=instance.user, post=instance,
-                                    text=Notification.VOTES_REACHED_PATTERN.format(votes),
-                                    type=Notification.VOTES_REACHED)
+        notification = Notification.objects.create(user=instance.user, post=instance,
+                                                   text=Notification.VOTES_REACHED_PATTERN.format(votes),
+                                                   type=Notification.VOTES_REACHED)
+        send_push_notification.delay(instance.user.pk, notification.text)
 
 
 @receiver(start_following, dispatch_uid='post_follow_notification')
@@ -123,6 +128,7 @@ def start_following_handler(sender, **kwargs):
     follower = kwargs['follower']
 
     logger.info('Create following notification {} {}'.format(follower, followee))
-    Notification.objects.create(text=Notification.STARTED_FOLLOW_PATTERN,
-                                user=followee, other=follower,
-                                type=Notification.STARTED_FOLLOW)
+    notification = Notification.objects.create(text=Notification.STARTED_FOLLOW_PATTERN,
+                                               user=followee, other=follower,
+                                               type=Notification.STARTED_FOLLOW)
+    send_push_notification.delay(followee.pk, notification.text)

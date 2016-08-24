@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_swagger',
+    'push_notifications',
     'core',
     'smsconfirmation',
     'posts',
@@ -177,6 +178,10 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
+
+PUSH_NOTIFICATIONS_SETTINGS = {
+    'APNS_CERTIFICATE': os.path.join(PARENT_DIR, '/sertificates/apsBlastProd.p12'),
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
