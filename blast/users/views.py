@@ -10,7 +10,7 @@ from core.views import ExtandableModelMixin
 from notifications.models import FollowRequest
 from posts.models import Post
 from posts.serializers import PostPublicSerializer, PreviewPostSerializer
-from users.models import User, UserSettings
+from users.models import User, UserSettings, Follower
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
@@ -29,11 +29,12 @@ def fill_follower(users: list, request):
         return
 
     user_ids = {it['id'] for it in users}
-    followes = user.followees.filter(pk__in=user_ids).values('id')
-    followes = {it['id']: it for it in followes}
+    followees = Follower.objects.filter(followee__in=user_ids, follower=user)
+    followees = followees.prefetch_related('followee')
+    followees = {it.followee.pk: it.followee for it in followees}
 
     for it in users:
-        it['is_followee'] = it['id'] in followes
+        it['is_followee'] = it['id'] in followees
 
 
 # TODO: Use class from core.views
@@ -96,7 +97,7 @@ class UserViewSet(ExtandableModelMixin,
             return self.permission_denied(request, 'You should be authorized')
 
         user = get_object_or_404(User, pk=pk)
-        if not user.followers.filter(pk=request.user.pk).exists():
+        if not Follower.objects.filter(followee=user, follower=request.user).exists():
             if user.is_private:
                 logger.info('Send follow request to {} from {}'.format(user, request.user))
                 _, created = FollowRequest.objects.get_or_create(follower=request.user,
@@ -104,7 +105,8 @@ class UserViewSet(ExtandableModelMixin,
             else:
                 logger.info('{} stated to follow by {}'.format(request.user, user))
                 start_following.send(sender=user, follower=request.user, followee=user)
-                user.followers.add(request.user)
+                Follower.objects.create(followee=user, follower=request.user)
+                # user.followers.add(request.user)
 
         return Response()
 
@@ -120,8 +122,8 @@ class UserViewSet(ExtandableModelMixin,
             return self.permission_denied(request, 'You should be authorized')
 
         user = get_object_or_404(User, pk=pk)
-        if user.followers.filter(pk=request.user.pk).exists():
-            user.followers.remove(request.user)
+        if Follower.objects.filter(follower=self.request.user, followee=user).exists():
+            Follower.objects.delete(follower=self.request.user, followee=user)
 
         return Response()
 
@@ -150,14 +152,15 @@ class UserViewSet(ExtandableModelMixin,
     def followers(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
 
-        qs = user.followers.all()
+        qs = Follower.objects.filter(followee=user).prefetch_related('follower')
         page = self.paginate_queryset(qs)
+        page = [it.follower for it in page]
 
         context = self.get_serializer_context()
         serializer = FollwersSerializer(page, many=True, context=context)
 
         followers_ids = {it.pk for it in page}
-        followees = user.followees.filter(pk__in=followers_ids)
+        followees = Follower.objects.filter(follower=user, followee__in=followers_ids)
         followees_ids = {it.pk for it in followees}
 
         user_post_list = self._get_user_recent_posts(serializer.data, followers_ids)
@@ -174,8 +177,9 @@ class UserViewSet(ExtandableModelMixin,
         # user = get_object_or_404(User, pk=pk)
         user = get_object_or_404(User, pk=pk)
 
-        qs = user.followees.all()
+        qs = Follower.objects.filter(follower=user).prefetch_related('followee')
         page = self.paginate_queryset(qs)
+        page = [it.followee for it in page]
 
         context = self.get_serializer_context()
         serializer = FollwersSerializer(page, many=True, context=context)
