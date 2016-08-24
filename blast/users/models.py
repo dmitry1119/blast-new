@@ -45,7 +45,6 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-
     GENDER_FEMALE = 0
     GENDER_MALE = 1
 
@@ -90,8 +89,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     hidden_posts = models.ManyToManyField('posts.Post', blank=True,
                                           related_name='hidden_users')
 
-    followers = models.ManyToManyField('User', blank=True,
-                                       related_name='followees')
+    # FIXME: symmetrical=False?
+    friends = models.ManyToManyField('User', blank=True, through='Follower',
+                                     related_name='related_friends',
+                                     through_fields=('follower', 'followee'))
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']
@@ -121,6 +122,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def str(self):
         return self.email
+
+
+class Follower(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    follower = models.ForeignKey(User, on_delete=models.CASCADE,
+                                 related_name='followees')
+    followee = models.ForeignKey(User, on_delete=models.CASCADE,
+                                 related_name='followers')
 
 
 class UserSettings(models.Model):
