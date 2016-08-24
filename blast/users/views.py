@@ -33,8 +33,13 @@ def fill_follower(users: list, request):
     followees = followees.prefetch_related('followee')
     followees = {it.followee.pk: it.followee for it in followees}
 
+    follow_requests = FollowRequest.objects.filter(follower=request.user,
+                                                   followee__in=user_ids)
+    follow_requests = {it.followee_id for it in follow_requests}
+
     for it in users:
         it['is_followee'] = it['id'] in followees
+        it['is_requested'] = it['id'] in follow_requests  # TODO: Make test
 
 
 # TODO: Use class from core.views
