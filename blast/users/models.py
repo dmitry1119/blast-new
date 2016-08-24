@@ -132,6 +132,9 @@ class Follower(models.Model):
     followee = models.ForeignKey(User, on_delete=models.CASCADE,
                                  related_name='followers')
 
+    def __str__(self):
+        return u'{} to {}'.format(self.follower, self.followee)
+
 
 class UserSettings(models.Model):
     """ List of user notify settings """

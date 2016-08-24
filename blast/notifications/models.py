@@ -6,7 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from posts.models import Post, PostComment
-from users.models import User, UserSettings
+from users.models import User, UserSettings, Follower
 from users.signals import start_following
 
 
@@ -62,24 +62,22 @@ def notify_users(users: list, post: Post, author: User):
 
     users = User.objects.filter(query).prefetch_related('settings')
 
-    # user_ids = {it.pk for it in users}
-    # followers = User.objects.filter(followees__in=user_ids, followers__in={author})
-    # print(followers)
+    followers = Follower.objects.filter(followee=author, follower__in=users)
+    followers = {it.follower_id for it in followers}
 
     notifications = []
     for it in users:
+        is_follow = it.id in followers
         if it.settings.notify_comments == UserSettings.OFF:
             continue
 
-        if it.settings.notify_comments == UserSettings.EVERYONE:
+        for_everyone = it.settings.notify_comments == UserSettings.EVERYONE
+        for_follower = (it.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW and is_follow)
+        if for_everyone or for_follower:
             notification = Notification(user=it, post=post, other=author,
                                         text=Notification.MENTIONED_IN_COMMENT_PATTERN,
                                         type=Notification.MENTIONED_IN_COMMENT)
-
-
-        # TODO: UserSettings.PEOPLE_I_FOLLOW
-
-        notifications.append(notification)
+            notifications.append(notification)
 
     Notification.objects.bulk_create(notifications)
 

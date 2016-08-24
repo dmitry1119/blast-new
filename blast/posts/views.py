@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -18,8 +19,7 @@ from datetime import timedelta, datetime
 
 
 from tags.models import Tag
-from users.models import User
-
+from users.models import User, Follower
 
 from users.serializers import UsernameSerializer
 
@@ -68,17 +68,13 @@ def attach_users(items: list, user: User, request):
     users = {it.pk: it for it in users}
 
     for post in items:
-        if post['user']:
-            user = users[post['user']]
-        else:
-            continue
-
         author = {}
-        if post.get('is_anonymous'):
+
+        if not post['user']:
             author['username'] = 'Anonymous'
             author['avatar'] = None
-            # del post['user']
         else:
+            user = users[post['user']]
             author['username'] = user.username
             author['id'] = user.pk
             if user.avatar:
@@ -126,7 +122,7 @@ def fill_posts(posts: list, user: User, request):
 
 # TODO: Add feeds test, check author, hidden posts and voted posts
 class FeedsView(ExtandableModelMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = Post.objects.filter(user__is_private=False,
+    queryset = Post.objects.filter(Q(user__is_private=False) | Q(user=None),
                                    expired_at__gte=timezone.now())
 
     serializer_class = PostPublicSerializer
@@ -164,7 +160,7 @@ class PostsViewSet(PerObjectPermissionMixin,
             - name: image
               type: file
     """
-    queryset = Post.objects.filter(user__is_private=False,
+    queryset = Post.objects.filter(Q(user__is_private=False) | Q(user=None),
                                    expired_at__gte=timezone.now())
 
     public_serializer_class = PostPublicSerializer
@@ -245,20 +241,21 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     @detail_route(methods=['get'])
     def voters(self, request, pk=None):
-        qs = PostVote.objects.filter(post=pk, is_positive=True)
-        page = self.paginate_queryset(qs)
-        ids = {it.user.pk for it in page}
-        users = User.objects.filter(pk__in=ids)
+        qs = PostVote.objects.filter(post=pk, is_positive=True)\
+            .prefetch_related('user')
 
-        # if request.user.is_authenticated():
-        #     users = users.exclude(pk=request.user.pk)
+        page = self.paginate_queryset(qs)
+
+        users = [it.user for it in page]
 
         serializer = UsernameSerializer(users, many=True,
                                         context=self.get_serializer_context())
 
         if request.user.is_authenticated():
-            followees = request.user.followees.filter(pk__in=users)
-            followees = {it.pk for it in followees}
+            followees = Follower.objects.filter(followee__in=users,
+                                                follower=request.user)
+            followees = followees.prefetch_related('followee')
+            followees = {it.followee.pk for it in followees}
             for it in serializer.data:
                 it['is_followee'] = it['id'] in followees
         else:
