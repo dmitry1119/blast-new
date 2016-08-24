@@ -6,7 +6,7 @@ from rest_framework import status
 from core.tests import BaseTestCase, create_file
 from countries.models import Country
 from posts.models import Post, PostComment, PostReport, PostVote
-from users.models import User
+from users.models import User, Follower
 
 
 class AnyPermissionTest(TestCase):
@@ -426,7 +426,8 @@ class VotersList(BaseTestCase):
         PostVote.objects.create(user=self.user1, post=self.post, is_positive=True)
         PostVote.objects.create(user=self.user2, post=self.post, is_positive=False)
 
-        self.user.followees.add(self.user1)
+        Follower.objects.create(follower=self.user, followee=self.user1)
+        # self.user.followees.add(self.user1)
 
     def test_votes_list(self):
         url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})

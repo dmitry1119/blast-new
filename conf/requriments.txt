@@ -19,3 +19,4 @@ sinchsms==1.0.3
 typing==3.5.2.2
 wheel==0.24.0
 django-imagekit==3.3
+django-push-notifications==1.4.1

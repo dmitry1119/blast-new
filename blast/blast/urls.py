@@ -17,6 +17,7 @@ from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.conf.urls.static import static
+from push_notifications.api.rest_framework import APNSDeviceAuthorizedViewSet
 
 from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
@@ -33,19 +34,20 @@ from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
                          DonwvotedPostsViewSet, PinnedPostsViewSet, FeedsView, PostSearchViewSet)
 
 api_1 = DefaultRouter()
-api_1.register('feeds', FeedsView, base_name='feed')
-api_1.register('users', UserViewSet)
-api_1.register('usernames', UsernameSearchView, base_name='usernames')
-api_1.register('countries', CountryViewSet, base_name='country')
-api_1.register('posts/pinned', PinnedPostsViewSet, base_name='pinned')
-api_1.register('posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
-api_1.register('posts/voted', VotedPostsViewSet, base_name='voted')
-api_1.register('posts/search', PostSearchViewSet, base_name='post-search')
-api_1.register('posts', PostsViewSet)
-api_1.register('comments', CommentsViewSet, base_name='comment')
-api_1.register('tags', TagsViewSet, base_name='tag')
-api_1.register('notifications/follow', FollowRequestViewSet, base_name='followrequest')
-api_1.register('notifications', NotificationsViewSet, base_name='notifications')
+api_1.register(r'feeds', FeedsView, base_name='feed')
+api_1.register(r'users', UserViewSet)
+api_1.register(r'usernames', UsernameSearchView, base_name='usernames')
+api_1.register(r'countries', CountryViewSet, base_name='country')
+api_1.register(r'posts/pinned', PinnedPostsViewSet, base_name='pinned')
+api_1.register(r'posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
+api_1.register(r'posts/voted', VotedPostsViewSet, base_name='voted')
+api_1.register(r'posts/search', PostSearchViewSet, base_name='post-search')
+api_1.register(r'posts', PostsViewSet)
+api_1.register(r'comments', CommentsViewSet, base_name='comment')
+api_1.register(r'tags', TagsViewSet, base_name='tag')
+api_1.register(r'notifications/follow', FollowRequestViewSet, base_name='followrequest')
+api_1.register(r'notifications', NotificationsViewSet, base_name='notifications')
+api_1.register(r'devices/apns', APNSDeviceAuthorizedViewSet, base_name='apns-device')
 
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
@@ -66,4 +68,3 @@ urlpatterns = [
 
     url(r'^api/v1/', include(api_1.urls)),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-

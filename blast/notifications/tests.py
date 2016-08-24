@@ -6,7 +6,7 @@ from rest_framework import status
 from core.tests import BaseTestCase
 from notifications.models import Notification, FollowRequest
 from posts.models import Post
-from users.models import User
+from users.models import User, UserSettings, Follower
 
 
 class TestPostVotesNotification(BaseTestCase):
@@ -48,13 +48,31 @@ class TestPostUserNotification(BaseTestCase):
 
         self.other = User.objects.create_user(phone='123', password='password',
                                               country=self.country, username='other')
+
+    def test_post_noticed_notification(self):
+        self.other.settings.notify_comments = UserSettings.EVERYONE
+        self.other.settings.save()
+
         self.post = Post.objects.create(text='@{}, hello!'.format(self.other.username),
                                         user=self.user)
 
-    def test_post_noticed_notification(self):
         self.assertEqual(Notification.objects.count(), 1)
 
         notification = Notification.objects.get(post=self.post)
+        self.assertEqual(notification.post, self.post)
+        self.assertEqual(notification.user, self.other)
+        self.assertEqual(notification.other, self.user)
+        self.assertEqual(notification.type, Notification.MENTIONED_IN_COMMENT)
+
+    def test_post_notices_by_follower(self):
+        Follower.objects.create(followee=self.user, follower=self.other)
+        self.post = Post.objects.create(text='@{}, hello!'.format(self.other.username),
+                                        user=self.user)
+
+        self.assertEqual(Notification.objects.count(), 1)
+
+        notification = Notification.objects.get(post=self.post)
+
         self.assertEqual(notification.post, self.post)
         self.assertEqual(notification.user, self.other)
         self.assertEqual(notification.other, self.user)
@@ -118,10 +136,10 @@ class TestFollowRequest(BaseTestCase):
         # Accept confirmation
         url = reverse_lazy('followrequest-detail', kwargs={'pk': follow_request.pk})
         response = self.put_json(url, json.dumps({'accept': True}))
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.user.followers.filter(pk=self.private_user.pk).exists())
-        self.assertFalse(FollowRequest.objects.filter(followee=self.user.pk,
-                                                      follower=self.private_user.pk).exists())
+        self.assertTrue(Follower.objects.filter(followee=self.user,
+                                                follower=self.private_user).exists())
 
     def test_follow_request_reject(self):
         self.user.is_private = True

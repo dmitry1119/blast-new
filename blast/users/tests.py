@@ -9,7 +9,7 @@ from rest_framework import status
 from countries.models import Country
 from posts.models import Post
 from smsconfirmation.models import PhoneConfirmation
-from users.models import User, UserSettings
+from users.models import User, UserSettings, Follower
 from core.tests import BaseTestCase, BaseTestCaseUnauth, create_file
 
 
@@ -64,6 +64,7 @@ class RegisterTest(TestCase):
         self.confirmation = PhoneConfirmation.objects.create(phone=self.phone,
                                                              is_confirmed=True,
                                                              request_type=PhoneConfirmation.REQUEST_PHONE)
+
     def test_user_unconfirmed_phone(self):
         data = {
             'phone': self.phone + '1',
@@ -383,7 +384,7 @@ class TestUserFollower(BaseTestCase):
         self.assertEqual(other['following'], 0)
 
     def test_user_unfollow(self):
-        self.other.followers.add(self.user)
+        # self.other.followers.add(Follower(follower=self.user, followee=self.other))
 
         url = reverse_lazy('user-detail', kwargs={'pk': self.other.pk})
 
@@ -403,8 +404,8 @@ class TestFollowersList(BaseTestCase):
         self.other2 = User.objects.create_user(username='username3', phone='+79111234568',
                                                password='password', country=self.country)
 
-        self.user.followers.add(self.other1)
-        self.user.followees.add(self.other2)
+        Follower.objects.create(follower=self.other1, followee=self.user)
+        Follower.objects.create(follower=self.user, followee=self.other2)
 
         self.posts = [{
                 'user': self.other1,
@@ -448,7 +449,7 @@ class TestFollowersList(BaseTestCase):
         self.assertEqual(result[0]['username'], 'username3')
 
     def test_followers_posts(self):
-        self.user.followers.add(self.other2)
+        Follower.objects.create(follower=self.other2, followee=self.user)
 
         url = reverse_lazy('user-detail', kwargs={'pk': self.user.pk})
         url += 'followers/'

@@ -45,7 +45,6 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-
     GENDER_FEMALE = 0
     GENDER_MALE = 1
 
@@ -90,8 +89,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     hidden_posts = models.ManyToManyField('posts.Post', blank=True,
                                           related_name='hidden_users')
 
-    followers = models.ManyToManyField('User', blank=True,
-                                       related_name='followees')
+    # FIXME: symmetrical=False?
+    friends = models.ManyToManyField('User', blank=True, through='Follower',
+                                     related_name='related_friends',
+                                     through_fields=('follower', 'followee'))
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']
@@ -123,6 +124,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
+class Follower(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    follower = models.ForeignKey(User, on_delete=models.CASCADE,
+                                 related_name='followees')
+    followee = models.ForeignKey(User, on_delete=models.CASCADE,
+                                 related_name='followers')
+
+    def __str__(self):
+        return u'{} to {}'.format(self.follower, self.followee)
+
+
 class UserSettings(models.Model):
     """ List of user notify settings """
     OFF = 0
@@ -135,7 +148,7 @@ class UserSettings(models.Model):
         (EVERYONE, 2)
     )
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
 
     notify_my_blasts = models.BooleanField(default=True)
     notify_upvoted_blasts = models.BooleanField(default=False)

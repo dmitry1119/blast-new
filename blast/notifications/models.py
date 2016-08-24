@@ -6,9 +6,10 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from posts.models import Post, PostComment
-from users.models import User, UserSettings
+from users.models import User, UserSettings, Follower
 from users.signals import start_following
 
+from notifications.tasks import send_push_notification
 
 logger = logging.getLogger(__name__)
 
@@ -62,26 +63,27 @@ def notify_users(users: list, post: Post, author: User):
 
     users = User.objects.filter(query).prefetch_related('settings')
 
-    # user_ids = {it.pk for it in users}
-    # followers = User.objects.filter(followees__in=user_ids, followers__in={author})
-    # print(followers)
+    followers = Follower.objects.filter(followee=author, follower__in=users)
+    followers = {it.follower_id for it in followers}
 
     notifications = []
     for it in users:
+        is_follow = it.id in followers
         if it.settings.notify_comments == UserSettings.OFF:
             continue
 
-        if it.settings.notify_comments == UserSettings.EVERYONE:
+        for_everyone = it.settings.notify_comments == UserSettings.EVERYONE
+        for_follower = (it.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW and is_follow)
+        if for_everyone or for_follower:
             notification = Notification(user=it, post=post, other=author,
                                         text=Notification.MENTIONED_IN_COMMENT_PATTERN,
                                         type=Notification.MENTIONED_IN_COMMENT)
-
-
-        # TODO: UserSettings.PEOPLE_I_FOLLOW
-
-        notifications.append(notification)
+            notifications.append(notification)
 
     Notification.objects.bulk_create(notifications)
+
+    for it in notifications:
+        send_push_notification.delay(it.user.pk, it.text)
 
 
 # TODO: make tests.
@@ -113,9 +115,10 @@ def post_save_post(sender, **kwargs):
 
     if (votes <= 100 and votes % 10 == 0) or (votes >= 1000 and votes % 1000 == 0):
         logger.info('Post {} reached {} votes', instance, votes)
-        Notification.objects.create(user=instance.user, post=instance,
-                                    text=Notification.VOTES_REACHED_PATTERN.format(votes),
-                                    type=Notification.VOTES_REACHED)
+        notification = Notification.objects.create(user=instance.user, post=instance,
+                                                   text=Notification.VOTES_REACHED_PATTERN.format(votes),
+                                                   type=Notification.VOTES_REACHED)
+        send_push_notification.delay(instance.user.pk, notification.text)
 
 
 @receiver(start_following, dispatch_uid='post_follow_notification')
@@ -125,6 +128,7 @@ def start_following_handler(sender, **kwargs):
     follower = kwargs['follower']
 
     logger.info('Create following notification {} {}'.format(follower, followee))
-    Notification.objects.create(text=Notification.STARTED_FOLLOW_PATTERN,
-                                user=followee, other=follower,
-                                type=Notification.STARTED_FOLLOW)
+    notification = Notification.objects.create(text=Notification.STARTED_FOLLOW_PATTERN,
+                                               user=followee, other=follower,
+                                               type=Notification.STARTED_FOLLOW)
+    send_push_notification.delay(followee.pk, notification.text)
