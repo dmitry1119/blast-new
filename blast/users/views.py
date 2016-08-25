@@ -127,8 +127,12 @@ class UserViewSet(ExtandableModelMixin,
             return self.permission_denied(request, 'You should be authorized')
 
         user = get_object_or_404(User, pk=pk)
+
         if Follower.objects.filter(follower=self.request.user, followee=user).exists():
             Follower.objects.delete(follower=self.request.user, followee=user)
+        else:
+            # TODO: make test
+            FollowRequest.objects.filter(follower=self.request.user, followee=user).delete()
 
         return Response()
 
