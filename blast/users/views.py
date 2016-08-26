@@ -24,7 +24,7 @@ from users.signals import start_following
 logger = logging.getLogger(__name__)
 
 
-def fill_follower(users: list, request):
+def extend_users_response(users: list, request):
     user = request.user
 
     if not user.is_authenticated():
@@ -66,7 +66,7 @@ class UserViewSet(ExtandableModelMixin,
             return RegisterUserSerializer
 
     def extend_response_data(self, data):
-        fill_follower(data, self.request)
+        extend_users_response(data, self.request)
 
     def create(self, request, *args, **kwarg):
         """

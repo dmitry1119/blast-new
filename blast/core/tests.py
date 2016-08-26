@@ -26,8 +26,6 @@ def create_file(name, content_file=True):
 
 
 class BaseTestCaseUnauth(TestCase):
-    # fixtures = ('countries.json',)
-
     phone = '8913123123'
     password = '111111'
     username = 'username'
