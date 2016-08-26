@@ -129,7 +129,7 @@ class UserViewSet(ExtandableModelMixin,
         user = get_object_or_404(User, pk=pk)
 
         if Follower.objects.filter(follower=self.request.user, followee=user).exists():
-            Follower.objects.delete(follower=self.request.user, followee=user)
+            Follower.objects.filter(follower=self.request.user, followee=user).delete()
         else:
             # TODO: make test
             FollowRequest.objects.filter(follower=self.request.user, followee=user).delete()

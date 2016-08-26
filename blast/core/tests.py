@@ -1,4 +1,6 @@
 import json
+import uuid
+
 from io import BytesIO
 
 from PIL import Image
@@ -30,9 +32,13 @@ class BaseTestCaseUnauth(TestCase):
     password = '111111'
     username = 'username'
 
-    def login(self, username, password):
+    def generate_user(self):
+        return User.objects.create_user(username=str(uuid.uuid4()), password=self.password,
+                                        country=self.country, phone=uuid.uuid4())
+
+    def login(self, username,):
         data = {
-            'username': self.username,
+            'username': username,
             'password': self.password
         }
 
@@ -62,6 +68,9 @@ class BaseTestCaseUnauth(TestCase):
         self.auth_token = response.data.get('token')
 
     def put_json(self, url, data=''):
+        if type(data) is dict:
+            data = json.dumps(data)
+
         return self.client.put(url, data=data, content_type='application/json')
 
     def patch_json(self, url, data=''):
@@ -70,7 +79,6 @@ class BaseTestCaseUnauth(TestCase):
 
 
 class BaseTestCase(BaseTestCaseUnauth):
-
     def setUp(self):
         super().setUp()
 

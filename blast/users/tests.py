@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework import status
 
 from countries.models import Country
+from notifications.models import FollowRequest
 from posts.models import Post
 from smsconfirmation.models import PhoneConfirmation
 from users.models import User, UserSettings, Follower
@@ -469,3 +470,47 @@ class TestFollowersList(BaseTestCase):
 
             for post in it['posts']:
                 self.assertEqual(post['user'], it['id'])
+
+
+class TestPrivateUserUnfollow(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.private = self.generate_user()
+        self.private.is_private = True
+        self.private.save()
+
+    def test_follow_crash(self):
+        """
+        1. self.user sends follow request to self.private
+        2. self.private accepts request
+        3. self.user unfollow self.private and gets 500.
+        :return:
+        """
+        # 1
+        url = reverse_lazy('user-detail', kwargs={'pk': self.private.pk})
+        url += 'follow/'
+        print(url)
+
+        response = self.put_json(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Follower.objects.filter(follower=self.user, followee=self.private).exists())
+
+        # 2
+        self.login(self.private)
+        follow_request = FollowRequest.objects.get(followee=self.private, follower=self.user)
+        url = reverse_lazy('followrequest-detail', kwargs={'pk': follow_request.pk})
+
+        response = self.put_json(url, {"accept": True})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Follower.objects.filter(follower=self.user, followee=self.private).exists())
+        self.assertFalse(FollowRequest.objects.filter(follower=self.user, followee=self.private).exists())
+
+        # 3
+        self.login(self.user)
+        url = reverse_lazy('user-detail', kwargs={'pk': self.private.pk})
+        url += 'unfollow/'
+
+        response = self.put_json(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Follower.objects.filter(follower=self.user, followee=self.private).exists())
