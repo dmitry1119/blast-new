@@ -93,6 +93,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     friends = models.ManyToManyField('User', blank=True, through='Follower',
                                      related_name='related_friends',
                                      through_fields=('follower', 'followee'))
+    blocked = models.ManyToManyField('User', blank=True, through='BlockedUsers',
+                                     related_name='blocked_users',
+                                     through_fields=('user', 'blocked'))
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']
@@ -134,6 +137,19 @@ class Follower(models.Model):
 
     def __str__(self):
         return u'{} to {}'.format(self.follower, self.followee)
+
+
+class BlockedUsers(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    user = models.ForeignKey('User', on_delete=models.CASCADE,
+                             related_name='block_owner')
+
+    blocked = models.ForeignKey('User', on_delete=models.CASCADE,
+                                related_name='blocked_user')
+
+    class Meta:
+        unique_together = ('user', 'blocked')
 
 
 class UserSettings(models.Model):

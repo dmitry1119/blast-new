@@ -1,5 +1,7 @@
 import logging
 
+
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import viewsets, mixins, permissions, generics, filters, status
@@ -10,7 +12,7 @@ from core.views import ExtandableModelMixin
 from notifications.models import FollowRequest
 from posts.models import Post
 from posts.serializers import PostPublicSerializer, PreviewPostSerializer
-from users.models import User, UserSettings, Follower
+from users.models import User, UserSettings, Follower, BlockedUsers
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
@@ -37,9 +39,14 @@ def fill_follower(users: list, request):
                                                    followee__in=user_ids)
     follow_requests = {it.followee_id for it in follow_requests}
 
+    blocked_users = BlockedUsers.objects.filter(user=request.user, blocked__in=user_ids)
+    blocked_users = {it.blocked_id for it in blocked_users}
+
     for it in users:
-        it['is_followee'] = it['id'] in followees
-        it['is_requested'] = it['id'] in follow_requests  # TODO: Make test
+        pk = it['id']
+        it['is_followee'] = pk in followees
+        it['is_requested'] = pk in follow_requests  # TODO: Make test
+        it['is_blocked'] = pk in blocked_users
 
 
 # TODO: Use class from core.views
@@ -202,6 +209,37 @@ class UserViewSet(ExtandableModelMixin,
                                                 context=context).data
 
         return self.get_paginated_response(serializer.data)
+
+    @detail_route(['put'])
+    def block(self, request, pk=None):
+        """
+        Adds user to blacklist
+
+        ---
+        omit_serializer: true
+        """
+        blocked = get_object_or_404(User, pk=pk)
+
+        try:
+            BlockedUsers.objects.create(user=request.user, blocked=blocked)
+        except IntegrityError as e:
+            logger.error("User {} already blocked by {}".format(blocked, request.user))
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        return Response()
+
+    @detail_route(['put'])
+    def unblock(self, request, pk=None):
+        """
+        Removes user from blacklist.
+        ---
+        omit_serializer: true
+        """
+        blocked = get_object_or_404(User, pk=pk)
+
+        BlockedUsers.objects.filter(user=request.user, blocked=blocked).delete()
+
+        return Response()
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):

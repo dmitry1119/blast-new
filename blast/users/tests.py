@@ -10,7 +10,7 @@ from countries.models import Country
 from notifications.models import FollowRequest
 from posts.models import Post
 from smsconfirmation.models import PhoneConfirmation
-from users.models import User, UserSettings, Follower
+from users.models import User, UserSettings, Follower, BlockedUsers
 from core.tests import BaseTestCase, BaseTestCaseUnauth, create_file
 
 
@@ -490,7 +490,6 @@ class TestPrivateUserUnfollow(BaseTestCase):
         # 1
         url = reverse_lazy('user-detail', kwargs={'pk': self.private.pk})
         url += 'follow/'
-        print(url)
 
         response = self.put_json(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -514,3 +513,35 @@ class TestPrivateUserUnfollow(BaseTestCase):
         response = self.put_json(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Follower.objects.filter(follower=self.user, followee=self.private).exists())
+
+
+class TestBlockUser(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.blocked = self.generate_user()
+
+    def test_block_user(self):
+        url = reverse_lazy('user-detail', kwargs={'pk': self.blocked.pk})
+
+        response = self.put_json(url + 'block/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(BlockedUsers.objects.filter(user=self.user, blocked=self.blocked).exists())
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get('is_blocked'), True)
+
+    def test_unblock_user(self):
+        BlockedUsers.objects.create(user=self.user, blocked=self.blocked)
+        url = reverse_lazy('user-detail', kwargs={'pk': self.blocked.pk})
+
+        response = self.put_json(url + 'unblock/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(BlockedUsers.objects.filter(user=self.user, blocked=self.blocked).exists())
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get('is_blocked'), False)
