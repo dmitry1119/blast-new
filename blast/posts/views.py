@@ -167,7 +167,7 @@ class PostsViewSet(PerObjectPermissionMixin,
     private_serializer_class = PostSerializer
 
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('user', 'tags',)
+    filter_fields = ('user', 'tags', 'is_anonymous')
 
     def extend_response_data(self, data):
         fill_posts(data, self.request.user, self.request)
