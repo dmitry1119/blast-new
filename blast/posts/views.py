@@ -120,7 +120,17 @@ def fill_posts(posts: list, user: User, request):
     return data
 
 
-# TODO: Add feeds test, check author, hidden posts and voted posts
+# TODO (VM): Add feeds test, check author, hidden posts and voted posts
+# Order of posts should be by date, with newest appearing at the top:  
+#
+# - Blasts users currently Following (all post uploaded by users that you have chosen to follow) 
+#
+# - Within the posts of users you are currently following,
+#   Anonymous posts will be displayed (1 in every 10 at random)
+#   *Example: First 10 posts display 9 posts from users that you are following and 1 Anonymous at position 8. 
+#
+# - After all posts by users currently following has been viewed all other posts will be rendered based on popularity with
+#   Anonymous posts being displayed in the same manner as described above.
 class FeedsView(ExtandableModelMixin, viewsets.ReadOnlyModelViewSet):
     queryset = Post.objects.filter(Q(user__is_private=False) | Q(user=None),
                                    expired_at__gte=timezone.now())
