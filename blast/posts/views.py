@@ -137,17 +137,22 @@ class FeedsView(ExtandableModelMixin, viewsets.ReadOnlyModelViewSet):
         if not user.is_authenticated():
             return qs
 
-        # Add followers posts
+        # Include followers posts
         # FIXME (VM): cache list in redis?
         followees = Follower.objects.filter(follower=self.request.user)
         followees = {it.followee_id for it in followees}
+
+        # Special case for user without followees
+        if not followees:
+            return qs
+
         qs = qs.filter(user__in=followees)
 
         # Exclude blocked users
         # FIXME (VM): cache list in redis?
         blocked = BlockedUsers.objects.filter(user=self.request.user)
         blocked = {it.blocked_id for it in blocked}
-        qs = qs.filter(user__in=blocked)
+        qs = qs.exclude(user__in=blocked)
 
         # Excludes hidden posts
         # FIXME (VM): cache list in redis?

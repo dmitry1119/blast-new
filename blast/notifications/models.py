@@ -27,9 +27,9 @@ class FollowRequest(models.Model):
 
 
 class Notification(models.Model):
-    STARTED_FOLLOW_PATTERN = 'Started following you.'
+    STARTED_FOLLOW_PATTERN = '{} started following you.'
     VOTES_REACHED_PATTERN = 'You blast reached {} votes.'
-    MENTIONED_IN_COMMENT_PATTERN = 'Mentioned you in comment'
+    MENTIONED_IN_COMMENT_PATTERN = '{} mentioned you in comment'
 
     STARTED_FOLLOW = 0
     MENTIONED_IN_COMMENT = 1
@@ -44,12 +44,33 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    votes = models.PositiveIntegerField(default=0)
     post = models.ForeignKey(Post, blank=True, null=True)
     user = models.ForeignKey(User, related_name='notifications', db_index=True)
     other = models.ForeignKey(User, null=True, blank=True, related_name='mention_notifications')
 
-    text = models.CharField(max_length=128)
     type = models.PositiveSmallIntegerField(choices=TYPE)
+
+    @property
+    def text(self):
+        if self.type == Notification.STARTED_FOLLOW:
+            return Notification.STARTED_FOLLOW_PATTERN.format(self.other.username)
+        elif self.type == Notification.VOTES_REACHED:
+            return Notification.VOTES_REACHED_PATTERN.format(self.votes)
+        elif self.type == Notification.MENTIONED_IN_COMMENT:
+            return Notification.VOTES_REACHED_PATTERN.format(self.other.username)
+
+        logger.error('Unknown notification type')
+
+        raise ValueError('Unknown notification type')
+
+    @property
+    def push_payload(self):
+        return {
+            'sound': 'default',
+            'post': self.post_id,
+            'user': self.other_id,
+        }
 
 
 def notify_users(users: list, post: Post, author: User):
@@ -76,14 +97,13 @@ def notify_users(users: list, post: Post, author: User):
         for_follower = (it.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW and is_follow)
         if for_everyone or for_follower:
             notification = Notification(user=it, post=post, other=author,
-                                        text=Notification.MENTIONED_IN_COMMENT_PATTERN,
                                         type=Notification.MENTIONED_IN_COMMENT)
             notifications.append(notification)
 
     Notification.objects.bulk_create(notifications)
 
     for it in notifications:
-        send_push_notification.delay(it.user.pk, it.text)
+        send_push_notification.delay(it.user_id, it.text, it.push_payload)
 
 
 # TODO: make tests.
@@ -116,9 +136,9 @@ def post_save_post(sender, **kwargs):
     if (votes <= 100 and votes % 10 == 0) or (votes >= 1000 and votes % 1000 == 0):
         logger.info('Post {} reached {} votes', instance, votes)
         notification = Notification.objects.create(user=instance.user, post=instance,
-                                                   text=Notification.VOTES_REACHED_PATTERN.format(votes),
-                                                   type=Notification.VOTES_REACHED)
-        send_push_notification.delay(instance.user.pk, notification.text)
+                                                   votes=votes, type=Notification.VOTES_REACHED)
+        send_push_notification.delay(instance.user_id, notification.text,
+                                     notification.push_payload)
 
 
 @receiver(start_following, dispatch_uid='post_follow_notification')
@@ -128,7 +148,6 @@ def start_following_handler(sender, **kwargs):
     follower = kwargs['follower']
 
     logger.info('Create following notification {} {}'.format(follower, followee))
-    notification = Notification.objects.create(text=Notification.STARTED_FOLLOW_PATTERN,
-                                               user=followee, other=follower,
+    notification = Notification.objects.create(user=followee, other=follower,
                                                type=Notification.STARTED_FOLLOW)
-    send_push_notification.delay(followee.pk, notification.text)
+    send_push_notification.delay(followee.pk, notification.text, notification.push_payload)
