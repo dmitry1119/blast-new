@@ -19,7 +19,7 @@ from datetime import timedelta, datetime
 
 
 from tags.models import Tag
-from users.models import User, Follower
+from users.models import User, Follower, BlockedUsers
 
 from users.serializers import UsernameSerializer
 
@@ -131,21 +131,38 @@ class FeedsView(ExtandableModelMixin, viewsets.ReadOnlyModelViewSet):
         fill_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
+        qs = self.queryset
         user = self.request.user
 
         if not user.is_authenticated():
-            return self.queryset
+            return qs
 
-        # Excludes hidden and voted posts for authorized user
-        hidden_ids = [it['pk'] for it in user.hidden_posts.all().values('pk')]
+        # Add followers posts
+        # FIXME (VM): cache list in redis?
+        followees = Follower.objects.filter(follower=self.request.user)
+        followees = {it.followee_id for it in followees}
+        qs = qs.filter(user__in=followees)
 
+        # Exclude blocked users
+        # FIXME (VM): cache list in redis?
+        blocked = BlockedUsers.objects.filter(user=self.request.user)
+        blocked = {it.blocked_id for it in blocked}
+        qs = qs.filter(user__in=blocked)
+
+        # Excludes hidden posts
+        # FIXME (VM): cache list in redis?
+        hidden = user.hidden_posts.all().values('pk')
+        hidden = {it['pk'] for it in hidden}
+        qs = qs.exclude(pk__in=hidden)
+
+        # Exclude voted posts
         # FIXME (VM): votes list can be very large
+        # FIXME (VM): cache list in redis?
         voted = PostVote.objects.filter(user=user.pk).values('post')
-        voted = [it['post'] for it in voted]
+        voted = {it['post'] for it in voted}
+        qs = qs.exclude(pk__in=voted)
 
-        hidden_ids.extend(voted)
-
-        return self.queryset.exclude(pk__in=hidden_ids)
+        return qs
 
 
 class PostsViewSet(PerObjectPermissionMixin,
@@ -160,8 +177,7 @@ class PostsViewSet(PerObjectPermissionMixin,
             - name: image
               type: file
     """
-    queryset = Post.objects.filter(Q(user__is_private=False) | Q(user=None),
-                                   expired_at__gte=timezone.now())
+    queryset = Post.objects.public()
 
     public_serializer_class = PostPublicSerializer
     private_serializer_class = PostSerializer

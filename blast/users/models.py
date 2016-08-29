@@ -139,6 +139,8 @@ class Follower(models.Model):
         return u'{} to {}'.format(self.follower, self.followee)
 
 
+# block user - it is for the purpose of not displaying content from that user on the newsfeed
+# and also with comment notifications users who have been blocked will not be sent to the user
 class BlockedUsers(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 

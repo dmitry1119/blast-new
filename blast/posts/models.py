@@ -3,6 +3,7 @@ import re
 import uuid
 from datetime import timedelta
 
+from django.db.models import Q
 from django.db import models
 from django.db.models import F
 from django.utils import timezone
@@ -41,8 +42,20 @@ def get_notified_users(text: str):
     return USER_REG.findall(text)
 
 
+class PostManager(models.Manager):
+    def public(self):
+        qs = self.get_queryset()
+        qs = qs.filter(Q(user__is_private=False) | Q(user=None),
+                       expired_at__gte=timezone.now())
+
+        return qs
+
+
 # TODO: Make user null for is_anonymous post.
 class Post(models.Model):
+
+    objects = PostManager()
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     expired_at = models.DateTimeField(default=get_expiration_date)
