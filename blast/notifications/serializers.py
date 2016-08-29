@@ -8,6 +8,10 @@ from users.models import Follower
 class NotificationPublicSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     post = PreviewPostSerializer()
+    text = serializers.ReadOnlyField()
+
+    def get_text(self, obj):
+        return obj.text
 
     # FIXME: Can be expensive
     def get_user(self, obj):

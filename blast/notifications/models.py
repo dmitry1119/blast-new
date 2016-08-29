@@ -58,7 +58,7 @@ class Notification(models.Model):
         elif self.type == Notification.VOTES_REACHED:
             return Notification.VOTES_REACHED_PATTERN.format(self.votes)
         elif self.type == Notification.MENTIONED_IN_COMMENT:
-            return Notification.VOTES_REACHED_PATTERN.format(self.other.username)
+            return Notification.MENTIONED_IN_COMMENT_PATTERN.format(self.other.username)
 
         logger.error('Unknown notification type')
 
