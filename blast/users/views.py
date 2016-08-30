@@ -1,6 +1,5 @@
 import logging
 
-
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -9,7 +8,7 @@ from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
 from core.views import ExtandableModelMixin
-from notifications.models import FollowRequest
+from notifications.models import FollowRequest, Notification
 from posts.models import Post
 from posts.serializers import PostPublicSerializer, PreviewPostSerializer
 from users.models import User, UserSettings, Follower, BlockedUsers
@@ -137,6 +136,7 @@ class UserViewSet(ExtandableModelMixin,
 
         if Follower.objects.filter(follower=self.request.user, followee=user).exists():
             Follower.objects.filter(follower=self.request.user, followee=user).delete()
+            Notification.objects.filter(user=user, other=self.request.user).delete()
         else:
             # TODO: make test
             FollowRequest.objects.filter(follower=self.request.user, followee=user).delete()
@@ -169,6 +169,7 @@ class UserViewSet(ExtandableModelMixin,
         user = get_object_or_404(User, pk=pk)
 
         qs = Follower.objects.filter(followee=user).prefetch_related('follower')
+        qs = qs.order_by('follower__username')
         page = self.paginate_queryset(qs)
         page = [it.follower for it in page]
 

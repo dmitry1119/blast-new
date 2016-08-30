@@ -3,6 +3,7 @@ from rest_framework import serializers
 from notifications.models import Notification, FollowRequest
 from posts.serializers import PreviewPostSerializer
 from users.models import Follower
+from users.signals import start_following
 
 
 class NotificationPublicSerializer(serializers.ModelSerializer):
@@ -62,8 +63,9 @@ class FollowRequestSerializer(serializers.ModelSerializer):
     def _process_request(self, instance, validated_data):
         if validated_data['accept']:
             Follower.objects.create(followee=instance.followee, follower=instance.follower)
-            # instance.followee.followers.add(instance.follower)
-            # TODO: raise user_follow signal?
+            start_following.send(sender=instance.followee,
+                                 follower=instance.follower,
+                                 followee=instance.followee)
 
         instance.delete()
 
