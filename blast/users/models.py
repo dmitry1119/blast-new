@@ -3,10 +3,13 @@ from __future__ import unicode_literals
 import os
 import uuid
 
+
 from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser, PermissionsMixin
 )
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 
 from countries.models import Country
@@ -27,9 +30,6 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.is_active = True
         user.save(using=self._db)
-
-        # Create settings for user
-        UserSettings.objects.create(user=user)
 
         return user
 
@@ -181,3 +181,14 @@ class UserSettings(models.Model):
     notify_new_followers = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
     notify_comments = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
     notify_reblasts = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
+
+
+@receiver(post_save, sender=User, dispatch_uid='post_user_save_handler')
+def post_user_created(sender, **kwargs):
+    if not kwargs['created']:
+        return
+
+    user = kwargs['instance']
+    # Creates settings for user
+    UserSettings.objects.create(user=user)
+
