@@ -27,8 +27,8 @@ class FollowRequest(models.Model):
 
 
 class Notification(models.Model):
-    STARTED_FOLLOW_PATTERN = '{} started following you.'
-    VOTES_REACHED_PATTERN = 'You blast reached {} votes.'
+    STARTED_FOLLOW_PATTERN = '{} started following you'
+    VOTES_REACHED_PATTERN = 'You blast reached {} votes'
     MENTIONED_IN_COMMENT_PATTERN = '{} mentioned you in comment'
 
     STARTED_FOLLOW = 0
