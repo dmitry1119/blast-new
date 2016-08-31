@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 
 # Create your views here.
 from rest_framework import viewsets, filters, generics, permissions
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
 from posts.models import Post
@@ -15,8 +15,7 @@ from tags.serializers import TagPublicSerializer
 # are most popular and 3 are random.
 # On tags tab the ones pinned will appear at the top then underneath ones that is most popular
 # (has the most posts with the tag)
-class TagsViewSet(ExtandableModelMixin,
-                  viewsets.ReadOnlyModelViewSet):
+class TagsViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all().order_by('-total_posts')
     serializer_class = TagPublicSerializer
 
@@ -41,6 +40,17 @@ class TagsViewSet(ExtandableModelMixin,
             request.user.pinned_tags.remove(tag)
 
         return Response()
+
+    @list_route(['get'])
+    def pinned(self, request):
+        qs = request.user.pinned_tags.all()
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
 
 class TagViewSet(ExtandableModelMixin,

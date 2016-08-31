@@ -122,3 +122,24 @@ class TagPinnedSearch(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.user.pinned_tags.count(), 0)
+
+    def test_pinned_tag_list(self):
+        limit = 5
+        tags = Tag.objects.all()[:limit]
+
+        for it in tags:
+            self.user.pinned_tags.add(it)
+
+        url = reverse_lazy('tag-list')
+        url += 'pinned/'
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(len(response.data['results']), limit)
+
+        tags = {it.title for it in tags}
+        titles = {it['title'] for it in response.data['results']}
+
+        self.assertEqual(tags, titles)
