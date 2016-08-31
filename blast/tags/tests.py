@@ -82,3 +82,43 @@ class TagSearchTest(BaseTestCase):
         # self.assertEqual(len(result), 10)
         #
         # # TODO: Check first free is pinned posts.
+
+
+class TagPinnedSearch(BaseTestCase):
+
+    tag_count = 10
+
+    def setUp(self):
+        super().setUp()
+
+        tags = [Tag(title='tag{}'.format(it)) for it in range(TagPinnedSearch.tag_count)]
+        Tag.objects.bulk_create(tags)
+
+    def test_pin_tag(self):
+        index = TagPinnedSearch.tag_count // 2
+        title = 'tag{}'.format(index)
+        url = reverse_lazy('tag-detail', kwargs={'pk': title})
+        url += 'pin/'
+
+        response = self.put_json(url, {})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.user.refresh_from_db()
+
+        self.assertEqual(self.user.pinned_tags.count(), 1)
+        self.assertTrue(self.user.pinned_tags.filter(title=title))
+
+    def test_unpin_tag(self):
+        tag = Tag.objects.get(title='tag5')
+
+        self.user.pinned_tags.add(tag)
+
+        url = reverse_lazy('tag-detail', kwargs={'pk': tag.title})
+        url += 'unpin/'
+
+        response = self.put_json(url, {})
+        self.user.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user.pinned_tags.count(), 0)
