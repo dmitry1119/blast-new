@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import uuid
@@ -8,7 +9,7 @@ from django.db import models
 from django.db.models import F
 from django.utils import timezone
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
 from users.models import User
@@ -47,6 +48,12 @@ class PostManager(models.Manager):
         qs = self.get_queryset()
         qs = qs.filter(Q(user__is_private=False) | Q(user=None),
                        expired_at__gte=timezone.now())
+
+        return qs
+
+    def expired(self):
+        qs = self.get_queryset()
+        qs = qs.filter(expired_at__lt=timezone.now())
 
         return qs
 
@@ -190,3 +197,10 @@ class PostReport(models.Model):
                                  help_text='Report reason')
     text = models.CharField(max_length=128, blank=True,
                             help_text='Details')
+
+
+@receiver(pre_delete, sender=Post, dispatch_uid='pre_delete_post_handler')
+def pre_delete_post(sender, instance, **kwargs):
+    logging.info('pre_delete for {} post'.format(instance.pk))
+    instance.video.delete()
+    instance.image.delete()

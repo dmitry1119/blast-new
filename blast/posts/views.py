@@ -8,7 +8,7 @@ from rest_framework import viewsets, mixins, permissions, status
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 
-from core.views import ExtandableModelMixin
+from core.views import ExtendableModelMixin
 
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
@@ -127,11 +127,13 @@ def fill_posts(posts: list, user: User, request):
 #
 # - Within the posts of users you are currently following,
 #   Anonymous posts will be displayed (1 in every 10 at random)
-#   *Example: First 10 posts display 9 posts from users that you are following and 1 Anonymous at position 8. 
+#   *Example: First 10 posts display 9 posts from users that you are following and
+#   1 Anonymous at position 8. 
 #
-# - After all posts by users currently following has been viewed all other posts will be rendered based on popularity with
-#   Anonymous posts being displayed in the same manner as described above.
-class FeedsView(ExtandableModelMixin, viewsets.ReadOnlyModelViewSet):
+# - After all posts by users currently following has been viewed all other posts will
+#   be rendered based on popularity with Anonymous posts being displayed in
+#   the same manner as described above.
+class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
     queryset = Post.objects.filter(Q(user__is_private=False) | Q(user=None),
                                    expired_at__gte=timezone.now())
 
@@ -181,7 +183,7 @@ class FeedsView(ExtandableModelMixin, viewsets.ReadOnlyModelViewSet):
 
 
 class PostsViewSet(PerObjectPermissionMixin,
-                   ExtandableModelMixin,
+                   ExtendableModelMixin,
                    viewsets.ModelViewSet):
     """
     ---
@@ -202,6 +204,17 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     def extend_response_data(self, data):
         fill_posts(data, self.request.user, self.request)
+
+    # def get_queryset(self):
+    #     sort = self.request.query_params.get('order', None)
+    #
+    #     qs = self.queryset
+    #     if sort == 'featured':
+    #         qs = qs.order_by('-voted_count')
+    #     elif sort == 'newest':
+    #         qs = qs.order_by('voted_count')
+    #
+    #     return qs
 
     # TODO: Move to mixin
     def create(self, request, *args, **kwargs):
@@ -403,14 +416,14 @@ class PostsViewSet(PerObjectPermissionMixin,
         return Response()
 
 
-class PinnedPostsViewSet(ExtandableModelMixin,
+class PinnedPostsViewSet(ExtendableModelMixin,
                          mixins.ListModelMixin,
                          viewsets.GenericViewSet):
     serializer_class = PostPublicSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def extend_response_data(self, data):
-        fill_posts(data, self.request.user, self.request)    
+        fill_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
         return self.request.user.pinned_posts.filter(expired_at__gte=timezone.now()).all()
@@ -429,7 +442,7 @@ class VotedPostBaseView(mixins.ListModelMixin,
         voted_ids = PostVote.objects.filter(user=self.request.user,
                                             is_positive=self.is_positive)
         voted_ids = [it.post_id for it in voted_ids]
-        return Post.objects.filter(pk__in=voted_ids, 
+        return Post.objects.filter(pk__in=voted_ids,
                                    expired_at__gte=timezone.now())
 
     def list(self, request, *args, **kwargs):
@@ -450,7 +463,7 @@ class DonwvotedPostsViewSet(VotedPostBaseView):
 # TODO (VM): Check if post is hidden
 # TODO (VM): Remove Update actions
 class CommentsViewSet(PerObjectPermissionMixin,
-                      ExtandableModelMixin,
+                      ExtendableModelMixin,
                       viewsets.ModelViewSet):
     queryset = PostComment.objects.all()
     public_serializer_class = CommentPublicSerializer
@@ -506,6 +519,3 @@ class PostSearchViewSet(mixins.ListModelMixin,
         posts = posts.order_by('-expired_at')
 
         return posts
-        # result = chain(pinned, posts)
-        #
-        # return result

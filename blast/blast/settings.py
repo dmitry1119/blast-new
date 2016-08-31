@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from datetime import timedelta
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARENT_DIR = os.path.dirname(BASE_DIR)
 
@@ -165,10 +167,12 @@ SINCH = {
     'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
 }
 
-# SINCH = {
-#     'APP_KEY': 'd59459a7-a98e-415f-b600-39ca9f59bbac',
-#     'APP_SECRET': 'aoSu8vzQ0Ue5iogg3ZTEag==',
-# }
+CELERYBEAT_SCHEDULE = {
+    'clear-expired-posts': {
+        'task': 'posts.tasks.clear_expired_posts',
+        'schedule': timedelta(minutes=5),
+    },
+}
 
 # CELERY SETTINGS
 BROKER_URL = 'redis://localhost:6379/0'
@@ -216,3 +220,23 @@ EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = 'djangomailservice@gmail.com'
 EMAIL_HOST_PASSWORD = 'w_sp[q12uQmZ36cjQ'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'adverts.tasks': {
+            'handlers': ['console'],
+            'level': 'INFO'
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+        },
+    },
+}
