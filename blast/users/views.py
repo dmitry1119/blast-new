@@ -20,9 +20,6 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 from users.signals import start_following
 
 
-logger = logging.getLogger(__name__)
-
-
 def extend_users_response(users: list, request):
     user = request.user
 
@@ -110,14 +107,13 @@ class UserViewSet(ExtandableModelMixin,
         user = get_object_or_404(User, pk=pk)
         if not Follower.objects.filter(followee=user, follower=request.user).exists():
             if user.is_private:
-                logger.info('Send follow request to {} from {}'.format(user, request.user))
+                logging.info('Send follow request to {} from {}'.format(user, request.user))
                 _, created = FollowRequest.objects.get_or_create(follower=request.user,
                                                                  followee=user)
             else:
-                logger.info('{} stated to follow by {}'.format(request.user, user))
+                logging.info('{} stated to follow by {}'.format(request.user, user))
                 start_following.send(sender=user, follower=request.user, followee=user)
                 Follower.objects.create(followee=user, follower=request.user)
-                # user.followers.add(request.user)
 
         return Response()
 
@@ -224,7 +220,7 @@ class UserViewSet(ExtandableModelMixin,
         try:
             BlockedUsers.objects.create(user=request.user, blocked=blocked)
         except IntegrityError as e:
-            logger.error("User {} already blocked by {}".format(blocked, request.user))
+            logging.error("User {} already blocked by {}".format(blocked, request.user))
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         return Response()

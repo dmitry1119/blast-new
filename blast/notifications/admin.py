@@ -10,6 +10,7 @@ def resend(modeladmin, request, qs):
 
 resend.short_description = 'Send push notifications'
 
+
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'text', 'created_at')
