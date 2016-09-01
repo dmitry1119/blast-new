@@ -133,23 +133,6 @@ class PostVote(models.Model):
         unique_together = (('user', 'post'),)
 
 
-@receiver(post_save, sender=PostVote, dispatch_uid='post_save_vote_handler')
-def post_save_vote(sender, **kwargs):
-    # if not kwargs['created']:
-    # TODO: update post instance by refreshing cache from db?
-    # pass
-
-    instance = kwargs['instance']
-
-    if instance.is_positive is None:
-        return
-
-    if instance.is_positive:
-        Post.objects.filter(pk=instance.post.pk).update(voted_count=F('voted_count') + 1)
-    else:
-        Post.objects.filter(pk=instance.post.pk).update(downvoted_count=F('downvoted_count') + 1)
-
-
 class PostComment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -204,3 +187,21 @@ def pre_delete_post(sender, instance, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
     instance.video.delete()
     instance.image.delete()
+
+
+@receiver(post_save, sender=PostVote, dispatch_uid='post_save_vote_handler')
+def post_save_vote(sender, **kwargs):
+    # if not kwargs['created']:
+    # TODO: update post instance by refreshing cache from db?
+    # pass
+
+    instance = kwargs['instance']
+
+    if instance.is_positive is None:
+        return
+
+    if instance.is_positive:
+        Post.objects.filter(pk=instance.post.pk).update(voted_count=F('voted_count') + 1)
+    else:
+        Post.objects.filter(pk=instance.post.pk).update(downvoted_count=F('downvoted_count') + 1)
+

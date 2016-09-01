@@ -230,13 +230,17 @@ LOGGING = {
         },
     },
     'loggers': {
-        'adverts.tasks': {
+        'tags.models': {
             'handlers': ['console'],
-            'level': 'INFO'
+            'level': 'DEBUG'
+        },
+        'tags.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG'
         },
         'django': {
             'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
         },
     },
 }

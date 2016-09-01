@@ -7,7 +7,7 @@ from rest_framework import viewsets, mixins, permissions, generics, filters, sta
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
-from core.views import ExtandableModelMixin
+from core.views import ExtendableModelMixin
 from notifications.models import FollowRequest, Notification
 from posts.models import Post
 from posts.serializers import PostPublicSerializer, PreviewPostSerializer
@@ -46,7 +46,7 @@ def extend_users_response(users: list, request):
 
 
 # TODO: Use class from core.views
-class UserViewSet(ExtandableModelMixin,
+class UserViewSet(ExtendableModelMixin,
                   mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.ListModelMixin,
@@ -140,8 +140,9 @@ class UserViewSet(ExtandableModelMixin,
         return Response()
 
     def _get_user_recent_posts(self, data: list, user_ids: set):
-        """Returns dict of last post for users in user_ids"""
+        """Returns dict with three last post for users in user_ids"""
         # Adds last three post to each user
+        # TODO: Use Redis sorted set
         # FIXME: can be slow and huge
         posts = Post.objects.filter(user__in=user_ids, expired_at__gte=timezone.now())
         posts = posts.order_by('user_id', 'voted_count')

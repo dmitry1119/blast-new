@@ -86,8 +86,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     pinned_posts = models.ManyToManyField('posts.Post', blank=True,
                                           related_name='pinned_users')
+
     hidden_posts = models.ManyToManyField('posts.Post', blank=True,
                                           related_name='hidden_users')
+
+    pinned_tags = models.ManyToManyField('tags.Tag', blank=True,
+                                         related_name='pinned_users')
 
     # FIXME: symmetrical=False?
     friends = models.ManyToManyField('User', blank=True, through='Follower',
