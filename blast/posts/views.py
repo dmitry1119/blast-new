@@ -1,3 +1,4 @@
+import redis
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -22,6 +23,9 @@ from tags.models import Tag
 from users.models import User, Follower, BlockedUsers
 
 from users.serializers import UsernameSerializer
+
+
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
 # FIXME: Replace by custom permission class
@@ -258,18 +262,23 @@ class PostsViewSet(PerObjectPermissionMixin,
         vote, created = PostVote.objects.get_or_create(user=request.user, post=post)
         vote.is_positive = is_positive
 
+        # Increase popularity in tags cache
+        # TODO: Move to post_save for vote?
+        tags = post.get_tag_titles()
+        for tag in tags:
+            key = Tag.redis_posts_key(tag)
+            r.zincrby(key, post.pk, 1 if is_positive else -1)
+
         if is_positive:
             post.expired_at += timedelta(minutes=5)
-            post.save()
         else:
             post.expired_at -= timedelta(minutes=10)
-            post.save()
 
+        post.save()
         vote.save()
-        status_code = status.HTTP_200_OK
 
         serializer = VoteSerializer(instance=vote)
-        return Response(serializer.data, status=status_code)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @detail_route(methods=['put'])
     def vote(self, request, pk=None):

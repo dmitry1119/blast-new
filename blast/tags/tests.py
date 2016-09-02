@@ -1,3 +1,4 @@
+import redis
 from django.core.urlresolvers import reverse_lazy
 from django.test import TestCase
 from rest_framework import status
@@ -57,31 +58,61 @@ class PostTagsTest(BaseTestCase):
 
 class TagSearchTest(BaseTestCase):
 
-    url = reverse_lazy('tag-search')
+    url = reverse_lazy('tag-pinned')
+    tags = ['testTag1', 'testTag2', 'testTag3']
 
     def setUp(self):
         super().setUp()
-        #
-        # posts = []
-        # for it in range(10):
-        #     posts.append(Post(user=self.user, text='post with @hashtag {}'.format(it)))
-        #
-        # Post.objects.create(posts)
-        # self.posts = Post.objects.all()
-        # for it in range(3):
-        #     self.user.pinned_posts.add(self.posts[it])
+
+        text = ', '.join(['#' + it for it in self.tags])
+
+        # Clear cache
+        r = redis.StrictRedis(host='localhost', port=6379, db=0)
+        for tag in self.tags:
+            key = Tag.redis_posts_key(tag)
+            r.delete(key)
+
+        for it in range(5):
+            post = Post(text=text, user=self.user)
+            post.save()
+
+        self.posts = list(Post.objects.all())
 
     def test_tag_search(self):
-        pass
-        # url = self.url + '?title={}'.format('hashtag')
-        # response = self.client.get(self.url)
-        #
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
-        #
-        # result = response.data['result']
-        # self.assertEqual(len(result), 10)
-        #
-        # # TODO: Check first free is pinned posts.
+        url = reverse_lazy('tag-list') + '?search={}'.format('testTag')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), 3)
+
+        for tag in self.tags:
+            result = list(filter(lambda it: it['title'] == tag, results))
+            self.assertEqual(len(result), 1)
+            result = result[0]
+
+            self.assertEqual(len(result['posts']), 3)
+
+    def test_post_rank(self):
+        """Checks that posts up to top in tag.posts after voting"""
+        # Upvote last post
+        post = self.posts[-1]
+        url = reverse_lazy('post-detail', kwargs={'pk': post.pk})
+        url += 'vote/'
+        response = self.put_json(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Search first tag
+        url = reverse_lazy('tag-list') + '?search={}'.format(self.tags[0])
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        result = response.data['results'][0]
+        posts = result['posts']
+
+        self.assertEqual(posts[0]['id'], post.pk)
 
 
 class TagPinnedSearch(BaseTestCase):
