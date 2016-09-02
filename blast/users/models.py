@@ -127,7 +127,9 @@ class User(AbstractBaseUser, PermissionsMixin):
             for it in user_posts:
                 to_add.append(it.voted_count)
                 to_add.append(it.pk)
-            r.zadd(key, *to_add)
+
+            if to_add:
+                r.zadd(key, *to_add)
 
         # zrevrange defines the order of posts.
         # See zrevrange doc.
