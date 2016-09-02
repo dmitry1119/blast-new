@@ -589,7 +589,7 @@ class TestUserSearch(BaseTestCase):
             self.assertEqual(posts[i]['id'], self.posts[i].pk)
 
         # Vote for last post
-        vote_url = reverse_lazy('posts-vote', kwargs={'pk': self.posts[-1].pk})
+        vote_url = reverse_lazy('post-vote', kwargs={'pk': self.posts[-1].pk})
 
         response = self.put_json(vote_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)

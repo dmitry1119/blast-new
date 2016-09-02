@@ -104,8 +104,7 @@ class TagSearchTest(BaseTestCase):
         """Checks that posts up to top in tag.posts after voting"""
         # Upvote last post
         post = self.posts[-1]
-        url = reverse_lazy('post-detail', kwargs={'pk': post.pk})
-        url += 'vote/'
+        url = reverse_lazy('post-vote', kwargs={'pk': post.pk})
         response = self.put_json(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
