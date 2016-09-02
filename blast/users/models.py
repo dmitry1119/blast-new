@@ -104,6 +104,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']
 
+    def redis_posts_key(pk):
+        return u'user:{}:posts'.format(pk)
+
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.
         return self.followers.count()

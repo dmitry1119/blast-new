@@ -230,6 +230,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         # Changes response use PostPublicSerializer
         data = PostPublicSerializer(serializer.instance, context=self.get_serializer_context()).data
         data = fill_posts([data], request.user, request)
+
         return Response(data[0], status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):

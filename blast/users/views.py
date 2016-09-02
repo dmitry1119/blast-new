@@ -1,4 +1,5 @@
 import logging
+import redis
 
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -18,6 +19,9 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                CheckUsernameAndPassword, UsernameSerializer, FollwersSerializer)
 
 from users.signals import start_following
+
+
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
 def extend_users_response(users: list, request):
@@ -344,6 +348,48 @@ class UserChangePhoneView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserSearchView(ExtendableModelMixin,
+                     viewsets.ReadOnlyModelViewSet):
+    # TODO: take into account a followers
+    queryset = User.objects.filter(is_private=False)
+    serializer_class = PublicUserSerializer
+
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
+
+    def extend_response_data(self, data):
+        users_to_posts = {}
+        posts = []
+        for user in data:
+            key = User.redis_posts_key(user['id'])
+
+            # zrevrange defines the order of posts. See zrevrange doc.
+            user_posts = r.zrevrange(key, 0, 5)
+            user_posts = [int(it) for it in user_posts]
+
+            users_to_posts[user['id']] = user_posts
+            posts.extend(user_posts)
+
+        # Pulls posts from memory and builds in-memory index
+        posts = Post.objects.filter(pk__in=posts)
+        posts = {it.pk: it for it in posts}
+
+        context = self.get_serializer_context()
+        for user in data:
+            user_posts_ids = users_to_posts[user['id']]
+
+            user_posts = []
+            for post_id in user_posts_ids:
+                if post_id in posts:
+                    user_posts.append(posts[post_id])
+                if len(user_posts) >= 3:  # FIXME: Magic number.
+                    break
+
+            user['posts'] = PostPublicSerializer(user_posts, many=True, context=context).data
+
+        return data
 
 
 class UsernameSearchView(viewsets.ReadOnlyModelViewSet):

@@ -26,7 +26,7 @@ from notifications.views import NotificationsViewSet, FollowRequestViewSet
 from tags.views import TagsViewSet
 
 from users.views import (UserViewSet, UserProfileView, UserSettingsView,
-                         UserPasswordResetView, UserChangePhoneView, UsernameSearchView)
+                         UserPasswordResetView, UserChangePhoneView, UsernameSearchView, UserSearchView)
 from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
                                    SinchPhoneConfirmationView)
 
@@ -35,6 +35,7 @@ from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
 
 api_1 = DefaultRouter()
 api_1.register(r'feeds', FeedsView, base_name='feed')
+api_1.register(r'users/search', UserSearchView, base_name='user-search')
 api_1.register(r'users', UserViewSet)
 api_1.register(r'usernames', UsernameSearchView, base_name='usernames')
 api_1.register(r'countries', CountryViewSet, base_name='country')
@@ -42,7 +43,7 @@ api_1.register(r'posts/pinned', PinnedPostsViewSet, base_name='pinned')
 api_1.register(r'posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
 api_1.register(r'posts/voted', VotedPostsViewSet, base_name='voted')
 api_1.register(r'posts/search', PostSearchViewSet, base_name='post-search')
-api_1.register(r'posts', PostsViewSet)
+api_1.register(r'posts', PostsViewSet, base_name='posts')
 api_1.register(r'comments', CommentsViewSet, base_name='comment')
 api_1.register(r'tags', TagsViewSet, base_name='tag')
 api_1.register(r'notifications/follow', FollowRequestViewSet, base_name='followrequest')

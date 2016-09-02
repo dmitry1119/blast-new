@@ -1,4 +1,5 @@
 import logging
+import redis
 import os
 import re
 import uuid
@@ -15,6 +16,9 @@ from django.dispatch import receiver
 from users.models import User
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFill
+
+
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
 def post_image_upload_dir(instance: User, filename: str):
@@ -83,6 +87,7 @@ class Post(models.Model):
                                format='PNG',
                                options={'quality': 90})
 
+    # FIXME: Make property return self.user == null
     is_anonymous = models.BooleanField(default=False)
 
     tags = models.ManyToManyField('tags.Tag', blank=True)
@@ -182,26 +187,39 @@ class PostReport(models.Model):
                             help_text='Details')
 
 
-@receiver(pre_delete, sender=Post, dispatch_uid='pre_delete_post_handler')
+@receiver(pre_delete, sender=Post, dispatch_uid='posts_pre_delete_post_handler')
 def pre_delete_post(sender, instance, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
     instance.video.delete()
     instance.image.delete()
 
+    # Remove post from user post set.
+    user_key = User.redis_posts_key(instance.user_id)
+    r.zrem(user_key, instance.pk)
 
-@receiver(post_save, sender=PostVote, dispatch_uid='post_save_vote_handler')
+
+@receiver(post_save, sender=Post, dispatch_uid='posts_post_save_post_handler')
+def post_save_post(sender, instance, **kwargs):
+    if not kwargs['created']:
+        return
+
+    # Add post to user post set.
+    user_key = User.redis_posts_key(instance.user_id)
+    r.zadd(user_key, 1, instance.pk)
+
+
+@receiver(post_save, sender=PostVote, dispatch_uid='posts_post_save_vote_handler')
 def post_save_vote(sender, **kwargs):
-    # if not kwargs['created']:
-    # TODO: update post instance by refreshing cache from db?
-    # pass
-
     instance = kwargs['instance']
 
     if instance.is_positive is None:
         return
 
+    user_key = User.redis_posts_key(instance.user_id)
     if instance.is_positive:
+        r.zincrby(user_key, instance.post_id, 1)  # incr post in redis cache
         Post.objects.filter(pk=instance.post.pk).update(voted_count=F('voted_count') + 1)
     else:
+        r.zincrby(user_key, instance.post_id, -1)  # incr post in redis cache
         Post.objects.filter(pk=instance.post.pk).update(downvoted_count=F('downvoted_count') + 1)
 
