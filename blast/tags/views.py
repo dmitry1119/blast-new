@@ -5,9 +5,6 @@ import redis
 
 from posts.serializers import PostPublicSerializer
 
-logger = logging.Logger(__name__)
-r = redis.StrictRedis(host='localhost', port=6379, db=0)
-
 # Create your views here.
 from rest_framework import viewsets, filters, generics, permissions
 from rest_framework.decorators import detail_route, list_route
@@ -17,6 +14,10 @@ from posts.models import Post
 from core.views import ExtendableModelMixin
 from tags.models import Tag
 from tags.serializers import TagPublicSerializer
+
+
+logger = logging.Logger(__name__)
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
 def extend_tags(data, serializer_context):
@@ -70,7 +71,17 @@ class TagsViewSet(ExtendableModelMixin,
 
     def extend_response_data(self, data):
         serializer_context = self.get_serializer_context()
-        return extend_tags(data, serializer_context)
+        extend_tags(data, serializer_context)
+        if not self.request.user.is_authenticated():
+            return
+
+        tags = {it['title'] for it in data}
+        pinned = self.request.user.pinned_tags.filter(title__in=tags)
+        pinned = pinned.values('title')
+        pinned = {it['title'] for it in pinned}
+
+        for it in data:
+            it['is_pinned'] = it['title'] in pinned
 
     @detail_route(['put'])
     def pin(self, request, pk=None):
@@ -93,15 +104,23 @@ class TagsViewSet(ExtendableModelMixin,
     def pinned(self, request):
         qs = request.user.pinned_tags.all()
         page = self.paginate_queryset(qs)
+
+        serializer_context = self.get_serializer_context()
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             response = self.get_paginated_response(serializer.data)
-            extend_tags(response.data['results'], self.get_serializer_context())
+            for it in response.data['results']:
+                it['is_pinned'] = True
+
+            extend_tags(response.data['results'], serializer_context)
 
             return response
 
         serializer = self.get_serializer(qs, many=True)
-        extend_tags(serializer.data, self.get_serializer_context())
+        extend_tags(serializer.data, serializer_context)
+
+        for it in serializer.data['results']:
+            it['is_pinned'] = True
         return Response(serializer.data)
 
 

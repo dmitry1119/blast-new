@@ -77,6 +77,8 @@ class TagSearchTest(BaseTestCase):
             post.save()
 
         self.posts = list(Post.objects.all())
+        self.user.pinned_tags.add(Tag.objects.get(title=self.tags[1]))
+        self.user.save()
 
     def test_tag_search(self):
         url = reverse_lazy('tag-list') + '?search={}'.format('testTag')
@@ -90,6 +92,11 @@ class TagSearchTest(BaseTestCase):
             result = list(filter(lambda it: it['title'] == tag, results))
             self.assertEqual(len(result), 1)
             result = result[0]
+
+            if result['title'] == self.tags[1]:
+                self.assertEqual(result['is_pinned'], True)
+            else:
+                self.assertEqual(result['is_pinned'], False)
 
             self.assertEqual(len(result['posts']), 3)
 
