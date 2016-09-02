@@ -1,6 +1,7 @@
 import json
 import uuid
 
+import redis
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.test.client import MULTIPART_CONTENT
@@ -561,6 +562,11 @@ class TestUserSearch(BaseTestCase):
 
         self.posts = list(Post.objects.all())
 
+        # Clear test
+        r = redis.StrictRedis(host='localhost', port=6379, db=0)
+        key = User.redis_posts_key(self.user.pk)
+        r.delete(key)
+
     def test_search_empty_result(self):
         """Should returns empty list for non existing user"""
         url = self.url + '?search={}'.format('000')
@@ -603,5 +609,3 @@ class TestUserSearch(BaseTestCase):
         posts = response.data['results'][0]['posts']
         for i in range(len(new_order)):
             self.assertEqual(posts[i]['id'], new_order[i].pk)
-
-

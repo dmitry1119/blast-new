@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
+import logging
 import os
 import uuid
+import redis
 
 
 from django.contrib.auth.models import (
@@ -13,6 +15,9 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from countries.models import Country
+
+
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
 def avatars_upload_dir(instance, filename):
@@ -106,6 +111,28 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def redis_posts_key(pk):
         return u'user:{}:posts'.format(pk)
+
+    @staticmethod
+    def get_posts(user_id, start, end):
+        """Returns user posts from redis cache"""
+        key = User.redis_posts_key(user_id)
+        if not r.exists(key):  # Warming cache
+            from posts.models import Post
+            logging.info('Warming cache for {} user key'.format(key))
+            user_posts = Post.objects.filter(user=user_id)
+
+            logging.info('Got {} posts for {} key'.format(len(user_posts), key))
+            # TODO: Think about first argument
+            to_add = []
+            for it in user_posts:
+                to_add.append(it.voted_count)
+                to_add.append(it.pk)
+            r.zadd(key, *to_add)
+
+        # zrevrange defines the order of posts.
+        # See zrevrange doc.
+        user_posts_ids = r.zrevrange(key, start, end)
+        return [int(it) for it in user_posts_ids]
 
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.

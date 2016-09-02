@@ -21,9 +21,6 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 from users.signals import start_following
 
 
-r = redis.StrictRedis(host='localhost', port=6379, db=0)
-
-
 def extend_users_response(users: list, request):
     user = request.user
 
@@ -363,14 +360,9 @@ class UserSearchView(ExtendableModelMixin,
         users_to_posts = {}
         posts = []
         for user in data:
-            key = User.redis_posts_key(user['id'])
-
-            # zrevrange defines the order of posts. See zrevrange doc.
-            user_posts = r.zrevrange(key, 0, 5)
-            user_posts = [int(it) for it in user_posts]
-
-            users_to_posts[user['id']] = user_posts
-            posts.extend(user_posts)
+            user_posts_ids = User.get_posts(user['id'], 0, 5)
+            users_to_posts[user['id']] = user_posts_ids
+            posts.extend(user_posts_ids)
 
         # Pulls posts from memory and builds in-memory index
         posts = Post.objects.filter(pk__in=posts)
