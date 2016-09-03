@@ -14,4 +14,4 @@ def send_push_notification(user_id: int, message: str, payload: dict):
     logger.info('Send push notification to {} user'.format(user_id))
 
     devices = APNSDevice.objects.filter(user=user_id)
-    devices.send_message(message, extra=payload)
+    devices.send_message(message, sound='default', extra=payload)
