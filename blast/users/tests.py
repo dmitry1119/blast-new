@@ -1,5 +1,7 @@
 import json
+import uuid
 
+import redis
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.test.client import MULTIPART_CONTENT
@@ -545,3 +547,65 @@ class TestBlockUser(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get('is_blocked'), False)
+
+
+class TestUserSearch(BaseTestCase):
+    url = reverse_lazy('user-search-list')
+
+    def setUp(self):
+        super().setUp()
+
+        self.other = self.generate_user()
+
+        for it in range(5):
+            Post.objects.create(user=self.user)
+
+        self.posts = list(Post.objects.all())
+
+        # Clear test
+        r = redis.StrictRedis(host='localhost', port=6379, db=0)
+        key = User.redis_posts_key(self.user.pk)
+        r.delete(key)
+
+    def test_search_empty_result(self):
+        """Should returns empty list for non existing user"""
+        url = self.url + '?search={}'.format('000')
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 0)
+
+    def test_search(self):
+        """Should find user by username"""
+
+        url = self.url + '?search={}'.format(self.user.username)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        results = response.data['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['username'], self.user.username)
+
+        posts = results[0]['posts']
+
+        self.assertEqual(len(posts), 3)
+        for i in range(len(posts)):
+            self.assertEqual(posts[i]['id'], self.posts[i].pk)
+
+        # Vote for last post
+        vote_url = reverse_lazy('post-vote', kwargs={'pk': self.posts[-1].pk})
+
+        response = self.put_json(vote_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # check new order
+        new_order = [self.posts[-1], self.posts[0], self.posts[1]]
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        posts = response.data['results'][0]['posts']
+        for i in range(len(new_order)):
+            self.assertEqual(posts[i]['id'], new_order[i].pk)

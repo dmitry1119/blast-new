@@ -1,4 +1,5 @@
 import logging
+import redis
 
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
@@ -7,7 +8,7 @@ from rest_framework import viewsets, mixins, permissions, generics, filters, sta
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
-from core.views import ExtandableModelMixin
+from core.views import ExtendableModelMixin
 from notifications.models import FollowRequest, Notification
 from posts.models import Post
 from posts.serializers import PostPublicSerializer, PreviewPostSerializer
@@ -18,9 +19,6 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                CheckUsernameAndPassword, UsernameSerializer, FollwersSerializer)
 
 from users.signals import start_following
-
-
-logger = logging.getLogger(__name__)
 
 
 def extend_users_response(users: list, request):
@@ -49,7 +47,7 @@ def extend_users_response(users: list, request):
 
 
 # TODO: Use class from core.views
-class UserViewSet(ExtandableModelMixin,
+class UserViewSet(ExtendableModelMixin,
                   mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.ListModelMixin,
@@ -110,14 +108,13 @@ class UserViewSet(ExtandableModelMixin,
         user = get_object_or_404(User, pk=pk)
         if not Follower.objects.filter(followee=user, follower=request.user).exists():
             if user.is_private:
-                logger.info('Send follow request to {} from {}'.format(user, request.user))
+                logging.info('Send follow request to {} from {}'.format(user, request.user))
                 _, created = FollowRequest.objects.get_or_create(follower=request.user,
                                                                  followee=user)
             else:
-                logger.info('{} stated to follow by {}'.format(request.user, user))
+                logging.info('{} stated to follow by {}'.format(request.user, user))
                 start_following.send(sender=user, follower=request.user, followee=user)
                 Follower.objects.create(followee=user, follower=request.user)
-                # user.followers.add(request.user)
 
         return Response()
 
@@ -144,8 +141,9 @@ class UserViewSet(ExtandableModelMixin,
         return Response()
 
     def _get_user_recent_posts(self, data: list, user_ids: set):
-        """Returns dict of last post for users in user_ids"""
+        """Returns dict with three last post for users in user_ids"""
         # Adds last three post to each user
+        # TODO: Use Redis sorted set
         # FIXME: can be slow and huge
         posts = Post.objects.filter(user__in=user_ids, expired_at__gte=timezone.now())
         posts = posts.order_by('user_id', 'voted_count')
@@ -224,7 +222,7 @@ class UserViewSet(ExtandableModelMixin,
         try:
             BlockedUsers.objects.create(user=request.user, blocked=blocked)
         except IntegrityError as e:
-            logger.error("User {} already blocked by {}".format(blocked, request.user))
+            logging.error("User {} already blocked by {}".format(blocked, request.user))
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         return Response()
@@ -347,6 +345,43 @@ class UserChangePhoneView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserSearchView(ExtendableModelMixin,
+                     viewsets.ReadOnlyModelViewSet):
+    # TODO: take into account a followers
+    queryset = User.objects.filter(is_private=False)
+    serializer_class = PublicUserSerializer
+
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
+
+    def extend_response_data(self, data):
+        users_to_posts = {}
+        posts = []
+        for user in data:
+            user_posts_ids = User.get_posts(user['id'], 0, 5)
+            users_to_posts[user['id']] = user_posts_ids
+            posts.extend(user_posts_ids)
+
+        # Pulls posts from memory and builds in-memory index
+        posts = Post.objects.filter(pk__in=posts)
+        posts = {it.pk: it for it in posts}
+
+        context = self.get_serializer_context()
+        for user in data:
+            user_posts_ids = users_to_posts[user['id']]
+
+            user_posts = []
+            for post_id in user_posts_ids:
+                if post_id in posts:
+                    user_posts.append(posts[post_id])
+                if len(user_posts) >= 3:  # FIXME: Magic number.
+                    break
+
+            user['posts'] = PostPublicSerializer(user_posts, many=True, context=context).data
+
+        return data
 
 
 class UsernameSearchView(viewsets.ReadOnlyModelViewSet):

@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
+import logging
 import os
 import uuid
+import redis
 
 
 from django.contrib.auth.models import (
@@ -12,7 +14,11 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from core.decoratiors import memoize_posts
 from countries.models import Country
+
+
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
 def avatars_upload_dir(instance, filename):
@@ -86,8 +92,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     pinned_posts = models.ManyToManyField('posts.Post', blank=True,
                                           related_name='pinned_users')
+
     hidden_posts = models.ManyToManyField('posts.Post', blank=True,
                                           related_name='hidden_users')
+
+    pinned_tags = models.ManyToManyField('tags.Tag', blank=True,
+                                         related_name='pinned_users')
 
     # FIXME: symmetrical=False?
     friends = models.ManyToManyField('User', blank=True, through='Follower',
@@ -99,6 +109,23 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']
+
+    def redis_posts_key(pk):
+        return u'user:{}:posts'.format(pk)
+
+    @staticmethod
+    @memoize_posts(u'user:{}:posts')
+    def get_posts(user_id, start, end):
+        from posts.models import Post
+        user_posts = list(Post.objects.filter(user=user_id))
+        logging.info('Got {} posts for {} user key'.format(len(user_posts), user_id))
+
+        result = []
+        for it in user_posts:
+            result.append(it.popularity)
+            result.append(it.pk)
+
+        return result
 
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.
