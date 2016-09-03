@@ -96,6 +96,10 @@ class Post(models.Model):
     downvoted_count = models.PositiveIntegerField(default=0)
     voted_count = models.PositiveIntegerField(default=0)
 
+    @property
+    def popularity(self):
+        return self.voted_count - self.downvoted_count
+
     def get_tag_titles(self):
         reg = re.compile(r'(?:(?<=\s)|^)#(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
         return reg.findall(self.text)

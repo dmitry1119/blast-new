@@ -27,9 +27,7 @@ def extend_tags(data, serializer_context):
     posts = []
     tags_to_posts = {}
     for tag in tags:
-        key = Tag.redis_posts_key(tag)
-        tag_post_ids = r.zrevrange(key, 0, 5)  # This defines order of posts. See zrevrange doc.
-        tag_post_ids = [int(i) for i in tag_post_ids]
+        tag_post_ids = Tag.get_posts(tag, 0, 5)
 
         tags_to_posts[tag] = tag_post_ids
         posts.extend(tag_post_ids)
@@ -41,6 +39,7 @@ def extend_tags(data, serializer_context):
     for it in data:
         tag_post_ids = tags_to_posts[it['title']]
         tag_posts = []
+
         for post_id in tag_post_ids:
             if post_id in posts:
                 tag_posts.append(posts[post_id])

@@ -9,6 +9,7 @@ from django.db.models import F
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
+from core.decoratiors import memoize_posts
 from posts.models import Post
 
 
@@ -31,6 +32,17 @@ class Tag(models.Model):
     @staticmethod
     def redis_posts_key(pk):
         return u'tag:{}:posts'.format(pk)
+
+    @staticmethod
+    @memoize_posts(u'tag:{}:posts')
+    def get_posts(tag_pk, start, end):
+        result = []
+        posts = list(Post.objects.filter(tags=tag_pk))
+        for it in posts:
+            result.append(it.popularity)
+            result.append(it.pk)
+
+        return result
 
     def __str__(self):
         return u'{} - {}'.format(self.title, self.total_posts)

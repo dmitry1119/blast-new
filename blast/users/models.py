@@ -14,6 +14,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from core.decoratiors import memoize_posts
 from countries.models import Country
 
 
@@ -113,28 +114,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         return u'user:{}:posts'.format(pk)
 
     @staticmethod
+    @memoize_posts(u'user:{}:posts')
     def get_posts(user_id, start, end):
-        """Returns user posts from redis cache"""
-        key = User.redis_posts_key(user_id)
-        if not r.exists(key):  # Warming cache
-            from posts.models import Post
-            logging.info('Warming cache for {} user key'.format(key))
-            user_posts = Post.objects.filter(user=user_id)
+        from posts.models import Post
+        user_posts = list(Post.objects.filter(user=user_id))
+        logging.info('Got {} posts for {} user key'.format(len(user_posts), user_id))
 
-            logging.info('Got {} posts for {} key'.format(len(user_posts), key))
-            # TODO: Think about first argument
-            to_add = []
-            for it in user_posts:
-                to_add.append(it.voted_count)
-                to_add.append(it.pk)
+        result = []
+        for it in user_posts:
+            result.append(it.popularity)
+            result.append(it.pk)
 
-            if to_add:
-                r.zadd(key, *to_add)
-
-        # zrevrange defines the order of posts.
-        # See zrevrange doc.
-        user_posts_ids = r.zrevrange(key, start, end)
-        return [int(it) for it in user_posts_ids]
+        return result
 
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.

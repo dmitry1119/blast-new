@@ -121,62 +121,103 @@ class TagSearchTest(BaseTestCase):
         self.assertEqual(posts[0]['id'], post.pk)
 
 
-class TagPinnedSearch(BaseTestCase):
-
-    tag_count = 10
+class TestCacheHeatUp(BaseTestCase):
+    tags = ['tag1', 'tag2', 'tag3']
 
     def setUp(self):
         super().setUp()
 
-        tags = [Tag(title='tag{}'.format(it)) for it in range(TagPinnedSearch.tag_count)]
-        Tag.objects.bulk_create(tags)
+        text = ', '.join(['#' + it for it in self.tags])
 
-    def test_pin_tag(self):
-        index = TagPinnedSearch.tag_count // 2
-        title = 'tag{}'.format(index)
-        url = reverse_lazy('tag-detail', kwargs={'pk': title})
-        url += 'pin/'
+        self.posts = []
+        for it in range(5):
+            post = Post.objects.create(user=self.user, text=text)
+            self.posts.append(post)
 
-        response = self.put_json(url, {})
+    def test_heat_up(self):
+        r = redis.StrictRedis(host='localhost', port=6379, db=0)
+        for it in self.tags:
+            key = Tag.redis_posts_key(it)
+            self.assertTrue(r.exists(key))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+            # Clear cache
+            r.delete(key)
 
-        self.user.refresh_from_db()
+        for it in self.tags:
+            self.assertFalse(r.exists(Tag.redis_posts_key(it)))
 
-        self.assertEqual(self.user.pinned_tags.count(), 1)
-        self.assertTrue(self.user.pinned_tags.filter(title=title))
+        # Heat up cache
+        post_ids = [it.pk for it in self.posts]
+        post_ids = reversed(post_ids)
+        for tag in self.tags:
+            print(tag)
+            tag_posts = Tag.get_posts(tag, 0, 5)
 
-    def test_unpin_tag(self):
-        tag = Tag.objects.get(title='tag5')
+            # Check cache values
+            for it1, it2 in zip(tag_posts, post_ids):
+                self.assertEqual(it1, it2)
 
-        self.user.pinned_tags.add(tag)
+            # Check cache keys
+            key = Tag.redis_posts_key(tag)
+            self.assertTrue(r.exists(key))
 
-        url = reverse_lazy('tag-detail', kwargs={'pk': tag.title})
-        url += 'unpin/'
 
-        response = self.put_json(url, {})
-        self.user.refresh_from_db()
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.user.pinned_tags.count(), 0)
-
-    def test_pinned_tag_list(self):
-        limit = 5
-        tags = Tag.objects.all()[:limit]
-
-        for it in tags:
-            self.user.pinned_tags.add(it)
-
-        url = reverse_lazy('tag-list')
-        url += 'pinned/'
-
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertEqual(len(response.data['results']), limit)
-
-        tags = {it.title for it in tags}
-        titles = {it['title'] for it in response.data['results']}
-
-        self.assertEqual(tags, titles)
+# class TagPinnedSearch(BaseTestCase):
+#
+#     tag_count = 10
+#
+#     def setUp(self):
+#         super().setUp()
+#
+#         tags = [Tag(title='tag{}'.format(it)) for it in range(TagPinnedSearch.tag_count)]
+#         Tag.objects.bulk_create(tags)
+#
+#     def test_pin_tag(self):
+#         index = TagPinnedSearch.tag_count // 2
+#         title = 'tag{}'.format(index)
+#         url = reverse_lazy('tag-detail', kwargs={'pk': title})
+#         url += 'pin/'
+#
+#         response = self.put_json(url, {})
+#
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#
+#         self.user.refresh_from_db()
+#
+#         self.assertEqual(self.user.pinned_tags.count(), 1)
+#         self.assertTrue(self.user.pinned_tags.filter(title=title))
+#
+#     def test_unpin_tag(self):
+#         tag = Tag.objects.get(title='tag5')
+#
+#         self.user.pinned_tags.add(tag)
+#
+#         url = reverse_lazy('tag-detail', kwargs={'pk': tag.title})
+#         url += 'unpin/'
+#
+#         response = self.put_json(url, {})
+#         self.user.refresh_from_db()
+#
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertEqual(self.user.pinned_tags.count(), 0)
+#
+#     def test_pinned_tag_list(self):
+#         limit = 5
+#         tags = Tag.objects.all()[:limit]
+#
+#         for it in tags:
+#             self.user.pinned_tags.add(it)
+#
+#         url = reverse_lazy('tag-list')
+#         url += 'pinned/'
+#
+#         response = self.client.get(url)
+#
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#
+#         self.assertEqual(len(response.data['results']), limit)
+#
+#         tags = {it.title for it in tags}
+#         titles = {it['title'] for it in response.data['results']}
+#
+#         self.assertEqual(tags, titles)
