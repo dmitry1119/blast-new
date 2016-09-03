@@ -54,8 +54,6 @@ def extend_tags(data, serializer_context):
     return data
 
 
-# On each tab it's populated by popularity/randomness so on the users
-# tab for every 10 displayed 7 are most popular and 3 are random.
 # On tags tab the ones pinned will appear at the top then underneath ones that is most popular
 # (has the most posts with the tag)
 class TagsViewSet(ExtendableModelMixin,
@@ -68,19 +66,29 @@ class TagsViewSet(ExtendableModelMixin,
 
     permission_classes = (permissions.IsAuthenticated,)
 
+    def get_queryset(self):
+        if not self.request.user.is_authenticated():
+            return self.queryset
+
+        pinned = list(self.request.user.pinned_tags.all())
+        pinned = {it.title for it in pinned}
+
+        qs = self.queryset.exclude(title__in=pinned)
+        return qs
+
     def extend_response_data(self, data):
         serializer_context = self.get_serializer_context()
         extend_tags(data, serializer_context)
-        if not self.request.user.is_authenticated():
-            return
+        # if not self.request.user.is_authenticated():
+        #     return
 
-        tags = {it['title'] for it in data}
-        pinned = self.request.user.pinned_tags.filter(title__in=tags)
-        pinned = pinned.values('title')
-        pinned = {it['title'] for it in pinned}
+        # tags = {it['title'] for it in data}
+        # pinned = self.request.user.pinned_tags.filter(title__in=tags)
+        # pinned = pinned.values('title')
+        # pinned = {it['title'] for it in pinned}
 
-        for it in data:
-            it['is_pinned'] = it['title'] in pinned
+        # for it in data:
+        #     it['is_pinned'] = it['title'] in pinned
 
     @detail_route(['put'])
     def pin(self, request, pk=None):
@@ -108,8 +116,6 @@ class TagsViewSet(ExtendableModelMixin,
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             response = self.get_paginated_response(serializer.data)
-            for it in response.data['results']:
-                it['is_pinned'] = True
 
             extend_tags(response.data['results'], serializer_context)
 
@@ -118,8 +124,6 @@ class TagsViewSet(ExtendableModelMixin,
         serializer = self.get_serializer(qs, many=True)
         extend_tags(serializer.data, serializer_context)
 
-        for it in serializer.data['results']:
-            it['is_pinned'] = True
         return Response(serializer.data)
 
 
