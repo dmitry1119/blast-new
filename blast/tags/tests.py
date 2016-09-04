@@ -144,7 +144,6 @@ class TestCacheHeatUp(BaseTestCase):
         post_ids = [it.pk for it in self.posts]
         post_ids = reversed(post_ids)
         for tag in self.tags:
-            print(tag)
             tag_posts = Tag.get_posts(tag, 0, 5)
 
             # Check cache values

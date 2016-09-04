@@ -37,7 +37,7 @@ class Tag(models.Model):
     @memoize_posts(u'tag:{}:posts')
     def get_posts(tag_pk, start, end):
         result = []
-        posts = list(Post.objects.filter(tags=tag_pk))
+        posts = list(Post.objects.actual().filter(tags=tag_pk))
         for it in posts:
             result.append(it.popularity)
             result.append(it.pk)
