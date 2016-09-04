@@ -209,16 +209,17 @@ class PostsViewSet(PerObjectPermissionMixin,
     def extend_response_data(self, data):
         fill_posts(data, self.request.user, self.request)
 
-    # def get_queryset(self):
-    #     sort = self.request.query_params.get('order', None)
-    #
-    #     qs = self.queryset
-    #     if sort == 'featured':
-    #         qs = qs.order_by('-voted_count')
-    #     elif sort == 'newest':
-    #         qs = qs.order_by('voted_count')
-    #
-    #     return qs
+    def get_queryset(self):
+        if not self.request.user.is_authenticated():
+            return self.queryset
+
+        followees = Follower.objects.filter(follower=self.request.user.pk)
+        followees = {it.followee_id for it in followees}
+
+        qs = Post.objects.actual()
+        qs = qs.filter(Q(user__is_private=False)|Q(user__in=followees)|Q(user=None))
+
+        return qs
 
     # TODO: Move to mixin
     def create(self, request, *args, **kwargs):
