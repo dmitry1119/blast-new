@@ -48,6 +48,9 @@ def get_notified_users(text: str):
 
 
 class PostManager(models.Manager):
+    def actual(self):
+        return self.get_queryset().filter(expired_at__gte=timezone.now())
+
     def public(self):
         qs = self.get_queryset()
         qs = qs.filter(Q(user__is_private=False) | Q(user=None),
