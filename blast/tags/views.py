@@ -127,6 +127,8 @@ class TagsViewSet(ExtendableModelMixin,
         for it in serializer.data:
             it['is_pinned'] = False
 
+        extend_tags(serializer.data, context)
+
         return Response({
             'count': qs.count(),
             'results': serializer.data
