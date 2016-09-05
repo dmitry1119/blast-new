@@ -388,14 +388,14 @@ class UserSearchView(ExtendableModelMixin,
 
     @list_route(['get'])
     def feeds(self, request):
-        page = request.query_params.get('page', 1)
+        page = request.query_params.get('page', 0)
         page_size = request.query_params.get('page_size', 50)
 
         try:
             page = int(page)
             page_size = min(int(page_size), 250)
         except ValueError as e:
-            page = 1
+            page = 0
             page_size = 50
             logging.error('Failed to cast page {} and page_size {} to int'.format(page, page_size))
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -403,8 +403,8 @@ class UserSearchView(ExtendableModelMixin,
         random_count = page_size // 10 * 3
 
         # Calculates limits for getting most popular users
-        start = (page - 1) * (page_size - random_count)
-        end = page * (page_size - random_count) - 1
+        start = page * (page_size - random_count)
+        end = (page + 1) * (page_size - random_count) - 1
 
         users = User.get_most_popular_ids(start, end)
 

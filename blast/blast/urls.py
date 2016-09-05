@@ -23,7 +23,7 @@ from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
 from notifications.views import NotificationsViewSet, FollowRequestViewSet
-from tags.views import TagsViewSet
+from tags.views import TagsViewSet, TagExactSearchView
 
 from users.views import (UserViewSet, UserProfileView, UserSettingsView,
                          UserPasswordResetView, UserChangePhoneView, UsernameSearchView, UserSearchView)
@@ -45,6 +45,7 @@ api_1.register(r'posts/voted', VotedPostsViewSet, base_name='voted')
 api_1.register(r'posts/search', PostSearchViewSet, base_name='post-search')
 api_1.register(r'posts', PostsViewSet, base_name='post')
 api_1.register(r'comments', CommentsViewSet, base_name='comment')
+api_1.register(r'tags/search', TagExactSearchView, base_name='tag-exact-search')
 api_1.register(r'tags', TagsViewSet, base_name='tag')
 api_1.register(r'notifications/follow', FollowRequestViewSet, base_name='followrequest')
 api_1.register(r'notifications', NotificationsViewSet, base_name='notifications')

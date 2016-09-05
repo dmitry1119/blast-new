@@ -170,7 +170,7 @@ class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
         blocked = {it.blocked_id for it in blocked}
         qs = qs.exclude(user__in=blocked)
 
-        # Excludes hidden posts
+        # Exclude hidden posts
         # FIXME (VM): cache list in redis?
         hidden = user.hidden_posts.all().values('pk')
         hidden = {it['pk'] for it in hidden}

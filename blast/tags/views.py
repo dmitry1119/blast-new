@@ -1,5 +1,6 @@
 import logging
 
+import itertools
 from django.shortcuts import render, get_object_or_404
 import redis
 
@@ -66,29 +67,19 @@ class TagsViewSet(ExtendableModelMixin,
 
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get_queryset(self):
-        if not self.request.user.is_authenticated():
-            return self.queryset
-
-        pinned = list(self.request.user.pinned_tags.all())
-        pinned = {it.title for it in pinned}
-
-        qs = self.queryset.exclude(title__in=pinned)
-        return qs
-
     def extend_response_data(self, data):
         serializer_context = self.get_serializer_context()
         extend_tags(data, serializer_context)
-        # if not self.request.user.is_authenticated():
-        #     return
+        if not self.request.user.is_authenticated():
+            return
 
-        # tags = {it['title'] for it in data}
-        # pinned = self.request.user.pinned_tags.filter(title__in=tags)
-        # pinned = pinned.values('title')
-        # pinned = {it['title'] for it in pinned}
+        tags = {it['title'] for it in data}
+        pinned = self.request.user.pinned_tags.filter(title__in=tags)
+        pinned = pinned.values('title')
+        pinned = {it['title'] for it in pinned}
 
-        # for it in data:
-        #     it['is_pinned'] = it['title'] in pinned
+        for it in data:
+            it['is_pinned'] = it['title'] in pinned
 
     @detail_route(['put'])
     def pin(self, request, pk=None):
@@ -108,6 +99,40 @@ class TagsViewSet(ExtendableModelMixin,
         return Response()
 
     @list_route(['get'])
+    def unpinned(self, request):
+        if not self.request.user.is_authenticated():
+            return self.queryset
+
+        page = request.query_params.get('page', 0)
+        page_size = request.query_params.get('page_size', 50)
+
+        try:
+            page = int(page)
+            page_size = int(page_size)
+        except ValueError:
+            logging.error('Failed to cast page and page size to int')
+            return Response('page and page_size should be int', status=400)
+
+        start = page * page_size
+        end = (page + 1) * page_size
+
+        pinned = self.request.user.pinned_tags.all()
+        pinned_tags = {it.title for it in pinned}
+
+        qs = Tag.objects.exclude(title__in=pinned_tags)
+        tags = qs[start:end]
+
+        context = self.get_serializer_context()
+        serializer = TagPublicSerializer(tags, many=True, context=context)
+        for it in serializer.data:
+            it['is_pinned'] = False
+
+        return Response({
+            'count': qs.count(),
+            'results': serializer.data
+        })
+
+    @list_route(['get'])
     def pinned(self, request):
         qs = request.user.pinned_tags.all()
         page = self.paginate_queryset(qs)
@@ -116,15 +141,107 @@ class TagsViewSet(ExtendableModelMixin,
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             response = self.get_paginated_response(serializer.data)
+            for it in serializer.data:
+                it['is_pinned'] = True
 
             extend_tags(response.data['results'], serializer_context)
 
             return response
 
         serializer = self.get_serializer(qs, many=True)
+        for it in serializer.data:
+            it['is_pinned'] = True
+
         extend_tags(serializer.data, serializer_context)
 
         return Response(serializer.data)
+
+    @list_route(['get'])
+    def feeds(self, request):
+        page = self.request.query_params.get('page', 0)
+        page_size = self.request.query_params.get('page_size', 50)
+
+        try:
+            page = int(page)
+            page_size = int(page_size)
+        except ValueError:
+            return Response('page and page_size should be int', status=400)
+
+        start = page * page_size
+        end = (page + 1) * page_size
+
+        pinned_qs = self.request.user.pinned_tags.all()
+        pinned_count = pinned_qs.count()
+        pinned = []
+
+        rest_qs = Tag.objects.all().order_by('-total_posts')
+        rest_count = rest_qs.count()
+        rest = []
+
+        print(start, end, page_size, pinned_count, start <= pinned_count and pinned_count <= end)
+        if start < pinned_count and pinned_count <= end:  # Case 2
+            pinned = pinned_qs[start:pinned_count]
+            pinned_tags = {it.title for it in pinned}
+
+            rest_qs = rest_qs.exclude(title__in=pinned_tags)
+            r_start = max(0, start - pinned_count)
+            r_end = end - pinned_count
+
+            rest = rest_qs[r_start:r_end]
+        elif end < pinned_count:  # Case 2
+            pinned = pinned_qs[start:end]
+        elif start >= pinned_count:  # Case 3
+            r_start = max(0, start - pinned_count)
+            r_end = end - pinned_count
+
+            pinned_tags = {it.title for it in pinned_qs.all()}
+            rest = rest_qs.exclude(title__in=pinned_tags)[r_start:r_end]
+
+        context = self.get_serializer_context()
+
+        pinned = TagPublicSerializer(pinned, many=True, context=context).data
+        for it in pinned:
+            it['is_pinned'] = True
+
+        rest = TagPublicSerializer(rest, many=True, context=context).data
+        for it in rest:
+            it['is_pinned'] = False
+
+        results = itertools.chain(pinned, rest)
+
+        return Response({
+            'count': rest_count + pinned_count,
+            'results': results
+        })
+
+
+class TagExactSearchView(viewsets.ReadOnlyModelViewSet):
+    """Returns list of post for given tag
+
+    ---
+    list:
+        parameters:
+            - name: search
+              type: string
+              description: tag name to search
+            - name: order
+              type: string
+              description: Should be 'newest' or 'featured'
+    """
+
+    serializer_class = PostPublicSerializer
+
+    def get_queryset(self):
+        tag = self.request.query_params.get('search')
+        qs = Post.objects.actual().filter(tags=tag)
+
+        order = self.request.query_params.get('order', 'neweset')
+        if order == 'newest':
+            qs = qs.order_by('created_at')
+        else:
+            qs = qs.order_by('-created_at')
+
+        return qs
 
 
 class TagViewSet(ExtendableModelMixin,
