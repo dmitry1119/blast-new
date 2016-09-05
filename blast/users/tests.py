@@ -609,3 +609,27 @@ class TestUserSearch(BaseTestCase):
         posts = response.data['results'][0]['posts']
         for i in range(len(new_order)):
             self.assertEqual(posts[i]['id'], new_order[i].pk)
+
+    def test_search_feeds(self):
+        page_size = 25
+        url = reverse_lazy('user-search-feeds')
+
+        users = [self.generate_user() for it in range(50)]
+
+        response = self.client.get(url + '?page_size={}'.format(page_size))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), page_size)
+
+    def test_search_feeds_full_page(self):
+        page_size = 50
+        url = reverse_lazy('user-search-feeds')
+
+        users = [self.generate_user() for it in range(50)]
+
+        response = self.client.get(url + '?page_size={}'.format(page_size))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), page_size)

@@ -1,22 +1,22 @@
 from __future__ import unicode_literals
 
+from typing import Set, List
+
 import logging
 import os
 import uuid
 import redis
 
-
 from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser, PermissionsMixin
 )
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
 from core.decoratiors import memoize_posts
 from countries.models import Country
-
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -59,6 +59,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         (GENDER_MALE, 1),
     )
 
+    USERS_SET_KEY = 'users:set:all'  # Redis key for getting random users
+
+    USERS_ZSET_KEY = 'users:zset:all'  # Redis key for getting users by popularity
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -99,6 +103,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     pinned_tags = models.ManyToManyField('tags.Tag', blank=True,
                                          related_name='pinned_users')
 
+    @property
+    def popularity(self):
+        return self.followers_count()  # FIXME: Too expensive
+
     # FIXME: symmetrical=False?
     friends = models.ManyToManyField('User', blank=True, through='Follower',
                                      related_name='related_friends',
@@ -117,7 +125,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     @memoize_posts(u'user:{}:posts')
     def get_posts(user_id, start, end):
         from posts.models import Post
-        user_posts = list(Post.objects.filter(user=user_id))
+        user_posts = list(Post.objects.actual().filter(user=user_id))
         logging.info('Got {} posts for {} user key'.format(len(user_posts), user_id))
 
         result = []
@@ -145,6 +153,43 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.fullname
+
+    @staticmethod
+    def get_random_user_ids(count) -> Set[int]:
+        if not r.exists(User.USERS_SET_KEY):
+            # Heat up cache
+            users = User.objects.all()
+            users = [it.pk for it in users]
+
+            r.sadd(User.USERS_SET_KEY, *users)
+
+        items = r.srandmember(User.USERS_SET_KEY, count)
+        return {int(it) for it in items}
+
+    @staticmethod
+    def get_most_popular_ids(start, end):
+        if not r.exists(User.USERS_ZSET_KEY):
+            # Heat up cache
+            users = User.objects.all()
+            # users = [it.pk for it in users]
+
+            to_add = []
+            for it in users:
+                to_add.append(it.popularity)
+                to_add.append(it.pk)
+
+            if to_add:
+                r.zadd(User.USERS_ZSET_KEY, *to_add)
+
+        items = r.zrevrange(User.USERS_ZSET_KEY, start, end)
+        return [int(it) for it in items]
+
+    @staticmethod
+    def get_users_count():
+        if r.exists(User.USERS_ZSET_KEY):
+            return r.zcard(User.USERS_ZSET_KEY)
+        else:
+            return 0
 
     @property
     def is_staff(self):
@@ -210,12 +255,29 @@ class UserSettings(models.Model):
     notify_reblasts = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
 
 
-@receiver(post_save, sender=User, dispatch_uid='post_user_save_handler')
-def post_user_created(sender, **kwargs):
+@receiver(post_save, sender=User, dispatch_uid='users_post_user_save_handler')
+def post_user_created(sender, instance: User, **kwargs):
     if not kwargs['created']:
         return
 
-    user = kwargs['instance']
-    # Creates settings for user
-    UserSettings.objects.create(user=user)
+    # add user to set of all users.
+    r.sadd(User.USERS_SET_KEY, instance.pk)
+    r.zadd(User.USERS_ZSET_KEY, 1, instance.pk)
 
+    # Creates settings for user
+    UserSettings.objects.create(user=instance)
+
+
+@receiver(post_save, sender=Follower, dispatch_uid='update_user_popularity_positive')
+def update_user_popularity_positive(sender, instance: Follower, **kwargs):
+    if not kwargs['created']:
+        return
+
+    followee_id = instance.followee_id
+    r.zincrby(User.USERS_ZSET_KEY, followee_id, 1)
+
+
+@receiver(pre_delete, sender=Follower, dispatch_uid='update_user_popularity_negative')
+def update_user_popularity_negative(sender, instance: Follower, **kwargs):
+    followee_id = instance.followee_id
+    r.zincrby(User.USERS_ZSET_KEY, followee_id, -1)

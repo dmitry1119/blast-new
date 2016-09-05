@@ -347,6 +347,8 @@ class UserChangePhoneView(generics.UpdateAPIView):
         return self.request.user
 
 
+# on each tab it's populated by popularity/randomness so on the users tab for every 10 displayed 7 are most popular
+# and 3 are random.
 class UserSearchView(ExtendableModelMixin,
                      viewsets.ReadOnlyModelViewSet):
     # TODO: take into account a followers
@@ -356,6 +358,7 @@ class UserSearchView(ExtendableModelMixin,
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
 
+    # TODO: Sort users by popularity
     def extend_response_data(self, data):
         users_to_posts = {}
         posts = []
@@ -382,6 +385,62 @@ class UserSearchView(ExtendableModelMixin,
             user['posts'] = PostPublicSerializer(user_posts, many=True, context=context).data
 
         return data
+
+    @list_route(['get'])
+    def feeds(self, request):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 50)
+
+        try:
+            page = int(page)
+            page_size = min(int(page_size), 250)
+        except ValueError as e:
+            page = 1
+            page_size = 50
+            logging.error('Failed to cast page {} and page_size {} to int'.format(page, page_size))
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        random_count = page_size // 10 * 3
+
+        # Calculates limits for getting most popular users
+        start = (page - 1) * (page_size - random_count)
+        end = page * (page_size - random_count) - 1
+
+        users = User.get_most_popular_ids(start, end)
+
+        # TODO: Total count is wrong if random_users too small or empty.
+        # Getting random users
+        random_users = User.get_random_user_ids(page_size*2)  # Increase random_count to avoid duplications with users
+        random_users = random_users.difference(set(users))  # Excludes already selected users
+        random_users = list(random_users)[random_count:]  # Slice unneeded elements
+        # random_users = User.objects.filter(pk__in=random_users).exclude(users)[random_count:]
+
+        rand_pos = 0
+        random_count = min(random_count, len(random_users))
+        for i in range(0, page_size + 1, 10):
+            pos = i + 7
+            for j in range(rand_pos * 3, (rand_pos + 1) * 3):
+                if j < random_count:
+                    users.insert(pos, random_users[j])
+                else:
+                    break
+
+            rand_pos += 1
+            if rand_pos * 3 >= random_count:
+                break
+
+        # Pulls users and sort according to cached popularity
+        sort_keys = {it: i for i, it in enumerate(users)}
+        users = User.objects.filter(pk__in=users)
+        users = sorted(users, key=lambda it: sort_keys[it.pk])
+
+        serializer = PublicUserSerializer(users, many=True,
+                                          context=self.get_serializer_context())
+        self.extend_response_data(serializer.data)
+        return Response({
+            'count': User.get_users_count(),
+            'results': serializer.data,
+        })
 
 
 class UsernameSearchView(viewsets.ReadOnlyModelViewSet):
