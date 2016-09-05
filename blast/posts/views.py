@@ -217,7 +217,8 @@ class PostsViewSet(PerObjectPermissionMixin,
         followees = {it.followee_id for it in followees}
 
         qs = Post.objects.actual()
-        qs = qs.filter(Q(user__is_private=False)|Q(user__in=followees)|Q(user=None))
+        qs = qs.filter(Q(user__is_private=False)|Q(user__in=followees)|
+                       Q(user=None)|Q(user=self.request.user.pk))
 
         return qs
 
