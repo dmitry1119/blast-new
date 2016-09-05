@@ -170,7 +170,7 @@ class TagsViewSet(ExtendableModelMixin,
         start = page * page_size
         end = (page + 1) * page_size
 
-        pinned_qs = self.request.user.pinned_tags.all()
+        pinned_qs = request.user.pinned_tags.all()
         pinned_count = pinned_qs.count()
         pinned = []
 
@@ -178,7 +178,6 @@ class TagsViewSet(ExtendableModelMixin,
         rest_count = rest_qs.count()
         rest = []
 
-        print(start, end, page_size, pinned_count, start <= pinned_count and pinned_count <= end)
         if start < pinned_count and pinned_count <= end:  # Case 2
             pinned = pinned_qs[start:pinned_count]
             pinned_tags = {it.title for it in pinned}
@@ -188,9 +187,9 @@ class TagsViewSet(ExtendableModelMixin,
             r_end = end - pinned_count
 
             rest = rest_qs[r_start:r_end]
-        elif end < pinned_count:  # Case 2
+        elif end < pinned_count:
             pinned = pinned_qs[start:end]
-        elif start >= pinned_count:  # Case 3
+        elif start >= pinned_count:
             r_start = max(0, start - pinned_count)
             r_end = end - pinned_count
 
