@@ -158,11 +158,9 @@ class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
         followees = Follower.objects.filter(follower=self.request.user)
         followees = {it.followee_id for it in followees}
 
-        # Special case for user without followees
-        if not followees:
-            return qs
-
-        qs = qs.filter(user__in=followees)
+        qs = Post.objects.actual().filter(Q(user__is_private=False) | Q(user=None) |
+                                          Q(user__in=followees) |
+                                          Q(user=self.request.user.pk))
 
         # Exclude blocked users
         # FIXME (VM): cache list in redis?
