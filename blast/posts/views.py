@@ -215,8 +215,9 @@ class PostsViewSet(PerObjectPermissionMixin,
         followees = {it.followee_id for it in followees}
 
         qs = Post.objects.actual()
-        qs = qs.filter(Q(user__is_private=False)|Q(user__in=followees)|
-                       Q(user=None)|Q(user=self.request.user.pk))
+        qs = qs.filter(Q(user__is_private=False) | Q(user=None) |
+                       Q(user__in=followees) |
+                       Q(user=self.request.user.pk))
 
         return qs
 
@@ -256,7 +257,7 @@ class PostsViewSet(PerObjectPermissionMixin,
             return self.permission_denied(self.request, 'You are not authenticated')
 
         try:
-            post = self.queryset.get(pk=pk)
+            post = self.get_queryset().get(pk=pk)
         except Post.DoesNotExist:
             raise Http404()
 
@@ -281,22 +282,10 @@ class PostsViewSet(PerObjectPermissionMixin,
         serializer = VoteSerializer(instance=vote)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @detail_route(methods=['put'])
-    def vote(self, request, pk=None):
-        """
-        Add vote to post
-
-        ---
-        omit_serializer: true
-        parameters_strategy:
-            form: replace
-        """
-        return self._update_vote(request, True, pk)
-
     @detail_route(methods=['get'])
     def voters(self, request, pk=None):
-        qs = PostVote.objects.filter(post=pk, is_positive=True)\
-            .prefetch_related('user')
+        qs = PostVote.objects.filter(post=pk, is_positive=True)
+        qs = qs.prefetch_related('user')
 
         page = self.paginate_queryset(qs)
 
@@ -317,6 +306,18 @@ class PostsViewSet(PerObjectPermissionMixin,
                 it['is_followee'] = False
 
         return self.get_paginated_response(serializer.data)
+
+    @detail_route(methods=['put'])
+    def vote(self, request, pk=None):
+        """
+        Add vote to post
+
+        ---
+        omit_serializer: true
+        parameters_strategy:
+            form: replace
+        """
+        return self._update_vote(request, True, pk)
 
     @detail_route(methods=['put'])
     def downvote(self, request, pk=None):

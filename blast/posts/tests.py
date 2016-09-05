@@ -76,6 +76,15 @@ class PostTest(BaseTestCase):
 
         self.assertEqual(Post.objects.all().count(), 0)
 
+    def test_get_my_private_post(self):
+        self.user.is_private = True
+        self.user.save()
+
+        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], self.post.pk)
+
 
 class TestAnonymousPost(BaseTestCase):
     def setUp(self):
@@ -240,6 +249,8 @@ class AuthorizedPermissionsTest(BaseTestCase):
 class VoteTest(BaseTestCase):
     def setUp(self):
         super().setUp()
+        self.user.is_private = True
+        self.user.save()
         self.post = Post.objects.create(user=self.user)
         self.expired_at = self.post.expired_at
 
