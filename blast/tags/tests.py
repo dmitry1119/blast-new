@@ -85,7 +85,7 @@ class TagSearchTest(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         results = response.data['results']
-        self.assertEqual(len(results), 2)
+        self.assertEqual(len(results), 3)
 
         for tag in ('testTag1', 'testTag3'):
             result = list(filter(lambda it: it['title'] == tag, results))

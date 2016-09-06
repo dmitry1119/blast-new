@@ -106,8 +106,7 @@ def notify_users(users: list, post: Post, author: User):
         send_push_notification.delay(it.user_id, it.text, it.push_payload)
 
 
-# TODO: make tests.
-@receiver(post_save, sender=PostComment, dispatch_uid='comment_notification')
+@receiver(post_save, sender=PostComment, dispatch_uid='notifications_comments')
 def post_save_comment(sender, **kwargs):
     if not kwargs['created']:
         return
@@ -118,13 +117,12 @@ def post_save_comment(sender, **kwargs):
     notify_users(users, instance.post, instance.user)
 
 
-@receiver(post_save, sender=Post, dispatch_uid='post_notification')
-def post_save_post(sender, **kwargs):
+@receiver(post_save, sender=Post, dispatch_uid='notifications_posts')
+def post_save_post(sender, instance: Post, **kwargs):
     """Handles changing of votes counter and creates notification"""
     if not kwargs['created']:
         return
 
-    instance = kwargs['instance']
     votes = instance.voted_count
 
     users = instance.notified_users
@@ -141,13 +139,13 @@ def post_save_post(sender, **kwargs):
                                      notification.push_payload)
 
 
-@receiver(start_following, dispatch_uid='post_follow_notification')
-def start_following_handler(sender, **kwargs):
+@receiver(post_save, sender=Follower, dispatch_uid='notifications_follow')
+def start_following_handler(sender, instance: Follower, **kwargs):
     """Handles following event"""
-    followee = kwargs['followee']
-    follower = kwargs['follower']
+    followee = instance.followee_id
+    follower = instance.follower_id
 
     logger.info('Create following notification {} {}'.format(follower, followee))
-    notification = Notification.objects.create(user=followee, other=follower,
+    notification = Notification.objects.create(user_id=followee, other_id=follower,
                                                type=Notification.STARTED_FOLLOW)
-    send_push_notification.delay(followee.pk, notification.text, notification.push_payload)
+    send_push_notification.delay(followee, notification.text, notification.push_payload)

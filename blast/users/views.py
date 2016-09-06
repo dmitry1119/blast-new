@@ -16,7 +16,7 @@ from users.models import User, UserSettings, Follower, BlockedUsers
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
-                               CheckUsernameAndPassword, UsernameSerializer, FollwersSerializer)
+                               CheckUsernameAndPassword, UsernameSerializer, FollowersSerializer)
 
 from users.signals import start_following
 
@@ -46,7 +46,7 @@ def extend_users_response(users: list, request):
         it['is_blocked'] = pk in blocked_users
 
 
-# TODO: Use class from core.views
+# TODO: Use mixin from core.views
 class UserViewSet(ExtendableModelMixin,
                   mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
@@ -113,7 +113,7 @@ class UserViewSet(ExtendableModelMixin,
                                                                  followee=user)
             else:
                 logging.info('{} stated to follow by {}'.format(request.user, user))
-                start_following.send(sender=user, follower=request.user, followee=user)
+                # start_following.send(sender=user, follower=request.user, followee=user)
                 Follower.objects.create(followee=user, follower=request.user)
 
         return Response()
@@ -172,7 +172,7 @@ class UserViewSet(ExtendableModelMixin,
         page = [it.follower for it in page]
 
         context = self.get_serializer_context()
-        serializer = FollwersSerializer(page, many=True, context=context)
+        serializer = FollowersSerializer(page, many=True, context=context)
 
         followers_ids = {it.pk for it in page}
         followees = Follower.objects.filter(follower=user, followee__in=followers_ids)
@@ -197,7 +197,7 @@ class UserViewSet(ExtendableModelMixin,
         page = [it.followee for it in page]
 
         context = self.get_serializer_context()
-        serializer = FollwersSerializer(page, many=True, context=context)
+        serializer = FollowersSerializer(page, many=True, context=context)
 
         user_ids = {it['id'] for it in serializer.data}
         user_post_list = self._get_user_recent_posts(serializer.data, user_ids)

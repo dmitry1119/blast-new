@@ -91,6 +91,7 @@ class ProfilePublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
+        # TODO: Don't use exclude
         exclude = ('password', 'user_permissions', 'groups',)
 
 
@@ -113,6 +114,7 @@ class PublicUserSerializer(serializers.ModelSerializer):
 class NotificationSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSettings
+        # FIXME: Don't use exclude
         exclude = ('user',)
 
 
@@ -185,10 +187,6 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
 class UsernameSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'avatar', 'fullname')
-
     def get_avatar(self, obj):
         request = self.context['request']
         if obj.avatar:
@@ -196,8 +194,12 @@ class UsernameSerializer(serializers.ModelSerializer):
         else:
             return None
 
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'avatar', 'fullname')
 
-class FollwersSerializer(serializers.ModelSerializer):
+
+class FollowersSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
 
     class Meta:

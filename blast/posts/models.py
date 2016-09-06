@@ -194,25 +194,25 @@ class PostReport(models.Model):
                             help_text='Details')
 
 
-@receiver(pre_delete, sender=Post, dispatch_uid='posts_pre_delete_post_handler')
+@receiver(pre_delete, sender=Post, dispatch_uid='posts_pre_delete')
 def pre_delete_post(sender, instance, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
     instance.video.delete()
     instance.image.delete()
 
     # Remove post from user post set.
-    user_key = User.redis_posts_key(instance.user_id)
-    r.zrem(user_key, instance.pk)
+    posts_key = User.redis_posts_key(instance.user_id)
+    r.zrem(posts_key, instance.pk)
 
 
-@receiver(post_save, sender=Post, dispatch_uid='posts_post_save_post_handler')
+@receiver(post_save, sender=Post, dispatch_uid='posts_post_save')
 def post_save_post(sender, instance, **kwargs):
     if not kwargs['created']:
         return
 
     # Add post to user post set.
-    user_key = User.redis_posts_key(instance.user_id)
-    r.zadd(user_key, 1, instance.pk)
+    posts_key = User.redis_posts_key(instance.user_id)
+    r.zadd(posts_key, 1, instance.pk)
 
 
 @receiver(post_save, sender=PostVote, dispatch_uid='posts_post_save_vote_handler')

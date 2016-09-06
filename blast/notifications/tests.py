@@ -69,7 +69,8 @@ class TestPostUserNotification(BaseTestCase):
         self.post = Post.objects.create(text='@{}, hello!'.format(self.other.username),
                                         user=self.user)
 
-        self.assertEqual(Notification.objects.count(), 1)
+        qs = Notification.objects.filter(type=Notification.MENTIONED_IN_COMMENT)
+        self.assertEqual(qs.count(), 1)
 
         notification = Notification.objects.get(post=self.post)
 
