@@ -11,6 +11,7 @@ from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser, PermissionsMixin
 )
 from django.db import models
+from django.db.models import F
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
@@ -86,7 +87,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Private information
     gender = models.IntegerField(default=None, blank=True, null=True,
-                                 help_text=('Use 1 for male and 0 for female'))
+                                 help_text='Use 1 for male and 0 for female')
     birthday = models.DateTimeField(default=None, blank=True, null=True)
 
     is_admin = models.BooleanField(default=False)
@@ -117,7 +118,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['phone']
 
-    def redis_posts_key(pk):
+    @staticmethod
+    def redis_posts_key(pk: int):
         return u'user:{}:posts'.format(pk)
 
     @staticmethod
@@ -275,8 +277,12 @@ def update_user_popularity_positive(sender, instance: Follower, **kwargs):
     followee_id = instance.followee_id
     r.zincrby(User.USERS_ZSET_KEY, followee_id, 1)
 
+    User.objects.filter(pk=instance.followee_id).update(popularity=F('popularity') + 1)
+
 
 @receiver(pre_delete, sender=Follower, dispatch_uid='update_user_popularity_negative')
 def update_user_popularity_negative(sender, instance: Follower, **kwargs):
     followee_id = instance.followee_id
     r.zincrby(User.USERS_ZSET_KEY, followee_id, -1)
+
+    User.objects.filter(pk=instance.followee_id).update(popularity=F('popularity') - 1)

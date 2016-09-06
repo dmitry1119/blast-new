@@ -195,7 +195,7 @@ class PostReport(models.Model):
 
 
 @receiver(pre_delete, sender=Post, dispatch_uid='posts_pre_delete')
-def pre_delete_post(sender, instance, **kwargs):
+def pre_delete_post(sender, instance: Post, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
     instance.video.delete()
     instance.image.delete()
@@ -204,15 +204,19 @@ def pre_delete_post(sender, instance, **kwargs):
     posts_key = User.redis_posts_key(instance.user_id)
     r.zrem(posts_key, instance.pk)
 
+    User.objects.filter(pk=instance.user_id).update(popularity=F('popularity') - 1)
+
 
 @receiver(post_save, sender=Post, dispatch_uid='posts_post_save')
-def post_save_post(sender, instance, **kwargs):
+def post_save_post(sender, instance: Post, **kwargs):
     if not kwargs['created']:
         return
 
     # Add post to user post set.
     posts_key = User.redis_posts_key(instance.user_id)
     r.zadd(posts_key, 1, instance.pk)
+
+    User.objects.filter(pk=instance.user_id).update(popularity=F('popularity') + 1)
 
 
 @receiver(post_save, sender=PostVote, dispatch_uid='posts_post_save_vote_handler')
