@@ -50,6 +50,18 @@ class UserManager(BaseUserManager):
 
         return user
 
+    @property
+    def anonymous_id(self):
+        """
+        Returns id of anonymous user
+        :return:
+        """
+        return 1
+
+    @property
+    def anonymous(self):
+        return self.get_queryset().get(pk=self.anonymous_id)
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     GENDER_FEMALE = 0
@@ -138,7 +150,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def followers_count(self):
         # TODO (VM): Use cached value from Redis.
-        return self.followers.count()
+        return Follower.objects.filter(followee_id=self.pk).count()
+        # return self.followers.count()
 
     def blasts_count(self):
         # TODO (VM): Use cached value from Redis.
@@ -147,7 +160,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def following_count(self):
         # TODO (VM): Use cached value from Redis.
-        return self.followees.count()
+        return Follower.objects.filter(follower_id=self.pk).count()
+        # return self.following.count()
 
     def get_full_name(self):
         return self.fullname
@@ -169,10 +183,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @staticmethod
     def get_most_popular_ids(start, end):
-        if not r.exists(User.USERS_ZSET_KEY):
-            # Heat up cache
+        """Returns list of user ids ranged by popularity"""
+        if not r.exists(User.USERS_ZSET_KEY):  # Heat up cache
             users = User.objects.all()
-            # users = [it.pk for it in users]
 
             to_add = []
             for it in users:
@@ -204,9 +217,9 @@ class Follower(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     follower = models.ForeignKey(User, on_delete=models.CASCADE,
-                                 related_name='followees')
-    followee = models.ForeignKey(User, on_delete=models.CASCADE,
                                  related_name='followers')
+    followee = models.ForeignKey(User, on_delete=models.CASCADE,
+                                 related_name='following')
 
     def __str__(self):
         return u'{} to {}'.format(self.follower, self.followee)
@@ -267,6 +280,11 @@ def post_user_created(sender, instance: User, **kwargs):
 
     # Creates settings for user
     UserSettings.objects.create(user=instance)
+
+    # Add anonymous to list of followers.
+    if instance.pk != User.objects.anonymous_id:
+        Follower.objects.create(follower_id=instance.pk,
+                                followee_id=User.objects.anonymous_id)
 
 
 @receiver(post_save, sender=Follower, dispatch_uid='update_user_popularity_positive')

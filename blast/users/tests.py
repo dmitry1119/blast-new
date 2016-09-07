@@ -369,7 +369,8 @@ class TestUserFollower(BaseTestCase):
         self.user.refresh_from_db()
 
         self.assertEqual(self.other.followers.count(), 1)
-        self.assertEqual(self.user.followees.count(), 1)
+        self.assertEqual(Follower.objects.filter(followee=self.other,
+                                                 follower=self.user).count(), 1)
 
         # Check user list
         url = reverse_lazy('user-list')
@@ -380,11 +381,11 @@ class TestUserFollower(BaseTestCase):
         user = users[self.user.pk]
         other = users[self.other.pk]
 
-        self.assertEqual(user['followers'], 0)
-        self.assertEqual(user['following'], 1)
+        self.assertEqual(user['followers'], 0)  # Nobody
+        self.assertEqual(user['following'], 2)  # Anonymous and self.user
 
-        self.assertEqual(other['followers'], 1)
-        self.assertEqual(other['following'], 0)
+        self.assertEqual(other['followers'], 1)  # self.user only
+        self.assertEqual(other['following'], 1)  # Anonymous
 
     def test_user_unfollow(self):
         # self.other.followers.add(Follower(follower=self.user, followee=self.other))
@@ -395,7 +396,7 @@ class TestUserFollower(BaseTestCase):
         response = self.client.put(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.other.followers.count(), 0)
+        self.assertEqual(self.other.followers.count(), 1)
 
 
 class TestFollowersList(BaseTestCase):
@@ -447,9 +448,10 @@ class TestFollowersList(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         result = response.data.get('results')
-        self.assertEqual(len(result), 1)
-        self.assertTrue(result[0]['is_followee'])
-        self.assertEqual(result[0]['username'], 'username3')
+        self.assertEqual(len(result), 2)
+
+        self.assertTrue(result[1]['is_followee'])
+        self.assertEqual(result[1]['username'], 'username3')
 
     def test_followers_posts(self):
         Follower.objects.create(follower=self.other2, followee=self.user)
@@ -633,3 +635,26 @@ class TestUserSearch(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         results = response.data['results']
         self.assertEqual(len(results), page_size)
+
+
+class TestAnonymousPost(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_anonymous_post(self):
+        url = reverse_lazy('post-list')
+
+        response = self.client.post(url, {
+            'is_anonymous': True,
+            'text': 'text'
+        })
+
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['author']['username'], 'Anonymous')
+
+        self.assertEqual(Post.objects.all().count(), 1)
+        post = Post.objects.all().first()
+
+        self.assertEqual(post.text, 'text')
+        self.assertEqual(post.user.pk, User.objects.anonymous_id)

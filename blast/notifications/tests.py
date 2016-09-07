@@ -152,7 +152,7 @@ class TestFollowRequest(BaseTestCase):
         url = reverse_lazy('followrequest-detail', kwargs={'pk': follow_request.pk})
         response = self.put_json(url, json.dumps({'accept': False}))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(self.user.followers.filter(pk=self.private_user.pk).exists())
-        self.assertFalse(self.private_user.followers.filter(pk=self.user.pk).exists())
+        self.assertFalse(Follower.objects.filter(followee=self.private_user).exists())
+        self.assertFalse(Follower.objects.filter(followee=self.private_user).exists())
         self.assertFalse(FollowRequest.objects.filter(followee=self.user.pk,
                                                       follower=self.private_user.pk).exists())

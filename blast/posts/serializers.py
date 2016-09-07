@@ -46,10 +46,19 @@ class PreviewPostSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
+    is_anonymous = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = Post
         read_only = ('user',)
-        fields = ('text', 'video', 'image', 'is_anonymous')
+        fields = ('text', 'video', 'image', 'is_anonymous',)
+
+    def save(self, **kwargs):
+        if kwargs.get('is_anonymous', False):
+            request = self.context['request'].user
+            self.validated_data['user'] = request.user
+
+        return super().save()
 
 
 class ReportPostSerializer(serializers.ModelSerializer):

@@ -48,6 +48,7 @@ class BaseTestCaseUnauth(TestCase):
         self.client.defaults.update(self.headers)
 
     def setUp(self):
+
         data = {
             'phone': self.phone,
             'username': self.username,
@@ -55,6 +56,10 @@ class BaseTestCaseUnauth(TestCase):
         }
 
         self.country = Country.objects.create(name='Russia', code='+7')
+
+        self.anonymous = User.objects.create(username='Anonymous', password=uuid.uuid4(),
+                                             phone='+', country=self.country)
+
         self.user = User.objects.create_user(**data)
 
         data = {

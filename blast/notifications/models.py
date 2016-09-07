@@ -72,6 +72,9 @@ class Notification(models.Model):
             'user': self.other_id,
         }
 
+    def __str__(self):
+        return '{} - {}'.format(self.user, self.text)
+
 
 def notify_users(users: list, post: Post, author: User):
     # TODO: author can be None
@@ -144,6 +147,10 @@ def start_following_handler(sender, instance: Follower, **kwargs):
     """Handles following event"""
     followee = instance.followee_id
     follower = instance.follower_id
+
+    if followee == User.objects.anonymous_id:
+        # Ignore anonymous user because he followee by default
+        return
 
     logger.info('Create following notification {} {}'.format(follower, followee))
     notification = Notification.objects.create(user_id=followee, other_id=follower,

@@ -202,7 +202,7 @@ class PostsViewSet(PerObjectPermissionMixin,
     private_serializer_class = PostSerializer
 
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('user', 'tags', 'is_anonymous')
+    filter_fields = ('user', 'tags',)
 
     def extend_response_data(self, data):
         fill_posts(data, self.request.user, self.request)
@@ -235,7 +235,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         return Response(data[0], status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save()
         post = serializer.instance
         if post.is_anonymous:
             self.request.user.pinned_posts.add(post)

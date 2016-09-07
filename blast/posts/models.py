@@ -91,8 +91,6 @@ class Post(models.Model):
                                options={'quality': 90})
 
     # FIXME: Make property return self.user == null
-    is_anonymous = models.BooleanField(default=False)
-
     tags = models.ManyToManyField('tags.Tag', blank=True)
 
     # Cache for voted and downvoted lists.
@@ -100,12 +98,16 @@ class Post(models.Model):
     voted_count = models.PositiveIntegerField(default=0)
 
     @property
+    def is_anonymous(self):
+        return self.user_id == User.objects.anonymous_id
+
+    @property
     def popularity(self):
         return self.voted_count - self.downvoted_count
 
     def get_tag_titles(self):
-        reg = re.compile(r'(?:(?<=\s)|^)#(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
-        return reg.findall(self.text)
+        expr = re.compile(r'(?:(?<=\s)|^)#(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
+        return expr.findall(self.text)
 
     @property
     def time_remains(self):
@@ -121,14 +123,14 @@ class Post(models.Model):
         # TODO (VM): Cache this value to redis
         return PostComment.objects.filter(post=self.pk).count()
 
-    def __str__(self):
-        return u'{} {}'.format(self.id, self.user_id)
-
     def save(self, **kwargs):
-        if self.is_anonymous:
-            self.user = None
+        if not self.user:
+            self.user_id = User.objects.anonymous_id
 
         return super().save(**kwargs)
+
+    def __str__(self):
+        return u'{} {}'.format(self.id, self.user_id)
 
     class Meta:
         ordering = ('-created_at',)
