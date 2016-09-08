@@ -158,7 +158,7 @@ class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
         followees = Follower.objects.filter(follower=self.request.user)
         followees = {it.followee_id for it in followees}
 
-        qs = Post.objects.actual().filter(Q(user__is_private=False) | Q(user=None) |
+        qs = Post.objects.actual().filter(Q(user__is_private=False) |
                                           Q(user__in=followees) |
                                           Q(user=self.request.user.pk))
 

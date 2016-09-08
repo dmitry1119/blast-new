@@ -65,7 +65,6 @@ class PostManager(models.Manager):
         return qs
 
 
-# TODO: Make user null for is_anonymous post.
 class Post(models.Model):
 
     objects = PostManager()
@@ -76,6 +75,7 @@ class Post(models.Model):
 
     text = models.CharField(max_length=256, blank=True)
 
+    # TODO: Remove black, null.
     user = models.ForeignKey(User, db_index=True, blank=True, null=True)
     image = models.ImageField(upload_to=post_image_upload_dir, blank=True, null=True)
     video = models.FileField(upload_to=post_upload_dir, blank=True, null=True)
@@ -90,7 +90,6 @@ class Post(models.Model):
                                format='PNG',
                                options={'quality': 90})
 
-    # FIXME: Make property return self.user == null
     tags = models.ManyToManyField('tags.Tag', blank=True)
 
     # Cache for voted and downvoted lists.
