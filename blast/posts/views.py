@@ -284,11 +284,10 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     @detail_route(methods=['get'])
     def voters(self, request, pk=None):
-        qs = PostVote.objects.filter(post=pk, is_positive=True)
+        qs = PostVote.objects.filter(post=pk)
         qs = qs.prefetch_related('user')
 
         page = self.paginate_queryset(qs)
-
         users = [it.user for it in page]
 
         serializer = UsernameSerializer(users, many=True,

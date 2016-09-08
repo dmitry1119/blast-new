@@ -12,6 +12,8 @@ class PostPublicSerializer(serializers.ModelSerializer):
     votes = serializers.ReadOnlyField(source='voted_count')
     downvotes = serializers.ReadOnlyField(source='downvoted_count')
 
+    is_anonymous = serializers.ReadOnlyField(read_only=True)
+
     image_135 = serializers.ImageField()
     image_248 = serializers.ImageField()
 
@@ -31,7 +33,7 @@ class PostPublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        read_only = ('comments', 'votes', 'downvotes')
+        read_only = ('comments', 'votes', 'downvotes', 'is_anonymous')
         exclude = ('tags', 'voted_count', 'downvoted_count',)
 
 
