@@ -356,7 +356,7 @@ class UserSearchView(ExtendableModelMixin,
     serializer_class = PublicUserSerializer
 
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('username',)
+    search_fields = ('username', 'fullname',)
 
     # TODO: Sort users by popularity
     def extend_response_data(self, data):
