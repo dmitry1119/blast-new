@@ -7,33 +7,16 @@ from users.signals import start_following
 
 
 class NotificationPublicSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
+    # user = serializers.SerializerMethodField()
     post = PreviewPostSerializer()
     text = serializers.ReadOnlyField()
 
     def get_text(self, obj):
         return obj.text
 
-    # FIXME: Can be expensive
-    def get_user(self, obj):
-        if not obj.other:
-            return None
-
-        request = self.context['request']
-        data = {
-            'id': obj.other.pk,
-            'username': obj.other.username,
-            'avatar': None
-        }
-
-        if obj.other.avatar:
-            data['avatar'] = request.build_absolute_uri(obj.other.avatar.url)
-
-        return data
-
     class Meta:
         model = Notification
-        exclude = ('user', 'post', 'other')
+        exclude = ('user', 'post',)
 
 
 class FollowRequestPublicSerializer(serializers.ModelSerializer):
