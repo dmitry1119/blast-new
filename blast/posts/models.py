@@ -234,4 +234,3 @@ def post_save_vote(sender, **kwargs):
     else:
         r.zincrby(user_key, instance.post_id, -1)  # incr post in redis cache
         Post.objects.filter(pk=instance.post.pk).update(downvoted_count=F('downvoted_count') + 1)
-

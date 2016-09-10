@@ -143,7 +143,7 @@ class UserViewSet(ExtendableModelMixin,
     def _get_user_recent_posts(self, data: list, user_ids: set):
         """Returns dict with three last post for users in user_ids"""
         # Adds last three post to each user
-        # TODO: Use Redis sorted set
+        # TODO: Use Redis sorted set, User.get_posts(user['id'], 0, 5)
         # FIXME: can be slow and huge
         posts = Post.objects.filter(user__in=user_ids, expired_at__gte=timezone.now())
         posts = posts.order_by('user_id', 'voted_count')
@@ -352,7 +352,7 @@ class UserChangePhoneView(generics.UpdateAPIView):
 class UserSearchView(ExtendableModelMixin,
                      viewsets.ReadOnlyModelViewSet):
     # TODO: take into account a followers
-    queryset = User.objects.filter(is_private=False).order_by('-popularity')
+    queryset = User.objects.filter().order_by('-popularity')
     serializer_class = PublicUserSerializer
 
     filter_backends = (filters.SearchFilter,)
@@ -394,7 +394,7 @@ class UserSearchView(ExtendableModelMixin,
         try:
             page = int(page)
             page_size = min(int(page_size), 250)
-        except ValueError as e:
+        except ValueError:
             page = 0
             page_size = 50
             logging.error('Failed to cast page {} and page_size {} to int'.format(page, page_size))

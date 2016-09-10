@@ -11,8 +11,11 @@ from rest_framework import viewsets, filters, generics, permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
-from posts.models import Post
 from core.views import ExtendableModelMixin
+
+from posts.models import Post
+from posts.utils import extend_posts
+
 from tags.models import Tag
 from tags.serializers import TagPublicSerializer
 
@@ -59,7 +62,7 @@ def extend_tags(data, serializer_context):
 # (has the most posts with the tag)
 class TagsViewSet(ExtendableModelMixin,
                   viewsets.ReadOnlyModelViewSet):
-    queryset = Tag.objects.all().order_by('-total_posts')
+    queryset = Tag.objects.filter(total_posts__gt=0).order_by('-total_posts')
     serializer_class = TagPublicSerializer
 
     filter_backends = (filters.SearchFilter,)
@@ -119,7 +122,7 @@ class TagsViewSet(ExtendableModelMixin,
         pinned = self.request.user.pinned_tags.all()
         pinned_tags = {it.title for it in pinned}
 
-        qs = Tag.objects.exclude(title__in=pinned_tags)
+        qs = Tag.objects.filter(total_posts__gt=0).exclude(title__in=pinned_tags)
         tags = qs[start:end]
 
         context = self.get_serializer_context()
@@ -176,7 +179,7 @@ class TagsViewSet(ExtendableModelMixin,
         pinned_count = pinned_qs.count()
         pinned = []
 
-        rest_qs = Tag.objects.all().order_by('-total_posts')
+        rest_qs = Tag.objects.filter(total_posts__gt=0).order_by('-total_posts')
         rest_count = rest_qs.count()
         rest = []
 
@@ -214,6 +217,41 @@ class TagsViewSet(ExtendableModelMixin,
             'count': rest_count + pinned_count,
             'results': results
         })
+
+    @detail_route(['get'])
+    def posts(self, request, pk=None):
+        """
+        returns list of posts for tag with title equal to pk
+        ---
+            parameters:
+                - name: order
+                  type: string
+                  description: Allowed 'feature' or 'newest'.
+                - name: pk
+                  type: string
+                  description: tag name
+        """
+        order = request.query_params.get('order', 'featured')
+
+        if order == 'featured':
+            order = u'created_at'
+        else:
+            order = u'-created_at'
+
+        tag = get_object_or_404(Tag, pk__iexact=pk)
+        posts = Post.objects.actual()
+        posts = posts.filter(tags__title__iexact=tag.title)
+        posts = posts.order_by(order)
+
+        page = self.paginate_queryset(posts)
+        serializer_context = self.get_serializer_context()
+
+        serializer = PostPublicSerializer(instance=page, many=True, context=serializer_context)
+        response = self.get_paginated_response(serializer.data)
+
+        extend_posts(serializer.data, request.user, request)
+
+        return response
 
 
 class TagExactSearchView(viewsets.ReadOnlyModelViewSet):

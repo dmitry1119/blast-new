@@ -91,11 +91,13 @@ def post_save_post(sender, instance, **kwargs):
 
 @receiver(pre_delete, sender=Post, dispatch_uid='pre_deleted_post_tags_handler')
 def pre_delete_post(sender, instance, **kwargs):
-    tags = instance.tags.all()
+    print('Pre delete')
+    tags = list(instance.tags.all())
+    tags = {it.title for it in tags}
     logging.info('pre_delete: Post. Update tag counters. {}'.format(tags))
     for it in tags:
-        key = Tag.redis_posts_key(it.title)
+        key = Tag.redis_posts_key(it)
         logging.info('pre_delete: Post. Update tag {} with key {}'.format(it, key))
         r.zrem(key, instance.pk)
 
-    instance.tags.update(total_posts=F('total_posts') - 1)
+    Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') - 1)

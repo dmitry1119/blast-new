@@ -16,7 +16,7 @@ from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
                                VoteSerializer, ReportPostSerializer)
 
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 
 from tags.models import Tag
@@ -24,6 +24,7 @@ from users.models import User, Follower, BlockedUsers
 
 from users.serializers import UsernameSerializer
 
+from posts.utils import attach_users, extend_posts
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -57,73 +58,6 @@ class PerObjectPermissionMixin(object):
         serializer.save(user=self.request.user)
 
 
-# TODO: It uses in PostComment.list method and should be refactored.
-def attach_users(items: list, user: User, request):
-    """
-    Attaches user to post dictionary
-    :param items: list of post dictionaries
-    :return: modified list of items
-    """
-    if len(items) == 0:
-        return items
-
-    users = {it['user'] for it in items if it['user']}
-    users = User.objects.filter(pk__in=users)
-    users = {it.pk: it for it in users}
-
-    for post in items:
-        author = {}
-
-        if not post['user']:
-            author['username'] = 'Anonymous'
-            author['avatar'] = None
-        else:
-            user = users[post['user']]
-            author['username'] = user.username
-            author['id'] = user.pk
-            if user.avatar:
-                author['avatar'] = request.build_absolute_uri(user.avatar.url)
-            else:
-                author['avatar'] = None
-        post['author'] = author
-
-    return items
-
-
-def mark_pinned(posts: list, user: User):
-    # TODO (VM): Make test
-    """
-    Adds is_pinned flag to each post dictionary in posts list
-    :return: modified list of posts
-    """
-    if user.is_anonymous() or len(posts) == 0:
-        return posts
-
-    ids = [it['id'] for it in posts]
-    pinned = user.pinned_posts.filter(id__in=ids).values('id')
-    pinned = [it['id'] for it in pinned]
-
-    for post in posts:
-        if post['id'] in pinned:
-            post['is_pinned'] = True
-        else:
-            post['is_pinned'] = False
-
-    return posts
-
-
-def fill_posts(posts: list, user: User, request):
-    """
-    Adds additional information to raw posts
-    :param posts: list of dictionaries
-    :return: modified posts list
-    """
-    data = mark_pinned(posts, user)
-    data = attach_users(data, user, request)
-
-    return data
-
-
 # TODO (VM): Add feeds test, check author, hidden posts and voted posts
 # Order of posts should be by date, with newest appearing at the top:  
 #
@@ -144,7 +78,7 @@ class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = PostPublicSerializer
 
     def extend_response_data(self, data):
-        fill_posts(data, self.request.user, self.request)
+        extend_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
         qs = self.queryset
@@ -205,7 +139,7 @@ class PostsViewSet(PerObjectPermissionMixin,
     filter_fields = ('user', 'tags',)
 
     def extend_response_data(self, data):
-        fill_posts(data, self.request.user, self.request)
+        extend_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
         if not self.request.user.is_authenticated():
@@ -230,7 +164,7 @@ class PostsViewSet(PerObjectPermissionMixin,
 
         # Changes response use PostPublicSerializer
         data = PostPublicSerializer(serializer.instance, context=self.get_serializer_context()).data
-        data = fill_posts([data], request.user, request)
+        data = extend_posts([data], request.user, request)
 
         return Response(data[0], status=status.HTTP_201_CREATED, headers=headers)
 
@@ -433,7 +367,7 @@ class PinnedPostsViewSet(ExtendableModelMixin,
     permission_classes = (permissions.IsAuthenticated,)
 
     def extend_response_data(self, data):
-        fill_posts(data, self.request.user, self.request)
+        extend_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
         return self.request.user.pinned_posts.filter(expired_at__gte=timezone.now()).all()
@@ -457,7 +391,7 @@ class VotedPostBaseView(mixins.ListModelMixin,
 
     def list(self, request, *args, **kwargs):
         response = super().list(self, request, *args, **kwargs)
-        fill_posts(response.data['results'], request.user, request)
+        extend_posts(response.data['results'], request.user, request)
 
         return response
 
