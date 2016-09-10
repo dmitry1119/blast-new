@@ -223,10 +223,11 @@ class TagsViewSet(ExtendableModelMixin,
         """
         returns list of posts for tag with title equal to pk
         ---
+            omit_serializer: true
             parameters:
                 - name: order
                   type: string
-                  description: Allowed 'feature' or 'newest'.
+                  description: Should be 'feature' or 'newest'.
                 - name: pk
                   type: string
                   description: tag name
