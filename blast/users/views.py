@@ -347,18 +347,15 @@ class UserChangePhoneView(generics.UpdateAPIView):
         return self.request.user
 
 
-# on each tab it's populated by popularity/randomness so on the users tab for every 10 displayed 7 are most popular
-# and 3 are random.
 class UserSearchView(ExtendableModelMixin,
                      viewsets.ReadOnlyModelViewSet):
     # TODO: take into account a followers
-    queryset = User.objects.filter().order_by('-popularity')
+    queryset = User.objects.filter().order_by('-search_range', 'username')
     serializer_class = PublicUserSerializer
 
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username', 'fullname',)
 
-    # TODO: Sort users by popularity
     def extend_response_data(self, data):
         users_to_posts = {}
         posts = []
@@ -386,6 +383,8 @@ class UserSearchView(ExtendableModelMixin,
 
         return data
 
+    # on each tab it's populated by popularity/randomness so on the users tab for every
+    # 10 displayed 7 are most popular and 3 are random.
     @list_route(['get'])
     def feeds(self, request):
         page = request.query_params.get('page', 0)

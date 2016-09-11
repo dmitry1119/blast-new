@@ -195,6 +195,9 @@ class PostReport(models.Model):
                             help_text='Details')
 
 
+USERS_RANGES_COUNT = 4
+
+
 @receiver(pre_delete, sender=Post, dispatch_uid='posts_pre_delete')
 def pre_delete_post(sender, instance: Post, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
@@ -205,6 +208,11 @@ def pre_delete_post(sender, instance: Post, **kwargs):
     posts_key = User.redis_posts_key(instance.user_id)
     r.zrem(posts_key, instance.pk)
 
+    # Updates search range
+    search_range = min(r.zcard(posts_key), USERS_RANGES_COUNT)
+    User.objects.filter(pk=instance.user_id).update(search_range=search_range)
+
+    # Updates user popularity
     User.objects.filter(pk=instance.user_id).update(popularity=F('popularity') - 1)
 
 
@@ -217,6 +225,11 @@ def post_save_post(sender, instance: Post, **kwargs):
     posts_key = User.redis_posts_key(instance.user_id)
     r.zadd(posts_key, 1, instance.pk)
 
+    # Updates search popularity
+    search_range = min(r.zcard(posts_key), USERS_RANGES_COUNT)
+    User.objects.filter(pk=instance.user_id).update(search_range=search_range)
+
+    # Updates user popularity
     User.objects.filter(pk=instance.user_id).update(popularity=F('popularity') + 1)
 
 

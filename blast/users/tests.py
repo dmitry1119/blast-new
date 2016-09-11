@@ -637,6 +637,59 @@ class TestUserSearch(BaseTestCase):
         self.assertEqual(len(results), page_size)
 
 
+class TestUserSearchOrder(BaseTestCase):
+    url = reverse_lazy('user-search-list')
+
+    def setUp(self):
+        super().setUp()
+
+        self.users = [
+            {'username': 'test_aaa', 'posts': 5},
+            {'username': 'test_bbb', 'posts': 4},
+            {'username': 'test_ccc', 'posts': 4},
+            {'username': 'test_aab', 'posts': 3},
+            {'username': 'test_aac', 'posts': 3},
+            {'username': 'test_aad', 'posts': 2},
+            {'username': 'test_aae', 'posts': 1},
+            {'username': 'test_aaf', 'posts': 1}
+        ]
+
+        r = redis.StrictRedis(host='localhost', port=6379, db=0)
+        for u in self.users:
+            user = self.generate_user(username=u['username'])
+
+            # Clear cache
+            key = User.redis_posts_key(user.pk)
+            r.delete(key)
+
+            for post in range(u['posts']):
+                Post.objects.create(user=user, text='text')
+
+    def test_search_order(self):
+        db_users = User.objects.filter(username__in={it['username'] for it in self.users})
+        db_users = {it.username: it for it in db_users}
+
+        for user in self.users:
+            db_user = db_users[user['username']]
+            self.assertLessEqual(db_user.search_range, 4)
+            self.assertEqual(db_user.search_range, min(user['posts'], 4))
+
+        url = self.url + '?search=test'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        results = response.data['results']
+
+        self.assertEqual(len(results), len(self.users))
+
+        for i in range(len(results)):
+            user = self.users[i]
+            res = response.data['results'][i]
+
+            self.assertEqual(user['username'], res['username'])
+
+
 class TestAnonymousPost(BaseTestCase):
     def setUp(self):
         super().setUp()
@@ -649,7 +702,6 @@ class TestAnonymousPost(BaseTestCase):
             'text': 'text'
         })
 
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['author']['username'], 'Anonymous')
 

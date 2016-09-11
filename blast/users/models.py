@@ -116,8 +116,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     pinned_tags = models.ManyToManyField('tags.Tag', blank=True,
                                          related_name='pinned_users')
 
-    # Filed for ranging
     popularity = models.FloatField(default=0)
+
+    # Range for users.SearchView
+    search_range = models.SmallIntegerField(default=0)
 
     # FIXME: symmetrical=False?
     friends = models.ManyToManyField('User', blank=True, through='Follower',

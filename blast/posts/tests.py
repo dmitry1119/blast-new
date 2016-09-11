@@ -442,12 +442,12 @@ class VotersList(BaseTestCase):
 
     def test_votes_list(self):
         url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
-        url = url + 'voters/'
+        url += 'voters/'
 
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 2)
+        self.assertEqual(len(response.data['results']), 3)
         # TODO: Improve and check user[0]
         self.assertEqual(response.data['results'][1]['username'], '1')
         self.assertEqual(response.data['results'][1]['is_followee'], True)

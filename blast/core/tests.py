@@ -30,8 +30,11 @@ class BaseTestCaseUnauth(TestCase):
     password = '111111'
     username = 'username'
 
-    def generate_user(self):
-        return User.objects.create_user(username=str(uuid.uuid4()), password=self.password,
+    def generate_user(self, username=None):
+        if not username:
+            username = str(uuid.uuid4())
+
+        return User.objects.create_user(username=username, password=self.password,
                                         country=self.country, phone=uuid.uuid4())
 
     def login(self, username,):
