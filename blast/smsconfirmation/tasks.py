@@ -3,6 +3,8 @@ import datetime
 import hashlib
 import hmac
 import json
+import logging
+
 import requests
 
 import blast.celery
@@ -87,11 +89,11 @@ def send_code_confirmation_request_async(code, phone):
 
 @shared_task(bind=False)
 def send_verification_request(phone):
-    print('verifying phone {}'.format(phone))
+    logging.info('verifying phone {}'.format(phone))
 
     response = sinch_request('/verification/v1/verifications', data={
         "identity": {"type": "number", "endpoint": str(phone)},
         "method": "sms",
     }, method='POST')
 
-    print('send_verification_request', phone, response.content)
+    logging.info('send_verification_request', phone, response.content)

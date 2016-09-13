@@ -67,7 +67,6 @@ class Notification(models.Model):
     @property
     def push_payload(self):
         return {
-            'sound': 'default',
             'post': self.post_id,
             'user': self.other_id,
         }

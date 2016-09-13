@@ -11,7 +11,7 @@ logger = logging.Logger(__name__)
 
 @shared_task(bind=False)
 def send_push_notification(user_id: int, message: str, payload: dict):
-    logger.info('Send push notification to {} user'.format(user_id))
+    logger.info(u'Send push notification to {} user with {}'.format(user_id, format))
 
     devices = APNSDevice.objects.filter(user=user_id)
     devices.send_message(message, sound='default', extra=payload)
