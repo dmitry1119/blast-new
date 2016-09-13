@@ -163,6 +163,9 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict):
         super().validate(attrs)
 
+        if 'new_phone' not in attrs:
+            raise serializers.ValidationError({'new_phone': 'Wrong new phone'})
+
         if User.objects.filter(phone=attrs['new_phone']).exists():
             raise serializers.ValidationError({'new_phone': 'This phone taken'})
 
@@ -175,9 +178,7 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
         return attrs
 
     def save(self, **kwargs):
-
         self.instance.phone = self.validated_data['new_phone']
-        # self.instance.save()
         super().save(**kwargs)
 
     class Meta:

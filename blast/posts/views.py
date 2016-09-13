@@ -114,6 +114,7 @@ class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
         voted = PostVote.objects.filter(user=user.pk).values('post')
         voted = {it['post'] for it in voted}
         qs = qs.exclude(pk__in=voted)
+        qs = qs.order_by('-created_at')
 
         return qs
 
