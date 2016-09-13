@@ -56,8 +56,8 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ('text', 'video', 'image', 'is_anonymous',)
 
     def save(self, **kwargs):
-        if kwargs.get('is_anonymous', False):
-            request = self.context['request'].user
+        if not kwargs.get('is_anonymous', False):
+            request = self.context['request']
             self.validated_data['user'] = request.user
 
         return super().save()

@@ -55,6 +55,17 @@ class PostTest(BaseTestCase):
         file = create_file('test.png')
         self.post = Post.objects.create(user=self.user, text='some_text', video=file)
 
+    def test_create_post(self):
+        url = reverse_lazy('post-list')
+
+        response = self.client.post(url, {
+            'text': 'text',
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['is_anonymous'], False)
+        self.assertEqual(response.data['author']['username'], self.user.username)
+
     def test_hide_post(self):
         url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
 
