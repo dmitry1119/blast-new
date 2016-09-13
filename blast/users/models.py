@@ -30,13 +30,15 @@ def avatars_upload_dir(instance, filename):
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, phone, username, password, country=None):
+    def create_user(self, phone, username, password, country=None, commit=True):
         # TODO: Validate password and username
         user = self.model(phone=phone, username=username)
         user.country = country or Country.objects.get(name='Russia')
         user.set_password(password)
         user.is_active = True
-        user.save(using=self._db)
+
+        if commit:
+            user.save(using=self._db)
 
         return user
 

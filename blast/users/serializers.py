@@ -48,15 +48,17 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         if not is_confirmed:
             raise serializers.ValidationError({'phone': [message]})
 
+        avatar = validated_data.get('avatar')
+        print(avatar)
         instance = User.objects.create_user(phone=validated_data['phone'],
                                             password=validated_data['password'],
                                             username=validated_data['username'],
-                                            country=validated_data['country'])
+                                            country=validated_data['country'],
+                                            commit=False)
         instance.set_password(validated_data['password'])
 
-        avatar = validated_data.get('avatar')
         if avatar:
-            instance.avatar.save()
+            instance.avatar.save(name=avatar.name, content=avatar)
 
         instance.save()
         return instance

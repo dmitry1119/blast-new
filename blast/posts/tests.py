@@ -66,6 +66,18 @@ class PostTest(BaseTestCase):
         self.assertEqual(response.data['is_anonymous'], False)
         self.assertEqual(response.data['author']['username'], self.user.username)
 
+    def test_create_anonymous_post(self):
+        url = reverse_lazy('post-list')
+
+        response = self.client.post(url, {
+            'text': 'text',
+            'is_anonymous': True
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['is_anonymous'], True)
+        self.assertEqual(response.data['author']['username'], 'Anonymous')
+
     def test_hide_post(self):
         url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk})
 

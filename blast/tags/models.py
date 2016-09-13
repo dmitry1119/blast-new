@@ -91,7 +91,6 @@ def post_save_post(sender, instance, **kwargs):
 
 @receiver(pre_delete, sender=Post, dispatch_uid='pre_deleted_post_tags_handler')
 def pre_delete_post(sender, instance, **kwargs):
-    print('Pre delete')
     tags = list(instance.tags.all())
     tags = {it.title for it in tags}
     logging.info('pre_delete: Post. Update tag counters. {}'.format(tags))
