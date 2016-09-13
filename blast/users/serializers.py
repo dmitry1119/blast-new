@@ -49,7 +49,6 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'phone': [message]})
 
         avatar = validated_data.get('avatar')
-        print(avatar)
         instance = User.objects.create_user(phone=validated_data['phone'],
                                             password=validated_data['password'],
                                             username=validated_data['username'],
