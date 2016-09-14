@@ -44,7 +44,8 @@ class PreviewPostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'user', 'image', 'image_135', 'image_248',)
+        fields = ('id', 'user', 'image', 'image_135', 'image_248',
+                  'created_at', 'expired_at')
 
 
 class PostSerializer(serializers.ModelSerializer):

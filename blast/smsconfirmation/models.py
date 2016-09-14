@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 CODE_CONFIRMATION_LEN = 4
 PHONE_CONFIRMATION_LIFE_TIME_IN_SECONDS = 5 * 60
 
+
 def get_phone_confirmation_code():
     return ''.join([random.choice(string.digits) for _ in range(CODE_CONFIRMATION_LEN)])
 
@@ -59,7 +60,7 @@ class PhoneConfirmation(models.Model):
         confirmation = PhoneConfirmation.objects.get_actual(phone)
 
         if not confirmation:
-            logger.error('Confirmation request for {} was not found'.format(phone))
+            logger.info('Confirmation request for {} was not found'.format(phone))
             return False, 'Confirmation code not found'
 
         if not confirmation.is_actual():
@@ -72,7 +73,7 @@ class PhoneConfirmation(models.Model):
         return '{} {} {} {}'.format(self.phone, self.code, self.created_at, self.is_confirmed)
 
     def is_actual(self):
-        delta = (timezone.now() - self.created_at).seconds
+        delta = (timezone.now() - self.created_at).total_seconds()
 
         return delta < PHONE_CONFIRMATION_LIFE_TIME_IN_SECONDS
 

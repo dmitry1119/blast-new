@@ -145,7 +145,7 @@ class UserViewSet(ExtendableModelMixin,
         # Adds last three post to each user
         # TODO: Use Redis sorted set, User.get_posts(user['id'], 0, 5)
         # FIXME: can be slow and huge
-        posts = Post.objects.filter(user__in=user_ids, expired_at__gte=timezone.now())
+        posts = Post.objects.actual().filter(user__in=user_ids, expired_at__gte=timezone.now())
         posts = posts.order_by('user_id', 'voted_count')
 
         user_post_list = {}
@@ -365,7 +365,7 @@ class UserSearchView(ExtendableModelMixin,
             posts.extend(user_posts_ids)
 
         # Pulls posts from memory and builds in-memory index
-        posts = Post.objects.filter(pk__in=posts)
+        posts = Post.objects.actual().filter(pk__in=posts)
         posts = {it.pk: it for it in posts}
 
         context = self.get_serializer_context()
