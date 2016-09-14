@@ -37,7 +37,7 @@ def extend_tags(data, serializer_context):
         posts.extend(tag_post_ids)
 
     # Pulls posts from db and builds in-memory index
-    posts = Post.objects.filter(pk__in=posts)
+    posts = Post.objects.actual().filter(pk__in=posts)
     posts = {it.pk: it for it in posts}
 
     for it in data:

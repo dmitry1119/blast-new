@@ -176,12 +176,12 @@ class UserViewSet(ExtendableModelMixin,
 
         followers_ids = {it.pk for it in page}
         followees = Follower.objects.filter(follower=user, followee__in=followers_ids)
-        followees_ids = {it.pk for it in followees}
+        followees = {it.followee_id for it in followees}
 
         user_post_list = self._get_user_recent_posts(serializer.data, followers_ids)
 
         for it in serializer.data:
-            it['is_followee'] = it['id'] in followees_ids
+            it['is_followee'] = it['id'] in followees
             it['posts'] = PreviewPostSerializer(user_post_list[it['id']], many=True,
                                                 context=context).data
 
