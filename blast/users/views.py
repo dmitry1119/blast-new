@@ -171,12 +171,12 @@ class UserViewSet(ExtendableModelMixin,
             pk = it['id']
             it['is_followee'] = pk in followees
             # TODO: Make test
-            if it['is_private'] and it['is_followee']:
+            if it['is_private'] and not it['is_followee']:
+                it['posts'] = []
+            else:
                 it['posts'] = PreviewPostSerializer(user_post_list[pk],
                                                     many=True,
                                                     context=context).data
-            else:
-                it['posts'] = []
 
             del it['is_private']
 
@@ -188,6 +188,7 @@ class UserViewSet(ExtendableModelMixin,
 
         qs = Follower.objects.filter(followee=user).prefetch_related('follower')
         qs = qs.order_by('follower__username')
+
         page = self.paginate_queryset(qs)
         page = [it.follower for it in page]
 

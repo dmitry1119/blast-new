@@ -359,9 +359,9 @@ class TestUserFollower(BaseTestCase):
                                               password=self.password, phone='-7')
 
     def test_user_follow(self):
-        url = reverse_lazy('user-detail', kwargs={'pk': self.other.pk})
+        url = reverse_lazy('user-follow', kwargs={'pk': self.other.pk})
 
-        response = self.client.put(url + 'follow/')
+        response = self.client.put(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -390,9 +390,7 @@ class TestUserFollower(BaseTestCase):
     def test_user_unfollow(self):
         # self.other.followers.add(Follower(follower=self.user, followee=self.other))
 
-        url = reverse_lazy('user-detail', kwargs={'pk': self.other.pk})
-
-        url += 'unfollow/'
+        url = reverse_lazy('user-unfollow', kwargs={'pk': self.other.pk})
         response = self.client.put(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -456,8 +454,7 @@ class TestFollowersList(BaseTestCase):
     def test_followers_posts(self):
         Follower.objects.create(follower=self.other2, followee=self.user)
 
-        url = reverse_lazy('user-detail', kwargs={'pk': self.user.pk})
-        url += 'followers/'
+        url = reverse_lazy('user-followers', kwargs={'pk': self.user.pk})
 
         response = self.client.get(url)
 
@@ -609,9 +606,8 @@ class TestUserSearch(BaseTestCase):
         self.posts = list(Post.objects.all())
 
         # Clear test
-        r = redis.StrictRedis(host='localhost', port=6379, db=0)
         key = User.redis_posts_key(self.user.pk)
-        r.delete(key)
+        self.r.delete(key)
 
     def test_search_empty_result(self):
         """Should returns empty list for non existing user"""

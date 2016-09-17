@@ -189,15 +189,23 @@ class User(AbstractBaseUser, PermissionsMixin):
         return result
 
     def followers_count(self):
+        # return Follower.objects.filter(followee_id=self.pk).count()
+        key = User.redis_followers_key(self.pk)
+        if not r.exists(key):
+            User.get_followees(self.pk, 0, 1)  # Heat up cache
+
         return r.zcard(User.redis_followers_key(self.pk))
+
+    def following_count(self):
+        key = User.redis_followees_key(self.pk)
+        if not r.exists(key):
+            User.get_followees(self.pk, 0, 1)  # Heat up cache
+
+        return r.zcard(User.redis_followees_key(self.pk))
 
     def blasts_count(self):
         return r.zcard(User.redis_posts_key(self.pk))
         # return Post.objects.filter(user=self.pk, expired_at__gte=timezone.now()).count()
-
-    def following_count(self):
-        return Follower.objects.filter(follower_id=self.pk).count()
-        # return self.following.count()
 
     def get_full_name(self):
         return self.fullname
@@ -334,13 +342,10 @@ def update_user_popularity_positive(sender, instance: Follower, **kwargs):
 
     # Updates followers cache
     key = User.redis_followers_key(instance.followee_id)
-    if r.exists(key):  # If cache exists
-        r.zadd(key, instance.follower.username, instance.follower_id)
+    r.zadd(key, instance.follower_id, instance.follower_id)
 
-    # Updates followees cache
-    key = User.redis_followees_key(instance.followee_id)
-    if r.exists(key):  # If cache exists
-        r.zadd(key, instance.followee.username, instance.followee_id)
+    key = User.redis_followees_key(instance.follower_id)
+    r.zadd(key, instance.followee_id, instance.followee_id)
 
 
 @receiver(pre_delete, sender=Follower, dispatch_uid='update_user_popularity_negative')
@@ -352,10 +357,8 @@ def update_user_popularity_negative(sender, instance: Follower, **kwargs):
 
     # Updates followers cache
     key = User.redis_followers_key(instance.followee_id)
-    if r.exists(key):  # If cache exists
-        r.zrem(key, instance.follower_id)
+    r.zrem(key, instance.follower_id)
 
     # Updates followees cache
-    key = User.redis_followees_key(instance.followee_id)
-    if r.exists(key):  # If cache exists
-        r.zrem(key, instance.followee_id)
+    key = User.redis_followees_key(instance.follower_id)
+    r.zrem(key, instance.followee_id)

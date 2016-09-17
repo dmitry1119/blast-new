@@ -3,6 +3,7 @@ import uuid
 
 from io import BytesIO
 
+import redis
 from PIL import Image
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -51,6 +52,8 @@ class BaseTestCaseUnauth(TestCase):
         self.client.defaults.update(self.headers)
 
     def setUp(self):
+        self.r = redis.StrictRedis(host='localhost', port=6379, db=0)
+        self.r.flushdb()
 
         data = {
             'phone': self.phone,
