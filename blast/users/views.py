@@ -18,7 +18,15 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
                                CheckUsernameAndPassword, UsernameSerializer, FollowersSerializer)
 
-from users.signals import start_following
+
+# TODO: use redis
+def filter_followee_users(request, user_ids: list):
+    if not request.user.is_authenticated():
+        return []
+
+    result = Follower.objects.filter(follower=request.user,
+                                     followee_id__in=user_ids).values_list('followee_id', flat=True)
+    return set(result)
 
 
 def extend_users_response(users: list, request):
@@ -28,14 +36,13 @@ def extend_users_response(users: list, request):
         return
 
     user_ids = {it['id'] for it in users}
-    followees = Follower.objects.filter(followee__in=user_ids, follower=user)
-    followees = followees.prefetch_related('followee')
-    followees = {it.followee.pk: it.followee for it in followees}
-
+    followees = filter_followee_users(request, user_ids)
     follow_requests = FollowRequest.objects.filter(follower=request.user,
                                                    followee__in=user_ids)
+    # TODO: use redis
     follow_requests = {it.followee_id for it in follow_requests}
 
+    # TODO: Use redis
     blocked_users = BlockedUsers.objects.filter(user=request.user, blocked__in=user_ids)
     blocked_users = {it.blocked_id for it in blocked_users}
 
@@ -143,7 +150,7 @@ class UserViewSet(ExtendableModelMixin,
     def _get_user_recent_posts(self, data: list, user_ids: set):
         """Returns dict with three last post for users in user_ids"""
         # Adds last three post to each user
-        # TODO: Use Redis sorted set, User.get_posts(user['id'], 0, 5)
+        # TODO: Use Redis sorted set, like User.get_posts(user['id'], 0, 5)
         result = {}
         for user in data:
             pk = user['id']
@@ -151,20 +158,13 @@ class UserViewSet(ExtendableModelMixin,
 
         return result
 
-    def _filter_followee_users_id(self, ids):
-        if not self.request.user.is_authenticated():
-            return []
-
-        return Follower.objects.filter(follower=self.request.user,
-                                       followee_id__in=ids).values_list('followee_id', flat=True)
-
     def _extend_follow_response(self, page):
         context = self.get_serializer_context()
         serializer = FollowersSerializer(page, many=True, context=context)
 
         user_ids = {it.pk for it in page}
 
-        followees = self._filter_followee_users_id(user_ids)
+        followees = filter_followee_users(self.request, user_ids)
         user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
 
         for it in serializer.data:
