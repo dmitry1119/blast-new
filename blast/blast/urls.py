@@ -36,7 +36,7 @@ from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
 api_1 = DefaultRouter()
 api_1.register(r'feeds', FeedsView, base_name='feed')
 api_1.register(r'users/search', UserSearchView, base_name='user-search')
-api_1.register(r'users', UserViewSet)
+api_1.register(r'users', UserViewSet, base_name='user')
 api_1.register(r'usernames', UsernameSearchView, base_name='usernames')
 api_1.register(r'countries', CountryViewSet, base_name='country')
 api_1.register(r'posts/pinned', PinnedPostsViewSet, base_name='pinned')

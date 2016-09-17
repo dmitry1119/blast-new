@@ -476,6 +476,50 @@ class TestFollowersList(BaseTestCase):
                 self.assertEqual(post['user'], it['id'])
 
 
+class TestFollowingLastPosts(BaseTestCase):
+    usernames = ['username1', 'username2', 'username3']
+
+    post_count = 3
+
+    def setUp(self):
+        super().setUp()
+
+        for username in self.usernames:
+            user = self.generate_user(username)
+            for i in range(self.post_count * 2):  # FIXME: magic number
+                Post.objects.create(text='text {} {}'.format(i, username), user=user)
+
+            url = reverse_lazy('user-follow', kwargs={'pk': user.pk})
+            response = self.client.put(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Unfollow anonymous
+        url = reverse_lazy('user-unfollow', kwargs={'pk': User.objects.anonymous_id})
+        self.client.put(url)
+
+    def test_empty_following_list(self):
+        url = reverse_lazy('user-following', kwargs={'pk': self.user.pk})
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        results = data['results']
+
+        self.assertEqual(data['count'], len(self.usernames))
+        self.assertEqual(len(results), len(self.usernames))
+
+        for it in results:
+            user = it['username']
+            user = User.objects.filter(username=user)
+            posts = it['posts']
+            posts_db = Post.objects.filter(user=user).order_by('-created_at')[:self.post_count]
+
+            self.assertEqual(len(posts), self.post_count)
+            for i in range(self.post_count):
+                self.assertEqual(posts[i]['id'], posts_db[i].id)
+
+
 class TestPrivateUserUnfollow(BaseTestCase):
     def setUp(self):
         super().setUp()

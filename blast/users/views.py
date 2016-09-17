@@ -144,23 +144,19 @@ class UserViewSet(ExtendableModelMixin,
         """Returns dict with three last post for users in user_ids"""
         # Adds last three post to each user
         # TODO: Use Redis sorted set, User.get_posts(user['id'], 0, 5)
-        # FIXME: can be slow and huge
-        posts = Post.objects.actual().filter(user__in=user_ids, expired_at__gte=timezone.now())
-        posts = posts.order_by('user_id', 'voted_count')
-
-        user_post_list = {}
+        result = {}
         for user in data:
-            user_post_list[user['id']] = []
+            pk = user['id']
+            result[pk] = Post.objects.filter(user_id=pk).order_by('-created_at')[:3]
 
-        for post in posts:
-            user = post.user_id
-            user_posts = user_post_list[user]
-            if len(user_posts) >= 3:  # FIXME: Magic number
-                continue
+        return result
 
-            user_posts.append(post)
+    def _filter_followee_users_id(self, ids):
+        if not self.request.user.is_authenticated():
+            return []
 
-        return user_post_list
+        return Follower.objects.filter(follower=self.request.user,
+                                       followee_id__in=ids).values_list('followee_id', flat=True)
 
     @detail_route(['get'])
     def followers(self, request, pk=None):
@@ -174,11 +170,11 @@ class UserViewSet(ExtendableModelMixin,
         context = self.get_serializer_context()
         serializer = FollowersSerializer(page, many=True, context=context)
 
-        followers_ids = {it.pk for it in page}
-        followees = Follower.objects.filter(follower=user, followee__in=followers_ids)
-        followees = {it.followee_id for it in followees}
+        user_ids = {it.pk for it in page}
 
-        user_post_list = self._get_user_recent_posts(serializer.data, followers_ids)
+        followees = self._filter_followee_users_id(user_ids)
+        print(followees)
+        user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
 
         for it in serializer.data:
             it['is_followee'] = it['id'] in followees
@@ -189,21 +185,24 @@ class UserViewSet(ExtendableModelMixin,
 
     @detail_route(['get'])
     def following(self, request, pk=None):
-        # user = get_object_or_404(User, pk=pk)
         user = get_object_or_404(User, pk=pk)
 
         qs = Follower.objects.filter(follower=user).prefetch_related('followee')
+        qs = qs.order_by('followee__username')
         page = self.paginate_queryset(qs)
         page = [it.followee for it in page]
 
         context = self.get_serializer_context()
         serializer = FollowersSerializer(page, many=True, context=context)
 
-        user_ids = {it['id'] for it in serializer.data}
+        user_ids = {it.pk for it in page}
+
+        followees = self._filter_followee_users_id(user_ids)
+        print(followees)
         user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
 
         for it in serializer.data:
-            it['is_followee'] = True
+            it['is_followee'] = it['id'] in followees
             it['posts'] = PreviewPostSerializer(user_post_list[it['id']], many=True,
                                                 context=context).data
 
