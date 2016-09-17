@@ -158,6 +158,22 @@ class UserViewSet(ExtendableModelMixin,
         return Follower.objects.filter(follower=self.request.user,
                                        followee_id__in=ids).values_list('followee_id', flat=True)
 
+    def _extend_follow_response(self, page):
+        context = self.get_serializer_context()
+        serializer = FollowersSerializer(page, many=True, context=context)
+
+        user_ids = {it.pk for it in page}
+
+        followees = self._filter_followee_users_id(user_ids)
+        user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
+
+        for it in serializer.data:
+            it['is_followee'] = it['id'] in followees
+            it['posts'] = PreviewPostSerializer(user_post_list[it['id']], many=True,
+                                                context=context).data
+
+        return self.get_paginated_response(serializer.data)
+
     @detail_route(['get'])
     def followers(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
@@ -167,21 +183,7 @@ class UserViewSet(ExtendableModelMixin,
         page = self.paginate_queryset(qs)
         page = [it.follower for it in page]
 
-        context = self.get_serializer_context()
-        serializer = FollowersSerializer(page, many=True, context=context)
-
-        user_ids = {it.pk for it in page}
-
-        followees = self._filter_followee_users_id(user_ids)
-        print(followees)
-        user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
-
-        for it in serializer.data:
-            it['is_followee'] = it['id'] in followees
-            it['posts'] = PreviewPostSerializer(user_post_list[it['id']], many=True,
-                                                context=context).data
-
-        return self.get_paginated_response(serializer.data)
+        return self._extend_follow_response(page)
 
     @detail_route(['get'])
     def following(self, request, pk=None):
@@ -192,21 +194,7 @@ class UserViewSet(ExtendableModelMixin,
         page = self.paginate_queryset(qs)
         page = [it.followee for it in page]
 
-        context = self.get_serializer_context()
-        serializer = FollowersSerializer(page, many=True, context=context)
-
-        user_ids = {it.pk for it in page}
-
-        followees = self._filter_followee_users_id(user_ids)
-        print(followees)
-        user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
-
-        for it in serializer.data:
-            it['is_followee'] = it['id'] in followees
-            it['posts'] = PreviewPostSerializer(user_post_list[it['id']], many=True,
-                                                context=context).data
-
-        return self.get_paginated_response(serializer.data)
+        return self._extend_follow_response(page)
 
     @detail_route(['put'])
     def block(self, request, pk=None):
