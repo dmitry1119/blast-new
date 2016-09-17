@@ -3,8 +3,9 @@ import redis
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
+
 # FIXME: Rename to memoize_zset?
-def memoize_posts(key_pattern: str):
+def save_to_zset(key_pattern: str):
     def wrap(f):
         def wrapped_function(pk, start: int, end: int):
             key = key_pattern.format(pk)

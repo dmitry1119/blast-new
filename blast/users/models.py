@@ -16,7 +16,7 @@ from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
-from core.decoratiors import memoize_posts
+from core.decoratiors import save_to_zset
 from countries.models import Country
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -139,7 +139,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         return u'user:{}:posts'.format(pk)
 
     @staticmethod
-    @memoize_posts(u'user:{}:posts')
+    def redis_followers_key(pk: int):
+        return u'user:{}:followers'.format(pk)
+
+    @staticmethod
+    def redis_followees_key(pk: int):
+        return u'user:{}:followee'.format(pk)
+
+    @staticmethod
+    @save_to_zset(u'user:{}:posts')
     def get_posts(user_id, start, end):
         from posts.models import Post
         user_posts = list(Post.objects.actual().filter(user=user_id))
@@ -152,18 +160,42 @@ class User(AbstractBaseUser, PermissionsMixin):
 
         return result
 
+    @staticmethod
+    @save_to_zset(u'user:{}:followers')
+    def get_followers(user_id, start, end):
+        followers = Follower.objects.filter(followee=user_id).prefetch_related('follower')
+        followers = list(followers)
+        logging.info('Got {} followers for {} user key'.format(len(followers), user_id))
+
+        result = []
+        for it in followers:
+            result.append(it.follower_id)
+            result.append(it.follower_id)
+
+        return result
+
+    @staticmethod
+    @save_to_zset(u'user:{}:followees')
+    def get_followees(user_id, start, end):
+        followees = Follower.objects.filter(follower=user_id).prefetch_related('followee')
+        followees = list(followees)
+        logging.info('Got {} followees for {} user key'.format(len(followees), user_id))
+
+        result = []
+        for it in followees:
+            result.append(it.followee_id)
+            result.append(it.followee_id)
+
+        return result
+
     def followers_count(self):
-        # TODO (VM): Use cached value from Redis.
-        return Follower.objects.filter(followee_id=self.pk).count()
-        # return self.followers.count()
+        return r.zcard(User.redis_followers_key(self.pk))
 
     def blasts_count(self):
-        # TODO (VM): Use cached value from Redis.
-        from posts.models import Post
-        return Post.objects.filter(user=self.pk, expired_at__gte=timezone.now()).count()
+        return r.zcard(User.redis_posts_key(self.pk))
+        # return Post.objects.filter(user=self.pk, expired_at__gte=timezone.now()).count()
 
     def following_count(self):
-        # TODO (VM): Use cached value from Redis.
         return Follower.objects.filter(follower_id=self.pk).count()
         # return self.following.count()
 
@@ -296,15 +328,34 @@ def update_user_popularity_positive(sender, instance: Follower, **kwargs):
     if not kwargs['created']:
         return
 
-    followee_id = instance.followee_id
-    r.zincrby(User.USERS_ZSET_KEY, followee_id, 1)
-
+    # TODO: Check cache exists
+    r.zincrby(User.USERS_ZSET_KEY, instance.followee_id, 1)
     User.objects.filter(pk=instance.followee_id).update(popularity=F('popularity') + 1)
+
+    # Updates followers cache
+    key = User.redis_followers_key(instance.followee_id)
+    if r.exists(key):  # If cache exists
+        r.zadd(key, instance.follower.username, instance.follower_id)
+
+    # Updates followees cache
+    key = User.redis_followees_key(instance.followee_id)
+    if r.exists(key):  # If cache exists
+        r.zadd(key, instance.followee.username, instance.followee_id)
 
 
 @receiver(pre_delete, sender=Follower, dispatch_uid='update_user_popularity_negative')
 def update_user_popularity_negative(sender, instance: Follower, **kwargs):
-    followee_id = instance.followee_id
-    r.zincrby(User.USERS_ZSET_KEY, followee_id, -1)
+    # TODO: Check cache exists
+    r.zincrby(User.USERS_ZSET_KEY, instance.followee_id, -1)
 
     User.objects.filter(pk=instance.followee_id).update(popularity=F('popularity') - 1)
+
+    # Updates followers cache
+    key = User.redis_followers_key(instance.followee_id)
+    if r.exists(key):  # If cache exists
+        r.zrem(key, instance.follower_id)
+
+    # Updates followees cache
+    key = User.redis_followees_key(instance.followee_id)
+    if r.exists(key):  # If cache exists
+        r.zrem(key, instance.followee_id)

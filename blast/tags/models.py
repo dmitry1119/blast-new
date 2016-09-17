@@ -9,7 +9,7 @@ from django.db.models import F
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
-from core.decoratiors import memoize_posts
+from core.decoratiors import save_to_zset
 from posts.models import Post
 
 
@@ -34,7 +34,7 @@ class Tag(models.Model):
         return u'tag:{}:posts'.format(pk)
 
     @staticmethod
-    @memoize_posts(u'tag:{}:posts')
+    @save_to_zset(u'tag:{}:posts')
     def get_posts(tag_pk, start, end):
         result = []
         posts = list(Post.objects.actual().filter(tags=tag_pk))

@@ -81,16 +81,15 @@ class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
         extend_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
-        qs = self.queryset
+        qs = Post.objects.actual()
         user = self.request.user
 
         if not user.is_authenticated():
             return qs
 
         # Include followers posts
-        # FIXME (VM): cache list in redis?
-        followees = Follower.objects.filter(follower=self.request.user)
-        followees = {it.followee_id for it in followees}
+        # FIXME: write method for geting all followees
+        followees = User.get_followees(user.pk, 0, 1000)
 
         qs = Post.objects.actual().filter(Q(user__is_private=False) |
                                           Q(user__in=followees) |
@@ -145,7 +144,6 @@ class PostsViewSet(PerObjectPermissionMixin,
     def get_queryset(self):
         if not self.request.user.is_authenticated():
             return self.queryset
-
         followees = Follower.objects.filter(follower=self.request.user.pk)
         followees = {it.followee_id for it in followees}
 
