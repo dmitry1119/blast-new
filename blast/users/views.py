@@ -20,7 +20,7 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 
 
 # TODO: use redis
-def filter_followee_users(request, user_ids: list):
+def filter_followee_users(request, user_ids: list or set):
     if not request.user.is_authenticated():
         return []
 
@@ -168,9 +168,17 @@ class UserViewSet(ExtendableModelMixin,
         user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
 
         for it in serializer.data:
-            it['is_followee'] = it['id'] in followees
-            it['posts'] = PreviewPostSerializer(user_post_list[it['id']], many=True,
-                                                context=context).data
+            pk = it['id']
+            it['is_followee'] = pk in followees
+            # TODO: Make test
+            if it['is_private'] and it['is_followee']:
+                it['posts'] = PreviewPostSerializer(user_post_list[pk],
+                                                    many=True,
+                                                    context=context).data
+            else:
+                it['posts'] = []
+
+            del it['is_private']
 
         return self.get_paginated_response(serializer.data)
 

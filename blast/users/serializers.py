@@ -206,7 +206,7 @@ class FollowersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'avatar', 'fullname')
+        fields = ('id', 'username', 'avatar', 'fullname', 'is_private')
 
     def get_avatar(self, obj):
         request = self.context['request']
