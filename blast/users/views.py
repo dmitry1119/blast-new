@@ -464,7 +464,7 @@ class UserAuthView(views.APIView):
             if registration_id in reg_ids:
                 reg_ids.remove(registration_id)
             msg = 'You have been signed out as you have logged in on another device'
-            send_push_notification_to_device.delay(reg_ids, msg, {}, True)
+            send_push_notification_to_device.delay(reg_ids, msg)
 
         devices.delete()
 
