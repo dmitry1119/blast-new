@@ -453,7 +453,7 @@ class UsernameSearchView(viewsets.ReadOnlyModelViewSet):
 
 
 class UserAuthView(views.APIView):
-    def _clear_auth_data(self, user: User, send_push: bool):
+    def _clear_auth_data(self, user: User, registration_id: str, send_push: bool):
         Token.objects.filter(user=user).delete()
 
         devices = APNSDevice.objects.filter(user=user)
@@ -461,6 +461,8 @@ class UserAuthView(views.APIView):
         if send_push:
             # Send message to user device
             reg_ids = list(it.registration_id for it in devices)
+            if registration_id in reg_ids:
+                reg_ids.remove(registration_id)
             msg = 'You have been signed out as you have logged in on another device'
             send_push_notification_to_device.delay(reg_ids, msg, {}, True)
 
@@ -480,7 +482,7 @@ class UserAuthView(views.APIView):
                     msg = 'User account is disabled.'
                     raise Response(msg, status=status.HTTP_403_FORBIDDEN)
 
-                self._clear_auth_data(user, True)
+                self._clear_auth_data(user, request.data.get('registration_id'), True)
 
                 return Response({
                     'token': Token.objects.create(user=user).key,
@@ -494,6 +496,6 @@ class UserAuthView(views.APIView):
 
     def delete(self):
         if self.request.user.is_authenticated():
-            self._clear_auth_data(self.request.user, False)
+            self._clear_auth_data(self.request.user, None, False)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
