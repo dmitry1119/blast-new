@@ -143,7 +143,8 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     def get_queryset(self):
         if not self.request.user.is_authenticated():
-            return self.queryset
+            return self.queryset.filter(user__is_private=False)
+
         followees = Follower.objects.filter(follower=self.request.user.pk)
         followees = {it.followee_id for it in followees}
 
