@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from smsconfirmation.models import CODE_CONFIRMATION_LEN, PhoneConfirmation
+from smsconfirmation.models import PhoneConfirmation
 from users.models import User, UserSettings
 
 

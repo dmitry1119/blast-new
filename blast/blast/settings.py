@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_swagger',
     'push_notifications',
     'core',
@@ -151,15 +152,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',  # TODO(VM): Get rid?
         'rest_framework.authentication.SessionAuthentication',  # TODO(VM): Get rid?
-        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
 
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardResultsSetPagination'
-}
-
-JWT_AUTH = {
-    'JWT_VERIFY_EXPIRATION': False,
-    'JWT_ALLOW_REFRESH': False,
 }
 
 SINCH = {

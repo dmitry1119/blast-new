@@ -19,14 +19,15 @@ from django.contrib import admin
 from django.conf.urls.static import static
 from push_notifications.api.rest_framework import APNSDeviceAuthorizedViewSet
 
-from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
 from notifications.views import NotificationsViewSet, FollowRequestViewSet
 from tags.views import TagsViewSet, TagExactSearchView
 
 from users.views import (UserViewSet, UserProfileView, UserSettingsView,
-                         UserPasswordResetView, UserChangePhoneView, UsernameSearchView, UserSearchView)
+                         UserPasswordResetView, UserChangePhoneView, UsernameSearchView, UserSearchView,
+                         UserAuthView)
+
 from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
                                    SinchPhoneConfirmationView)
 
@@ -60,8 +61,7 @@ urlpatterns = [
     url(r'^api/v1/user/settings/$', UserSettingsView.as_view(), name='user-settings'),
     url(r'^api/v1/user/phone/$', UserChangePhoneView.as_view(), name='user-phone'),
 
-    url(r'^api/v1/token/refresh/', refresh_jwt_token, name='refresh-token'),
-    url(r'^api/v1/token/$', obtain_jwt_token, name='get-auth-token'),
+    url(r'^api/v1/token/$', UserAuthView.as_view(), name='get-auth-token'),
     url(r'^api/v1/sms/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),
     url(r'^api/v1/sms/password/', ResetPasswordView.as_view(), name='reset-password'),
 

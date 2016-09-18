@@ -47,7 +47,7 @@ class BaseTestCaseUnauth(TestCase):
         response = self.client.post(reverse_lazy('get-auth-token'), data)
         self.auth_token = response.data.get('token')
         self.headers = {
-            'HTTP_AUTHORIZATION': 'JWT {0}'.format(self.auth_token)
+            'HTTP_AUTHORIZATION': 'Token {0}'.format(self.auth_token)
         }
         self.client.defaults.update(self.headers)
 
@@ -92,6 +92,6 @@ class BaseTestCase(BaseTestCaseUnauth):
         super().setUp()
 
         self.headers = {
-            'HTTP_AUTHORIZATION': 'JWT {0}'.format(self.auth_token)
+            'HTTP_AUTHORIZATION': 'Token {0}'.format(self.auth_token)
         }
         self.client.defaults.update(self.headers)

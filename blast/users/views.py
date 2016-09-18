@@ -1,12 +1,14 @@
 import logging
-import redis
+
+
 
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
-from rest_framework import viewsets, mixins, permissions, generics, filters, status
+from django.contrib.auth import authenticate
+from rest_framework import viewsets, mixins, permissions, generics, filters, status, views
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
 
 from core.views import ExtendableModelMixin
 from notifications.models import FollowRequest, Notification
@@ -17,6 +19,9 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
                                CheckUsernameAndPassword, UsernameSerializer, FollowersSerializer)
+
+from push_notifications.models import APNSDevice
+from notifications.tasks import send_push_notification_to_device
 
 
 # TODO: use redis
@@ -445,3 +450,50 @@ class UsernameSearchView(viewsets.ReadOnlyModelViewSet):
 
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
+
+
+class UserAuthView(views.APIView):
+    def _clear_auth_data(self, user: User, send_push: bool):
+        Token.objects.filter(user=user).delete()
+
+        devices = APNSDevice.objects.filter(user=user)
+
+        if send_push:
+            # Send message to user device
+            reg_ids = list(it.registration_id for it in devices)
+            msg = 'You have been signed out as you have logged in on another device'
+            send_push_notification_to_device.delay(reg_ids, msg, {}, True)
+
+        devices.delete()
+
+    def post(self, request):
+        credentials = {
+            'username': request.data.get('username'),
+            'password': request.data.get('password')
+        }
+
+        if all(credentials.values()):
+            user = authenticate(**credentials)
+
+            if user:
+                if not user.is_active:
+                    msg = 'User account is disabled.'
+                    raise Response(msg, status=status.HTTP_403_FORBIDDEN)
+
+                self._clear_auth_data(user, True)
+
+                return Response({
+                    'token': Token.objects.create(user=user).key,
+                }, status=status.HTTP_200_OK)
+            else:
+                msg = 'Unable to login with provided credentials.'
+                raise Response(msg, status=status.HTTP_403_FORBIDDEN)
+        else:
+            msg = 'Must include "username" and "password".'
+            raise Response(msg, status=status.HTTP_403_FORBIDDEN)
+
+    def delete(self):
+        if self.request.user.is_authenticated():
+            self._clear_auth_data(self.request.user, False)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
