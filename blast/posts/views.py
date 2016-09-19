@@ -409,7 +409,7 @@ class DonwvotedPostsViewSet(VotedPostBaseView):
 class CommentsViewSet(PerObjectPermissionMixin,
                       ExtendableModelMixin,
                       viewsets.ModelViewSet):
-    queryset = PostComment.objects.all()
+    queryset = PostComment.objects.all().order_by('-created_at')
     public_serializer_class = CommentPublicSerializer
     private_serializer_class = CommentSerializer
 
