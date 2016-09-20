@@ -142,6 +142,9 @@ class PostVote(models.Model):
     post = models.ForeignKey(Post, db_index=True)
     is_positive = models.NullBooleanField()  # False if post is downvoted, True otherwise.
 
+    def __str__(self):
+        return u'{} {}'.format(self.pk, self.user_id, self.post_id)
+
     class Meta:
         unique_together = (('user', 'post'),)
 
@@ -201,12 +204,17 @@ USERS_RANGES_COUNT = 4
 @receiver(pre_delete, sender=Post, dispatch_uid='posts_pre_delete')
 def pre_delete_post(sender, instance: Post, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
-    instance.video.delete()
-    instance.image.delete()
+    if instance.video:
+        instance.video.delete()
+
+    if instance.image:
+        instance.image.delete()
 
     # Remove post from user post set.
     posts_key = User.redis_posts_key(instance.user_id)
-    r.zrem(posts_key, instance.pk)
+    if r.exists(posts_key):  # If cache is "hot"
+        r.zrem(posts_key, instance.pk)
+        logging.info('Remove {} from {} cache'.format(instance.pk, posts_key))
 
     # Updates search range
     search_range = min(r.zcard(posts_key), USERS_RANGES_COUNT)
@@ -223,7 +231,9 @@ def post_save_post(sender, instance: Post, **kwargs):
 
     # Add post to user post set.
     posts_key = User.redis_posts_key(instance.user_id)
-    r.zadd(posts_key, 1, instance.pk)
+    if r.exists(posts_key):  # If cache is "hot"
+        r.zadd(posts_key, 1, instance.pk)
+        logging.info('Add {} to {} cache'.format(instance.pk, posts_key))
 
     # Updates search popularity
     search_range = min(r.zcard(posts_key), USERS_RANGES_COUNT)

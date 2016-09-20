@@ -134,7 +134,7 @@ def post_save_post(sender, instance: Post, **kwargs):
         return
 
     if (votes <= 100 and votes % 10 == 0) or (votes >= 1000 and votes % 1000 == 0):
-        logger.info('Post {} reached {} votes', instance, votes)
+        logger.info('Post {} reached {} votes'.format(instance, votes))
         notification = Notification.objects.create(user=instance.user, post=instance,
                                                    votes=votes, type=Notification.VOTES_REACHED)
         send_push_notification.delay(instance.user_id, notification.text,
