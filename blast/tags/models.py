@@ -5,11 +5,12 @@ import redis
 from django.db import models
 
 # Create your models here.
+from django.db.backends.dummy.base import IntegrityError
 from django.db.models import F
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
-from core.decoratiors import save_to_zset
+from core.decorators import save_to_zset
 from posts.models import Post
 
 
@@ -27,7 +28,18 @@ class Tag(models.Model):
     total_posts = models.PositiveIntegerField(default=0)
 
     def posts_count(self):
-        return r.zcard(Tag.redis_posts_key(self.pk))
+        return Post.objects.filter(tags__title=self.title).count()
+        # key = r.zcard(Tag.redis_posts_key(self.pk))
+        # if not r.exists(key):
+        #     posts = Post.objects.filter(tags__title=self.title).values_list('id', flat=True)
+        #     result = []
+        #     for it in posts:
+        #         result.append(1)
+        #         result.append(it)
+        #     if result:
+        #         r.zadd(key, *result)
+        #
+        # return r.zcard(key)
 
     @staticmethod
     def redis_posts_key(pk):
@@ -78,13 +90,13 @@ def post_save_post(sender, instance, **kwargs):
         # it will throw exception for one of them.
         Tag.objects.bulk_create(db_tags)
 
-    db_tags = Tag.objects.filter(title__in=tags)
+    db_tags = list(Tag.objects.filter(title__in=tags))
     instance.tags.add(*db_tags)
 
     # Increase total posts counter
     for it in db_tags:
         key = Tag.redis_posts_key(it.title)
-        r.zadd(key, 1, instance.pk)
+        r.zincrby(key, instance.pk)
 
     Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') + 1)
 
@@ -99,4 +111,7 @@ def pre_delete_post(sender, instance, **kwargs):
         logging.info('pre_delete: Post. Update tag {} with key {}'.format(it, key))
         r.zrem(key, instance.pk)
 
-    Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') - 1)
+    try:
+        Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') - 1)
+    except IntegrityError as e:
+        logger.error('{}'.format(e))

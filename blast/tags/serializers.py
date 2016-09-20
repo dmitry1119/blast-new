@@ -4,6 +4,8 @@ from tags.models import Tag
 
 
 class TagPublicSerializer(serializers.ModelSerializer):
+    total_posts = serializers.ReadOnlyField(source='posts_count')
+
     class Meta:
         model = Tag
-        fields = '__all__'
+        fields = ('title', 'total_posts',)
