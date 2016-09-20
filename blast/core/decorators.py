@@ -3,24 +3,24 @@ import redis
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
+logger = logging.getLogger(__name__)
+
 
 # FIXME: Rename to memoize_zset?
 def save_to_zset(key_pattern: str):
     def wrap(f):
         def wrapped_function(pk, start: int, end: int):
             key = key_pattern.format(pk)
-            logging.info('Head up cache for {}'.format(key))
-
             if not r.exists(key):
+                logger.info('Head up cache for {}'.format(key))
                 result = f(pk, start, end)
 
                 if not result:
-                    logging.info('Nothing to cache. Key is {}'.format(key))
+                    logger.info('Nothing to cache. Key is {}'.format(key))
                     return []
 
                 if len(result) % 2:
-                    logging.error('Invalid result size for {}. Size is {}'
-                                  .format(key, len(result)))
+                    logger.error('Invalid result size for {}. Size is {}'.format(key, len(result)))
                     return []
 
                 r.zadd(key, *result)

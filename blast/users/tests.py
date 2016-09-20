@@ -652,6 +652,7 @@ class TestUserSearch(BaseTestCase):
         for i in range(len(new_order)):
             self.assertEqual(posts[i]['id'], new_order[i].pk)
 
+    # TODO: Write test
     def test_search_feeds(self):
         page_size = 25
         url = reverse_lazy('user-search-feeds')
@@ -750,3 +751,61 @@ class TestAnonymousPost(BaseTestCase):
 
         self.assertEqual(post.text, 'text')
         self.assertEqual(post.user.pk, User.objects.anonymous_id)
+
+
+class TestCache(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_blasts_count(self):
+        """
+        Checks blasts count for user with "cold" cache.
+        :return:
+        """
+        self.clear_cache()
+
+        count = 5
+        for it in range(count):
+            Post.objects.create(user=self.user, text='text')
+
+        self.assertEqual(self.user.blasts_count(), count)
+
+        for it in range(count):
+            Post.objects.create(user=self.user, text='text')
+
+        self.clear_cache()
+
+        self.assertEqual(self.user.blasts_count(), count * 2)
+
+    def test_followers_count(self):
+        count = 5
+        users = []
+        for it in range(count):
+            users.append(self.generate_user())
+
+        self.clear_cache()
+
+        self.assertEqual(self.user.following_count(), 1)  # Anonymous only
+        self.assertEqual(self.user.followers_count(), 0)
+
+        for it in users:
+            Follower.objects.create(follower=it, followee=self.user)
+
+        self.assertEqual(self.user.following_count(), 1)
+        self.assertEqual(self.user.followers_count(), count)
+
+        self.clear_cache()
+
+        self.assertEqual(self.user.following_count(), 1)
+        self.assertEqual(self.user.followers_count(), count)
+
+        for it in Follower.objects.all():
+            it.delete()
+
+        self.assertEqual(self.user.followers_count(), 0)
+        self.assertEqual(self.user.followers_count(), 0)
+
+        self.clear_cache()
+
+        self.assertEqual(self.user.followers_count(), 0)
+        self.assertEqual(self.user.followers_count(), 0)

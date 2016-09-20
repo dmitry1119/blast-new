@@ -76,6 +76,15 @@ class BaseTestCaseUnauth(TestCase):
         response = self.client.post(reverse_lazy('get-auth-token'), data)
         self.auth_token = response.data.get('token')
 
+    def clear_cache(self):
+        self.r.flushdb()
+
+    def map_result_to_pk(self, results):
+        if 'results' in results:
+            results = results['results']
+
+        return {it['id']: it for it in results}
+
     def put_json(self, url, data=''):
         if type(data) is dict:
             data = json.dumps(data)

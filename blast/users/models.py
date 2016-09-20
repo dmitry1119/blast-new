@@ -16,11 +16,12 @@ from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
-from core.decoratiors import save_to_zset
+from core.decorators import save_to_zset
 from countries.models import Country
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
+logger = logging.getLogger(__name__)
 
 def avatars_upload_dir(instance, filename):
     """Returns unique path for uploading image by user and filename"""
@@ -63,6 +64,11 @@ class UserManager(BaseUserManager):
     @property
     def anonymous(self):
         return self.get_queryset().get(pk=self.anonymous_id)
+
+
+USER_POSTS_KEY = u'user:{}:posts'
+USER_FOLLOWERS_KEY = u'user:{}:followers'
+USER_FOLLOWEES_KEY = u'user:{}:followees'
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -136,19 +142,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @staticmethod
     def redis_posts_key(pk: int):
-        return u'user:{}:posts'.format(pk)
+        return USER_POSTS_KEY.format(pk)
 
     @staticmethod
     def redis_followers_key(pk: int):
-        return u'user:{}:followers'.format(pk)
+        return USER_FOLLOWERS_KEY.format(pk)
 
     @staticmethod
     def redis_followees_key(pk: int):
-        return u'user:{}:followee'.format(pk)
+        return USER_FOLLOWEES_KEY.format(pk)
 
     @staticmethod
-    @save_to_zset(u'user:{}:posts')
-    def get_posts(user_id, start, end):
+    @save_to_zset(USER_POSTS_KEY)
+    def get_posts(user_id: int, start: int, end: int):
         from posts.models import Post
         user_posts = list(Post.objects.actual().filter(user=user_id))
         logging.info('Got {} posts for {} user key'.format(len(user_posts), user_id))
@@ -161,7 +167,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return result
 
     @staticmethod
-    @save_to_zset(u'user:{}:followers')
+    @save_to_zset(USER_FOLLOWERS_KEY)
     def get_followers(user_id, start, end):
         followers = Follower.objects.filter(followee=user_id).prefetch_related('follower')
         followers = list(followers)
@@ -175,16 +181,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         return result
 
     @staticmethod
-    @save_to_zset(u'user:{}:followees')
+    @save_to_zset(USER_FOLLOWEES_KEY)
     def get_followees(user_id, start, end):
-        followees = Follower.objects.filter(follower=user_id).prefetch_related('followee')
-        followees = list(followees)
+        followees = Follower.objects.filter(follower=user_id).values_list('followee_id', flat=True)
         logging.info('Got {} followees for {} user key'.format(len(followees), user_id))
 
         result = []
         for it in followees:
-            result.append(it.followee_id)
-            result.append(it.followee_id)
+            result.append(it)
+            result.append(it)
 
         return result
 
@@ -192,19 +197,25 @@ class User(AbstractBaseUser, PermissionsMixin):
         # return Follower.objects.filter(followee_id=self.pk).count()
         key = User.redis_followers_key(self.pk)
         if not r.exists(key):
-            User.get_followees(self.pk, 0, 1)  # Heat up cache
+            User.get_followers(self.pk, 0, 1)  # Heat up cache
 
-        return r.zcard(User.redis_followers_key(self.pk))
+        return r.zcard(key)
 
     def following_count(self):
         key = User.redis_followees_key(self.pk)
         if not r.exists(key):
             User.get_followees(self.pk, 0, 1)  # Heat up cache
 
-        return r.zcard(User.redis_followees_key(self.pk))
+        return r.zcard(key)
 
     def blasts_count(self):
-        return r.zcard(User.redis_posts_key(self.pk))
+        key = User.redis_posts_key(self.pk)
+        if not r.exists(key):
+            logger.info('Heat up cache for {}'.format(key))
+            User.get_posts(self.pk, 0, 1)  # Heat up cache
+
+        return r.zcard(key)
+
         # return Post.objects.filter(user=self.pk, expired_at__gte=timezone.now()).count()
 
     def get_full_name(self):
@@ -225,6 +236,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         items = r.srandmember(User.USERS_SET_KEY, count)
         return {int(it) for it in items}
 
+    # TODO: Use zrange decorator
     @staticmethod
     def get_most_popular_ids(start, end):
         """Returns list of user ids ranged by popularity"""

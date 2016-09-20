@@ -1,7 +1,5 @@
 import logging
 
-
-
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
@@ -22,7 +20,9 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 
 from push_notifications.models import APNSDevice
 from notifications.tasks import send_push_notification_to_device
+from users.utils import bound_posts_to_users
 
+logger = logging.getLogger(__name__)
 
 # TODO: use redis
 def filter_followee_users(request, user_ids: list or set):
@@ -381,6 +381,14 @@ class UserSearchView(ExtendableModelMixin,
                     break
 
             user['posts'] = PostPublicSerializer(user_posts, many=True, context=context).data
+        # user_ids = {it['id'] for it in data}
+        # user_to_posts = bound_posts_to_users(user_ids, 3)
+        #
+        # context = self.get_serializer_context()
+        # for it in data:
+        #     pk = it['id']
+        #     posts = user_to_posts[pk]
+        #     it['posts'] = PostPublicSerializer(posts, many=True, context=context).data
 
         return data
 
@@ -395,24 +403,26 @@ class UserSearchView(ExtendableModelMixin,
             page = int(page)
             page_size = min(int(page_size), 250)
         except ValueError:
-            page = 0
-            page_size = 50
             logging.error('Failed to cast page {} and page_size {} to int'.format(page, page_size))
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         random_count = page_size // 10 * 3
 
         # Calculates limits for getting most popular users
-        start = page * (page_size - random_count)
-        end = (page + 1) * (page_size - random_count) - 1
+        page_size -= random_count
+        start = page * page_size
+        end = (page + 1) * page_size - 1
+        page_size += random_count
 
         users = User.get_most_popular_ids(start, end)
 
         # TODO: Total count is wrong if random_users too small or empty.
         # Getting random users
+        logger.debug('Fetch random users. {} {}'.format(page, page_size))
         random_users = User.get_random_user_ids(page_size*2)  # Increase random_count to avoid duplications with users
         random_users = random_users.difference(set(users))  # Excludes already selected users
         random_users = list(random_users)[random_count:]  # Slice unneeded elements
+        logger.debug('Got {} random users. {} {}'.format(len(random_users), page, page_size))
         # random_users = User.objects.filter(pk__in=random_users).exclude(users)[random_count:]
 
         rand_pos = 0
@@ -453,7 +463,7 @@ class UsernameSearchView(viewsets.ReadOnlyModelViewSet):
 
 
 class UserAuthView(views.APIView):
-    def _clear_auth_data(self, user: User, registration_id: str, send_push: bool):
+    def _clear_auth_data(self, user: User, registration_id: str or None, send_push: bool):
         Token.objects.filter(user=user).delete()
 
         devices = APNSDevice.objects.filter(user=user)

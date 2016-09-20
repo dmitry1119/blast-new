@@ -234,9 +234,11 @@ def post_save_post(sender, instance: Post, **kwargs):
 
     # Add post to user post set.
     posts_key = User.redis_posts_key(instance.user_id)
-    if r.exists(posts_key):  # If cache is "hot"
-        r.zadd(posts_key, 1, instance.pk)
-        logging.info('Add {} to {} cache'.format(instance.pk, posts_key))
+    if not r.exists(posts_key):
+        User.get_posts(instance.user_id, 0, 1)  # Heat up cache
+
+    r.zadd(posts_key, 1, instance.pk)
+    logging.info('Add {} to {} cache'.format(instance.pk, posts_key))
 
     # Updates search popularity
     search_range = min(r.zcard(posts_key), USERS_RANGES_COUNT)
@@ -253,7 +255,7 @@ def post_save_vote(sender, **kwargs):
     if instance.is_positive is None:
         return
 
-    user_key = User.redis_posts_key(instance.user_id)
+    user_key = User.redis_posts_key(instance.post.user_id)
     if instance.is_positive:
         r.zincrby(user_key, instance.post_id, 1)  # incr post in redis cache
         Post.objects.filter(pk=instance.post.pk).update(voted_count=F('voted_count') + 1)
