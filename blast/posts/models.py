@@ -17,8 +17,9 @@ from users.models import User
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFill
 
-
+logger = logging.getLogger(__name__)
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
+
 
 
 def post_image_upload_dir(instance: User, filename: str):
@@ -205,9 +206,11 @@ USERS_RANGES_COUNT = 4
 def pre_delete_post(sender, instance: Post, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
     if instance.video:
+        logger.info('Delete {} image of {} post'.format(instance.image, instance.pk))
         instance.video.delete()
 
     if instance.image:
+        logger.info('Delete {} video of {} post'.format(instance.image, instance.pk))
         instance.image.delete()
 
     # Remove post from user post set.
