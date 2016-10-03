@@ -273,19 +273,6 @@ LOGGING = {
     'loggers': {
         'core.decorators': {
             'handlers': ['console'],
-            'level': 'DEBUG'
-        },
-        'tags.models': {
-            'handlers': ['console'],
-            'level': 'DEBUG'
-        },
-        'tags.views': {
-            'handlers': ['console'],
-            'level': 'DEBUG'
-        },
-        'django': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
         },
         '': {
             'handlers': ['console', 'production_file', 'debug_file'],

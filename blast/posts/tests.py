@@ -356,6 +356,24 @@ class VoteTest(BaseTestCase):
         delta = (expired_at - self.post.expired_at).total_seconds()
         self.assertEqual(round(delta), extra_time_in_minutes * 60)
 
+    def test_twice_vote(self):
+        """Checks votes counter for twice vote request"""
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.voted_count, 0)
+        url = reverse_lazy('post-vote', kwargs={'pk': self.post.pk})
+
+        response = self.put_json(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.voted_count, 1)
+
+        response = self.put_json(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.voted_count, 1)
+
 
 class ReportTest(BaseTestCase):
 

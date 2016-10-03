@@ -249,16 +249,20 @@ def post_save_post(sender, instance: Post, **kwargs):
 
 
 @receiver(post_save, sender=PostVote, dispatch_uid='posts_post_save_vote_handler')
-def post_save_vote(sender, **kwargs):
-    instance = kwargs['instance']
-
-    if instance.is_positive is None:
+def post_save_vote(sender, instance: PostVote, created: bool, **kwargs):
+    if not created or instance.is_positive is None:
         return
 
     user_key = User.redis_posts_key(instance.post.user_id)
     if instance.is_positive:
         r.zincrby(user_key, instance.post_id, 1)  # incr post in redis cache
-        Post.objects.filter(pk=instance.post.pk).update(voted_count=F('voted_count') + 1)
+        Post.objects.filter(pk=instance.post_id).update(voted_count=F('voted_count') + 1)
+        logger.debug('Incremented voted_count {} {}'.format(instance, instance.post_id))
     else:
         r.zincrby(user_key, instance.post_id, -1)  # incr post in redis cache
-        Post.objects.filter(pk=instance.post.pk).update(downvoted_count=F('downvoted_count') + 1)
+        Post.objects.filter(pk=instance.post_id).update(downvoted_count=F('downvoted_count') + 1)
+        logger.debug('Decremented voted_count {} {}'.format(instance, instance.post_id))
+
+    logger.debug('Refreshing post after changing counter')
+    # FIXME: Workaround for tests.VoteTest.test_twice_vote
+    instance.post.refresh_from_db()

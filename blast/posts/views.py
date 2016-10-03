@@ -195,8 +195,13 @@ class PostsViewSet(PerObjectPermissionMixin,
         except Post.DoesNotExist:
             raise Http404()
 
-        vote, created = PostVote.objects.get_or_create(user=request.user, post=post)
+        try:
+            vote = PostVote.objects.get(user=request.user, post=post)
+        except PostVote.DoesNotExist:
+            vote = PostVote(user=request.user, post=post, is_positive=is_positive)
+        # vote, created = PostVote.objects.get_or_create(user=request.user, post=post)
         vote.is_positive = is_positive
+        vote.save()
 
         # Increase popularity in tags cache
         # TODO: Move to post_save for vote?
@@ -218,15 +223,7 @@ class PostsViewSet(PerObjectPermissionMixin,
                 if remains < min_time_in_seconds:  # Is too much taken away?
                     post.expired_at = timezone.now() + timedelta(seconds=min_time_in_seconds)
 
-            # # Check if remain time great than allowed limit
-            # if remains > min_time_in_seconds:
-            #     value = min_time_in_seconds
-            #     if remains - value < min_time_in_seconds:
-            #         value = max(min_time_in_seconds - remains, 0)
-            #     post.expired_at -= timedelta(seconds=value)
-
         post.save()
-        vote.save()
 
         serializer = VoteSerializer(instance=vote)
         return Response(serializer.data, status=status.HTTP_200_OK)
