@@ -112,7 +112,7 @@ class Post(models.Model):
     @property
     def time_remains(self):
         delta = self.expired_at - timezone.now()
-        delta = delta - timedelta(microseconds=delta.microseconds)
+        delta = delta - timedelta(microseconds=delta.microseconds)  # Remove microseconds for pretty printing
         return delta
 
     @property

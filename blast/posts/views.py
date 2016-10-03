@@ -208,7 +208,22 @@ class PostsViewSet(PerObjectPermissionMixin,
         if is_positive:
             post.expired_at += timedelta(minutes=5)
         else:
-            post.expired_at -= timedelta(minutes=10)
+            min_time_in_seconds = 60 * 10
+
+            remains = post.time_remains.total_seconds()
+            if remains > min_time_in_seconds: # Is enough time to downvote?
+                post.expired_at -= timedelta(seconds=min_time_in_seconds)
+                remains = post.time_remains.total_seconds()
+
+                if remains < min_time_in_seconds:  # Is too much taken away?
+                    post.expired_at = timezone.now() + timedelta(seconds=min_time_in_seconds)
+
+            # # Check if remain time great than allowed limit
+            # if remains > min_time_in_seconds:
+            #     value = min_time_in_seconds
+            #     if remains - value < min_time_in_seconds:
+            #         value = max(min_time_in_seconds - remains, 0)
+            #     post.expired_at -= timedelta(seconds=value)
 
         post.save()
         vote.save()

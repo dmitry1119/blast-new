@@ -1,4 +1,5 @@
-from datetime import timedelta
+import datetime
+from django.utils import timezone
 from django.core.urlresolvers import reverse_lazy
 from django.test import TestCase
 from rest_framework import status
@@ -286,7 +287,7 @@ class VoteTest(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.post.voted_count, 1)
         self.assertEqual(self.post.downvoted_count, 0)
-        self.assertEqual(self.post.expired_at, self.expired_at + timedelta(minutes=5))
+        self.assertEqual(self.post.expired_at, self.expired_at + datetime.timedelta(minutes=5))
 
         url = reverse_lazy('post-list') + 'voted/'
         response = self.client.get(url)
@@ -306,7 +307,7 @@ class VoteTest(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.post.voted_count, 0)
         self.assertEqual(self.post.downvoted_count, 1)
-        self.assertEqual(self.post.expired_at, self.expired_at - timedelta(minutes=10))
+        self.assertEqual(self.post.expired_at, self.expired_at - datetime.timedelta(minutes=10))
 
         url = reverse_lazy('post-list') + 'downvoted/'
         response = self.client.get(url)
@@ -317,6 +318,43 @@ class VoteTest(BaseTestCase):
         result = response.data.get('results')[0]
         self.assertEqual(result['id'], self.post.id)
         self.assertEqual(result['author']['username'], self.user.username)
+
+    def test_downvote_min_time(self):
+        """Should not change expired_at for post with little expired_at"""
+        expired_at = timezone.now() + datetime.timedelta(minutes=5)  # FIXME: hardcoded value
+        self.post.expired_at = expired_at
+        self.post.save()
+
+        url = reverse_lazy('post-downvote', kwargs={'pk': self.post.pk})
+        response = self.put_json(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.expired_at, expired_at)
+
+    def test_downvote_time(self):
+        """Should set expired_at time to 10 min for post with soon expired_at"""
+        extra_time_in_minutes = 3
+        expired_at = timezone.now() + datetime.timedelta(minutes=10 + extra_time_in_minutes)  # FIXME: hardcoded value
+        self.post.expired_at = expired_at
+        self.post.save()
+
+        url = reverse_lazy('post-downvote', kwargs={'pk': self.post.pk})
+        response = self.put_json(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.post.refresh_from_db()
+
+        should_be = timezone.now() + datetime.timedelta(minutes=10)
+        delta = (should_be - self.post.expired_at).total_seconds()
+
+        self.assertLess(delta, 10)
+        self.assertGreaterEqual(delta, 0)
+
+        delta = (expired_at - self.post.expired_at).total_seconds()
+        self.assertEqual(round(delta), extra_time_in_minutes * 60)
 
 
 class ReportTest(BaseTestCase):
