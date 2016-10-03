@@ -9,6 +9,9 @@ def clear_expired_posts():
     posts = Post.objects.expired()
 
     posts = list(posts)
+    if not len(posts):
+        return
+
     logging.info('Remove {} expired posts'.format(len(posts)))
 
     for it in posts:
