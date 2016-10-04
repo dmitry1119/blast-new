@@ -5,21 +5,21 @@ import re
 import uuid
 from datetime import timedelta
 
-from django.db.models import Q
 from django.db import models
-from django.db.models import F
+from django.db.models import F, Q
 from django.utils import timezone
+from django.db.backends.dummy.base import IntegrityError
 
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
+from tags.models import Tag
 from users.models import User
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFill
 
 logger = logging.getLogger(__name__)
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
-
 
 
 def post_image_upload_dir(instance: User, filename: str):
@@ -202,8 +202,8 @@ class PostReport(models.Model):
 USERS_RANGES_COUNT = 4
 
 
-@receiver(pre_delete, sender=Post, dispatch_uid='posts_pre_delete')
-def pre_delete_post(sender, instance: Post, **kwargs):
+@receiver(pre_delete, sender=Post, dispatch_uid='post_delete_clear_files')
+def post_delete_clear_files(sender, instance: Post, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
     if instance.video:
         logger.info('Delete {} image of {} post'.format(instance.image, instance.pk))
@@ -227,8 +227,8 @@ def pre_delete_post(sender, instance: Post, **kwargs):
     User.objects.filter(pk=instance.user_id).update(popularity=F('popularity') - 1)
 
 
-@receiver(post_save, sender=Post, dispatch_uid='posts_post_save')
-def post_save_post(sender, instance: Post, **kwargs):
+@receiver(post_save, sender=Post, dispatch_uid='post_update_caches')
+def post_update_cache(sender, instance: Post, **kwargs):
     if not kwargs['created']:
         return
 
@@ -266,3 +266,55 @@ def post_save_vote(sender, instance: PostVote, created: bool, **kwargs):
     logger.debug('Refreshing post after changing counter')
     # FIXME: Workaround for tests.VoteTest.test_twice_vote
     instance.post.refresh_from_db()
+
+
+@receiver(post_save, sender=Post, dispatch_uid='post_create_tags')
+def post_create_tags(sender, instance: Post, **kwargs):
+    if not kwargs['created']:
+        return
+
+    tags = instance.get_tag_titles()
+
+    logger.info('Created new post with {} tags'.format(tags))
+
+    if not tags:
+        return
+
+    db_tags = Tag.objects.filter(title__in=tags)
+    db_tags = {it.title for it in db_tags}
+    to_create = set(tags) - db_tags
+
+    db_tags = []
+    for it in to_create:
+        db_tags.append(Tag(title=it))
+
+    if db_tags:
+        # FIXME (VM): if two user tries to create a same tags,
+        # it will throw exception for one of them.
+        Tag.objects.bulk_create(db_tags)
+
+    db_tags = list(Tag.objects.filter(title__in=tags))
+    instance.tags.add(*db_tags)
+
+    # Increase total posts counter
+    for it in db_tags:
+        key = Tag.redis_posts_key(it.title)
+        r.zincrby(key, instance.pk)
+
+    Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') + 1)
+
+
+@receiver(pre_delete, sender=Post, dispatch_uid='post_clear_cache')
+def post_clear_cache(sender, instance: Post, **kwargs):
+    tags = list(instance.tags.all())
+    tags = {it.title for it in tags}
+    logging.info('pre_delete: Post. Update tag counters. {}'.format(tags))
+    for it in tags:
+        key = Tag.redis_posts_key(it)
+        logging.info('pre_delete: Post. Update tag {} with key {}'.format(it, key))
+        r.zrem(key, instance.pk)
+
+    try:
+        Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') - 1)
+    except IntegrityError as e:
+        logger.error('{}'.format(e))
