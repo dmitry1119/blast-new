@@ -6,8 +6,9 @@ from rest_framework import status
 
 from core.tests import BaseTestCase, create_file
 from countries.models import Country
+from users.models import User, Follower, UserSettings
 from posts.models import Post, PostComment, PostReport, PostVote
-from users.models import User, Follower
+from posts.tasks import send_expire_notifications, _get_post_to_users_push_list
 
 
 class AnyPermissionTest(TestCase):
@@ -530,3 +531,48 @@ class VotersList(BaseTestCase):
         # TODO: Improve and check user[0]
         self.assertEqual(response.data['results'][1]['username'], '1')
         self.assertEqual(response.data['results'][1]['is_followee'], True)
+
+
+class ExpiredNotificationsTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.user1 = self.generate_user('voter')
+        self.user2 = self.generate_user('downvoter')
+
+        UserSettings.objects.all().update(notify_upvoted_blasts=True,
+                                          notify_downvoted_blasts=True,
+                                          notify_pinned_blasts=True)
+
+        expired_at = timezone.now() + datetime.timedelta(minutes=5)
+        self.post1 = Post.objects.create(user=self.user, expired_at=expired_at)
+        self.post2 = Post.objects.create(user=self.user1, expired_at=expired_at)
+        self.post3 = Post.objects.create(user=self.user2, expired_at=expired_at)
+        self.post4 = Post.objects.create(user=self.user2)
+
+        PostVote.objects.create(user=self.user1, post=self.post1, is_positive=True)
+        PostVote.objects.create(user=self.user2, post=self.post1, is_positive=True)
+        PostVote.objects.create(user=self.user1, post=self.post2, is_positive=True)
+        PostVote.objects.create(user=self.user2, post=self.post2, is_positive=False)
+
+    def test_check_notificiations(self):
+        # TODO: add pinned posts
+        should_be = {
+            self.post1.pk: {
+                self.user.pk,  # owner
+                self.user1.pk,  # voter
+                self.user2.pk  # voter
+            },
+            self.post2.pk: {
+                self.user1.pk,  # owner, voter
+                self.user2.pk  # downvoter
+            },
+            self.post3.pk: {
+                self.user2.pk,  # owner
+            },
+        }
+
+        result = _get_post_to_users_push_list()
+
+        self.assertNotIn(self.post4.pk, result)
+        self.assertEqual(result, should_be)
