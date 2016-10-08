@@ -20,7 +20,7 @@ from datetime import timedelta
 
 
 from tags.models import Tag
-from users.models import User, Follower, BlockedUsers
+from users.models import User, Follower, BlockedUsers, PinnedPosts
 
 from users.serializers import UsernameSerializer
 
@@ -172,7 +172,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         serializer.save()
         post = serializer.instance
         if post.is_anonymous:
-            self.request.user.pinned_posts.add(post)
+            PinnedPosts.objects.create(user=self.request.user, post=post)
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -350,7 +350,8 @@ class PostsViewSet(PerObjectPermissionMixin,
         if self.request.user.is_anonymous():
             return self.permission_denied(request)
         instance = get_object_or_404(Post, pk=pk)
-        request.user.pinned_posts.add(instance)
+        if not PinnedPosts.objects.filter(user_id=self.request.user.pk, post=instance).exists():
+            PinnedPosts.objects.create(user_id=self.request.user.pk, post=instance)
 
         return Response()
 
@@ -367,7 +368,7 @@ class PostsViewSet(PerObjectPermissionMixin,
             return self.permission_denied(request)
 
         instance = get_object_or_404(Post, pk=pk)
-        request.user.pinned_posts.remove(instance)
+        PinnedPosts.objects.filter(user_id=self.request.user.pk, post_id=pk).delete()
 
         return Response()
 
@@ -382,7 +383,7 @@ class PinnedPostsViewSet(ExtendableModelMixin,
         extend_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
-        return self.request.user.pinned_posts.filter(expired_at__gte=timezone.now()).all()
+        return self.request.user.pinned.filter(expired_at__gte=timezone.now()).all()
 
 
 class VotedPostBaseView(mixins.ListModelMixin,
@@ -466,7 +467,7 @@ class PostSearchViewSet(mixins.ListModelMixin,
         tags = tags.order_by('-total_posts')[:100]
 
         # Select first 100 posts assume that search output will be short
-        pinned = self.request.user.pinned_posts
+        pinned = self.request.user.pinned
         pinned = pinned.filter(tags__in=tags, expired_at__gte=timezone.now())
         pinned = pinned.order_by('-expired_at').distinct()[:100]
 

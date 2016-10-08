@@ -116,6 +116,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     pinned_posts = models.ManyToManyField('posts.Post', blank=True,
+                                          through='PinnedPosts', through_fields=('user', 'post'),
                                           related_name='pinned_users')
 
     hidden_posts = models.ManyToManyField('posts.Post', blank=True,
@@ -282,6 +283,18 @@ class Follower(models.Model):
 
     class Meta:
         unique_together = ('follower', 'followee')
+
+
+class PinnedPosts(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey('User', on_delete=models.CASCADE,
+                             related_name='pinned')
+    post = models.ForeignKey('posts.Post', on_delete=models.CASCADE,
+                             related_name='pinners')
+
+    def __str__(self):
+        return u'PinnedPost: {} {}'.format(self.user_id, self.post_id)
+
 
 
 # block user - it is for the purpose of not displaying content from that user on the newsfeed

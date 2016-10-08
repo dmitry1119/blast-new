@@ -6,7 +6,7 @@ from rest_framework import status
 
 from core.tests import BaseTestCase, create_file
 from countries.models import Country
-from users.models import User, Follower, UserSettings
+from users.models import User, Follower, UserSettings, PinnedPosts
 from posts.models import Post, PostComment, PostReport, PostVote
 from posts.tasks import send_expire_notifications, _get_post_to_users_push_list
 
@@ -157,7 +157,7 @@ class TestIsPinnedPost(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.post = Post.objects.create(user=self.user)
-        self.user.pinned_posts.add(self.post)
+        PinnedPosts.objects.create(user=self.user, post=self.post)
 
     def test_is_pinned_flag(self):
         url = reverse_lazy('post-list')
@@ -544,35 +544,45 @@ class ExpiredNotificationsTest(BaseTestCase):
                                           notify_downvoted_blasts=True,
                                           notify_pinned_blasts=True)
 
+    def test_check_notify_list_owners(self):
         expired_at = timezone.now() + datetime.timedelta(minutes=5)
-        self.post1 = Post.objects.create(user=self.user, expired_at=expired_at)
-        self.post2 = Post.objects.create(user=self.user1, expired_at=expired_at)
-        self.post3 = Post.objects.create(user=self.user2, expired_at=expired_at)
-        self.post4 = Post.objects.create(user=self.user2)
+        post1 = Post.objects.create(user=self.user, expired_at=expired_at)
+        post2 = Post.objects.create(user=self.user1, expired_at=expired_at)
+        post3 = Post.objects.create(user=self.user2, expired_at=expired_at)
+        post4 = Post.objects.create(user=self.user2)
 
-        PostVote.objects.create(user=self.user1, post=self.post1, is_positive=True)
-        PostVote.objects.create(user=self.user2, post=self.post1, is_positive=True)
-        PostVote.objects.create(user=self.user1, post=self.post2, is_positive=True)
-        PostVote.objects.create(user=self.user2, post=self.post2, is_positive=False)
+        PostVote.objects.create(user=self.user1, post=post1, is_positive=True)
+        PostVote.objects.create(user=self.user2, post=post1, is_positive=True)
+        PostVote.objects.create(user=self.user1, post=post2, is_positive=True)
+        PostVote.objects.create(user=self.user2, post=post2, is_positive=False)
 
-    def test_check_notificiations(self):
-        # TODO: add pinned posts
+        # Pinned and voted
+        # User pin and vote post, this post will be include in 'pinned' set only.
+        PostVote.objects.create(user=self.user1, post=post3, is_positive=True)
+        PinnedPosts.objects.create(user=self.user1, post=post3)
+
+        # Owner pin his own post.
+        # This post will not be included in 'pinned' set, but will be in 'owner' set.
+        PinnedPosts.objects.create(user=self.user2, post=post3)
+
         should_be = {
-            self.post1.pk: {
-                self.user.pk,  # owner
-                self.user1.pk,  # voter
-                self.user2.pk  # voter
+            'owner': {
+                post1.pk: {self.user.pk},
+                post2.pk: {self.user1.pk},
+                post3.pk: {self.user2.pk}
             },
-            self.post2.pk: {
-                self.user1.pk,  # owner, voter
-                self.user2.pk  # downvoter
+            'pinned': {
+                post3.pk: {self.user1.pk}
             },
-            self.post3.pk: {
-                self.user2.pk,  # owner
+            'upvote': {
+                post1.pk: {self.user1.pk, self.user2.pk},
             },
+            'downvote': {
+                post2.pk: {self.user2.pk}
+            }
         }
 
         result = _get_post_to_users_push_list()
 
-        self.assertNotIn(self.post4.pk, result)
+        self.assertNotIn(post4.pk, result)
         self.assertEqual(result, should_be)
