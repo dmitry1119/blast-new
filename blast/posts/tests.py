@@ -153,7 +153,6 @@ class TestAnonymousPost(BaseTestCase):
 
 
 class TestIsPinnedPost(BaseTestCase):
-
     def setUp(self):
         super().setUp()
         self.post = Post.objects.create(user=self.user)
@@ -377,7 +376,6 @@ class VoteTest(BaseTestCase):
 
 
 class ReportTest(BaseTestCase):
-
     text = 'report text'
 
     def setUp(self):
@@ -404,7 +402,6 @@ class ReportTest(BaseTestCase):
 
 
 class PinPost(BaseTestCase):
-
     posts_count = 10
 
     def setUp(self):
@@ -472,7 +469,7 @@ class FeedsTest(BaseTestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), len(self.posts)-1)
+        self.assertEqual(len(response.data['results']), len(self.posts) - 1)
 
         should_be_hidden = self.posts[5].pk
         ids = [it['id'] for it in response.data['results']]
@@ -484,7 +481,7 @@ class FeedsTest(BaseTestCase):
 
         response = self.client.get(self.url)
 
-        self.assertEqual(len(response.data['results']), len(self.posts)-1)
+        self.assertEqual(len(response.data['results']), len(self.posts) - 1)
 
         should_be_hidden = self.posts[0].pk
         ids = [it['id'] for it in response.data['results']]
@@ -497,7 +494,7 @@ class FeedsTest(BaseTestCase):
 
         response = self.client.get(self.url)
 
-        self.assertEqual(len(response.data['results']), len(self.posts)-2)
+        self.assertEqual(len(response.data['results']), len(self.posts) - 2)
 
         should_be_hidden = [self.posts[0].pk, self.posts[1]]
         self.assertNotIn(should_be_hidden[0], response.data['results'])
@@ -513,7 +510,7 @@ class VotersList(BaseTestCase):
         self.user1 = User.objects.create_user(phone='1', username='1', password='1', country=country)
         self.user2 = User.objects.create_user(phone='2', username='2', password='2', country=country)
 
-        PostVote.objects.create(user=self.user,  post=self.post, is_positive=True)
+        PostVote.objects.create(user=self.user, post=self.post, is_positive=True)
         PostVote.objects.create(user=self.user1, post=self.post, is_positive=True)
         PostVote.objects.create(user=self.user2, post=self.post, is_positive=False)
 
@@ -584,5 +581,22 @@ class ExpiredNotificationsTest(BaseTestCase):
 
         result = _get_post_to_users_push_list()
 
-        self.assertNotIn(post4.pk, result)
+        self.assertEqual(result, should_be)
+
+    def test_check_notify_list_case_01(self):
+        expired_at = timezone.now() + datetime.timedelta(minutes=5)
+
+        post = Post.objects.create(user=self.user, expired_at=expired_at)
+
+        PinnedPosts.objects.create(user=self.user1, post=post)
+
+        result = _get_post_to_users_push_list()
+
+        should_be = {
+            'owner': {post.pk: {self.user.pk}},
+            'pinned': {post.pk: {self.user1.pk}},
+            'upvote': {},
+            'downvote': {}
+        }
+
         self.assertEqual(result, should_be)

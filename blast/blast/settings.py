@@ -168,6 +168,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'posts.tasks.clear_expired_posts',
         'schedule': timedelta(minutes=5),
     },
+    'send-notifications': {
+        'task': 'posts.tasks.send_expire_notifications',
+        'schedule': timedelta(minutes=3)
+    }
 }
 
 # CELERY SETTINGS

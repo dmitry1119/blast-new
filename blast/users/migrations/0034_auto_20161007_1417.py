@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('posts', '0026_remove_post_is_anonymous'),
-        ('users', '0033_user_search_range'),add
+        ('users', '0033_user_search_range'),
     ]
 
     operations = [

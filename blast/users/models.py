@@ -295,7 +295,9 @@ class PinnedPosts(models.Model):
     def __str__(self):
         return u'PinnedPost: {} {}'.format(self.user_id, self.post_id)
 
-
+    class Meta:
+        verbose_name = 'Pinned post'
+        verbose_name_plural = 'Pinned posts'
 
 # block user - it is for the purpose of not displaying content from that user on the newsfeed
 # and also with comment notifications users who have been blocked will not be sent to the user

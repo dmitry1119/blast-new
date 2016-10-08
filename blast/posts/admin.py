@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from posts.models import Post, PostComment, PostVote, PostReport
+from users.models import PinnedPosts
 
 
 @admin.register(Post)
@@ -23,3 +24,7 @@ class PostVoteAdmin(admin.ModelAdmin):
 class PostReportAdmin(admin.ModelAdmin):
     list_display = ('pk', 'post', 'user', 'reason', 'text', 'created_at')
 
+
+@admin.register(PinnedPosts)
+class PinnedPostsAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'post_id', 'user_id',)

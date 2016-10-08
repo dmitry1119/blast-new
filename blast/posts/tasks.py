@@ -34,20 +34,20 @@ def clear_expired_posts():
         it.delete()
 
 
-def send_ending_soon_notification(post_id: int, users: set):
-    expire_s = 60 * 10  # 10 minutes
+def send_ending_soon_notification(post_id: int, users: set, message: str):
     send_marker_key = 'EndSoonPUSHSendState:{}:{}'.format(post_id, '{}')
-
-    logger.info('Send ending soon PUSH message for {} to {}'.format(post_id, users))
+    logger.info('Ending soon PUSH message candidates %s: %s', post_id, users)
 
     to_send = [it for it in users if not r.exists(send_marker_key.format(it))]
+    logger.info('Send ending soon PUSH message to %s: %s', post_id, to_send)
 
-    # TODO: send push
+    devices = APNSDevice.objects.filter(user_id__in=to_send)
+    devices.send_message(message, sound='default', extra={'post_id': post_id})
 
-    logger.info('Set up ending soon markers for {} {}'.format(post_id, to_send))
+    logger.info('Set up ending soon markers for %s %s', post_id, to_send)
     for it in to_send:
         key = send_marker_key.format(it)
-        r.set(key, '1', ex=expire_s)
+        r.set(key, '1', ex=60 * 10)
 
 
 def _get_post_to_users_push_list() -> dict:
@@ -154,13 +154,22 @@ def _get_post_to_users_push_list() -> dict:
 
 @shared_task(bind=False)
 def send_expire_notifications():
-    post_to_users = _get_post_to_users_push_list()
+    messages = {
+        'owner': 'Your Blast is ending soon',
+        'pinned': 'Pinned Blast ending soon',
+        'upvote': 'Upvoted Blast ending soon',
+        'downvote': 'Downvoted Blast ending soon'
+    }
 
-    for post_id in post_to_users:
-        send_ending_soon_notification(post_id, post_to_users[post_id])
+    post_dict = _get_post_to_users_push_list()
+    if not post_dict:
+        return
 
-    # for it in
-        # APNSDevice.objects.filter(user_id__in=users).send_message('Ending soon', extra={
-        #     post_id: expired_posts
-        # })
+    logger.info('Sending expired PUSH to %s', post_dict)
 
+    for category in post_dict:
+        msg = messages[category]
+        for post_id in post_dict[category]:
+            users = post_dict[category][post_id]
+            logger.info('Sending expired push %s %s %s', category, post_id, users)
+            send_ending_soon_notification(post_id, users, msg)  # TODO: make async
