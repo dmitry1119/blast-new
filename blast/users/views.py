@@ -490,7 +490,7 @@ class UserAuthView(views.APIView):
             if user:
                 if not user.is_active:
                     msg = 'User account is disabled.'
-                    return Response(msg, status=status.HTTP_403_FORBIDDEN)
+                    return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
 
                 self._clear_auth_data(user, request.data.get('registration_id'), True)
 
@@ -499,10 +499,10 @@ class UserAuthView(views.APIView):
                 }, status=status.HTTP_200_OK)
             else:
                 msg = 'Unable to login with provided credentials.'
-                return Response(msg, status=status.HTTP_403_FORBIDDEN)
+                return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
         else:
             msg = 'Must include "username" and "password".'
-            return Response(msg, status=status.HTTP_403_FORBIDDEN)
+            return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
 
     def delete(self):
         if self.request.user.is_authenticated():
