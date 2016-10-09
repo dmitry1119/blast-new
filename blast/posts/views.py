@@ -383,7 +383,8 @@ class PinnedPostsViewSet(ExtendableModelMixin,
         extend_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
-        return self.request.user.pinned.filter(expired_at__gte=timezone.now()).all()
+        posts = self.request.user.pinned.filter().values('post_id')
+        return Post.objects.filter(expired_at__gte=timezone.now(), id__in=posts)
 
 
 class VotedPostBaseView(mixins.ListModelMixin,
