@@ -210,14 +210,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         return r.zcard(key)
 
     def blasts_count(self):
-        key = User.redis_posts_key(self.pk)
-        if not r.exists(key):
-            logger.info('Heat up cache for {}'.format(key))
-            User.get_posts(self.pk, 0, 1)  # Heat up cache
-
-        return r.zcard(key)
-
-        # return Post.objects.filter(user=self.pk, expired_at__gte=timezone.now()).count()
+        # key = User.redis_posts_key(self.pk)
+        # if not r.exists(key):
+        #     logger.info('Heat up cache for {}'.format(key))
+        #     User.get_posts(self.pk, 0, 1)  # Heat up cache
+        #
+        # return r.zcard(key)
+        # FIXME: Use r.zcard(key) and write test
+        from posts.models import Post
+        return Post.objects.filter(user=self.pk, expired_at__gte=timezone.now()).count()
 
     def get_full_name(self):
         return self.fullname
