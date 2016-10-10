@@ -328,8 +328,7 @@ class PostsViewSet(PerObjectPermissionMixin,
         """
         if request.user.is_anonymous():
             # TODO: Test this branch
-            self.permission_denied(request,
-                                   message=getattr(permissions.IsAuthenticated, 'message'))
+            self.permission_denied(request, message=getattr(permissions.IsAuthenticated, 'message'))
 
         instance = get_object_or_404(Post, pk=pk)
         serializer = ReportPostSerializer(data=request.data)

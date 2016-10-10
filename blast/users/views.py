@@ -16,7 +16,7 @@ from users.models import User, UserSettings, Follower, BlockedUsers
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
-                               CheckUsernameAndPassword, UsernameSerializer, FollowersSerializer)
+                               CheckUsernameAndPassword, UsernameSerializer, FollowersSerializer, ReportUserSerializer)
 
 from push_notifications.models import APNSDevice
 from notifications.tasks import send_push_notification_to_device
@@ -93,6 +93,14 @@ class UserViewSet(ExtendableModelMixin,
               description: user country id.
         """
         return super().create(request, *args, **kwarg)
+
+    @detail_route(['put'], permission_classes=[permissions.IsAuthenticated], serializer_class=ReportUserSerializer)
+    def report(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
+        serializer = ReportUserSerializer(data=request.GET)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(reporter=request.user, user=user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @list_route(['get'])
     def check(self, request, *args, **kwargs):
