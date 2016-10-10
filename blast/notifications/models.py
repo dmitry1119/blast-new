@@ -67,8 +67,8 @@ class Notification(models.Model):
     @property
     def push_payload(self):
         return {
-            'post': self.post_id,
-            'user': self.other_id,
+            'postId': self.post_id,
+            'userId': self.other_id,
         }
 
     def __str__(self):

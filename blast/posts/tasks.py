@@ -42,7 +42,7 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
     logger.info('Send ending soon PUSH message to %s: %s', post_id, to_send)
 
     devices = APNSDevice.objects.filter(user_id__in=to_send)
-    devices.send_message(message, sound='default', extra={'post_id': post_id})
+    devices.send_message(message, sound='default', extra={'postId': post_id})
 
     logger.info('Set up ending soon markers for %s %s', post_id, to_send)
     for it in to_send:
