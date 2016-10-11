@@ -27,13 +27,22 @@ class FollowRequest(models.Model):
 
 
 class Notification(models.Model):
-    STARTED_FOLLOW_PATTERN = '{} started following you'
-    VOTES_REACHED_PATTERN = 'You blast reached {} votes'
-    MENTIONED_IN_COMMENT_PATTERN = '{} mentioned you in comment'
+    TEXT_STARTED_FOLLOW_PATTERN = '{} started following you'
+    TEXT_VOTES_REACHED_PATTERN = 'You blast reached {} votes'
+    TEXT_MENTIONED_IN_COMMENT_PATTERN = '{} mentioned you in comment'
+
+    TEXT_END_SOON_OWNER = 'Your Blast is ending soon'
+    TEXT_END_SOON_PINNER = 'Pinned Blast ending soon'
+    TEXT_END_SOON_UPVOTER = 'Upvoted Blast ending soon'
+    TEXT_END_SOON_DOWNVOTER = 'Downvoted Blast ending soon'
 
     STARTED_FOLLOW = 0
     MENTIONED_IN_COMMENT = 1
-    VOTES_REACHED = 2
+    VOTES_REACHED = 2,
+    ENDING_SOON_OWNER = 3
+    ENDING_SOON_PINNER = 4
+    ENDING_SOON_UPVOTER = 5
+    ENDING_SOON_DOWNVOTER = 6
 
     TYPE = (
         (STARTED_FOLLOW, 'Started follow'),
@@ -54,11 +63,20 @@ class Notification(models.Model):
     @property
     def text(self):
         if self.type == Notification.STARTED_FOLLOW:
-            return Notification.STARTED_FOLLOW_PATTERN.format(self.other.username)
+            return Notification.TEXT_STARTED_FOLLOW_PATTERN.format(self.other.username)
         elif self.type == Notification.VOTES_REACHED:
-            return Notification.VOTES_REACHED_PATTERN.format(self.votes)
+            return Notification.TEXT_VOTES_REACHED_PATTERN.format(self.votes)
         elif self.type == Notification.MENTIONED_IN_COMMENT:
-            return Notification.MENTIONED_IN_COMMENT_PATTERN.format(self.other.username)
+            return Notification.TEXT_MENTIONED_IN_COMMENT_PATTERN.format(self.other.username)
+
+        elif self.type == Notification.ENDING_SOON_OWNER:
+            return self.TEXT_END_SOON_OWNER
+        elif self.type == Notification.ENDING_SOON_PINNER:
+            return self.TEXT_END_SOON_PINNER
+        elif self.type == Notification.ENDING_SOON_UPVOTER:
+            return self.TEXT_END_SOON_UPVOTER
+        elif self.type == Notification.ENDING_SOON_DOWNVOTER:
+            return self.TEXT_END_SOON_DOWNVOTER
 
         logger.error('Unknown notification type')
 

@@ -163,11 +163,11 @@ SINCH = {
 CELERYBEAT_SCHEDULE = {
     'clear-expired-posts': {
         'task': 'posts.tasks.clear_expired_posts',
-        'schedule': timedelta(minutes=5),
+        'schedule': timedelta(seconds=60*5),
     },
     'send-notifications': {
         'task': 'posts.tasks.send_expire_notifications',
-        'schedule': timedelta(minutes=3)
+        'schedule': timedelta(seconds=60*3)
     }
 }
 
@@ -257,7 +257,7 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'logs/main.log',
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
-            'backupCount': 7,
+            'backupCount': 10,
             'formatter': 'main_formatter',
             'filters': ['require_debug_false'],
         },
@@ -266,17 +266,50 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'logs/debug_main.log',
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
-            'backupCount': 7,
+            'backupCount': 10,
             'formatter': 'main_formatter',
             'filters': ['require_debug_true'],
         },
     },
     'loggers': {
-        'core.decorators': {
-            'handlers': ['console'],
-        },
-        '': {
+        # 'django': {
+        #     'handlers': ['console'],
+        #     'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        # },
+        'core': {
             'handlers': ['console', 'production_file', 'debug_file'],
+            'level': 'DEBUG',
+        },
+        'posts': {
+            'handlers': ['console', 'production_file', 'debug_file'],
+            'level': 'DEBUG',
+        },
+        'users': {
+            'handlers': ['console', 'production_file', 'debug_file'],
+            'level': 'DEBUG',
+        },
+        'notifications': {
+            'handlers': ['console', 'production_file', 'debug_file'],
+            'level': 'DEBUG',
+        },
+        'reports': {
+            'handlers': ['console', 'production_file', 'debug_file'],
+            'level': 'DEBUG',
+        },
+        'countries': {
+            'handlers': ['console', 'production_file', 'debug_file'],
+            'level': 'DEBUG',
+        },
+        'smsconfirmation': {
+            'handlers': ['console', 'production_file', 'debug_file'],
+            'level': 'DEBUG',
+        },
+        'tags': {
+            'handlers': ['console', 'production_file', 'debug_file'],
+            'level': 'DEBUG',
+        },
+        'django.db': {
+            'handlers': ['console'],
             'level': 'DEBUG',
         },
     },

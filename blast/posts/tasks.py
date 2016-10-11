@@ -10,6 +10,8 @@ from push_notifications.apns import apns_send_bulk_message
 from push_notifications.models import APNSDevice
 
 from celery import shared_task
+
+from notifications.models import Notification
 from posts.models import Post, PostVote
 from users.models import User, PinnedPosts
 
@@ -38,14 +40,37 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
     send_marker_key = 'EndSoonPUSHSendState:{}:{}'.format(post_id, '{}')
     logger.info('Ending soon PUSH message candidates %s: %s', post_id, users)
 
-    to_send = [it for it in users if not r.exists(send_marker_key.format(it))]
-    logger.info('Send ending soon PUSH message to %s: %s', post_id, to_send)
+    users = [it for it in users if not r.exists(send_marker_key.format(it))]
+    logger.info('Send ending soon PUSH message to %s: %s', post_id, users)
 
-    devices = APNSDevice.objects.filter(user_id__in=to_send)
+    devices = APNSDevice.objects.filter(user_id__in=users)
     devices.send_message(message, sound='default', extra={'postId': post_id})
 
-    logger.info('Set up ending soon markers for %s %s', post_id, to_send)
-    for it in to_send:
+    # Create notifications
+    try:
+        notify_type = None
+        if message == Notification.TEXT_END_SOON_OWNER:
+            notify_type = Notification.ENDING_SOON_OWNER
+        elif message == Notification.TEXT_END_SOON_PINNER:
+            notify_type = Notification.ENDING_SOON_PINNER
+        elif message == Notification.TEXT_END_SOON_UPVOTER:
+            notify_type = Notification.ENDING_SOON_UPVOTER
+        elif message == Notification.TEXT_END_SOON_DOWNVOTER:
+            notify_type = Notification.ENDING_SOON_DOWNVOTER
+
+        logger.info('Creating notifications for %s, %s, notify_type is %s', post_id, users, notify_type)
+        notifications = []
+        for user_id in users:
+            notify = Notification(post_id=post_id, user_id=user_id, type=notify_type)
+            notifications.append(notify)
+
+        Notification.objects.bulk_create(notifications)
+        logger.info('Created notifications for %s, %s', post_id, users)
+    except Exception:
+        logger.exception("Failed to create notifications for %s %s", post_id, users)
+
+    logger.info('Set up ending soon markers for %s %s', post_id, users)
+    for it in users:
         key = send_marker_key.format(it)
         r.set(key, '1', ex=60 * 10)
 
@@ -155,10 +180,10 @@ def _get_post_to_users_push_list() -> dict:
 @shared_task(bind=False)
 def send_expire_notifications():
     messages = {
-        'owner': 'Your Blast is ending soon',
-        'pinned': 'Pinned Blast ending soon',
-        'upvote': 'Upvoted Blast ending soon',
-        'downvote': 'Downvoted Blast ending soon'
+        'owner': Notification.TEXT_END_SOON_OWNER,
+        'pinned': Notification.TEXT_END_SOON_PINNER,
+        'upvote': Notification.TEXT_END_SOON_UPVOTER,
+        'downvote': Notification.TEXT_END_SOON_DOWNVOTER
     }
 
     post_dict = _get_post_to_users_push_list()
