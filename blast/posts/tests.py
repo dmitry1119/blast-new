@@ -6,7 +6,7 @@ from rest_framework import status
 
 from core.tests import BaseTestCase, create_file
 from countries.models import Country
-from users.models import User, Follower, UserSettings, PinnedPosts
+from users.models import User, Follower, UserSettings, PinnedPosts, UserReport
 from posts.models import Post, PostComment, PostReport, PostVote
 from posts.tasks import send_expire_notifications, _get_post_to_users_push_list
 
@@ -600,3 +600,22 @@ class ExpiredNotificationsTest(BaseTestCase):
         }
 
         self.assertEqual(result, should_be)
+
+
+class ReportUserTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.other = self.generate_user('other')
+
+    def test_report_route(self):
+        url = reverse_lazy('user-report', kwargs={'pk': self.other.pk})
+
+        text = 'text'
+        response = self.put_json(url, data={'reason': UserReport.DUPLICATED_CONTENT, 'text': text})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        report = UserReport.objects.all()[0]
+        self.assertEqual(report.reason, UserReport.DUPLICATED_CONTENT)
+        self.assertEqual(report.text, text)
+        self.assertEqual(report.reporter.pk, self.user.pk)

@@ -97,7 +97,7 @@ class UserViewSet(ExtendableModelMixin,
     @detail_route(['put'], permission_classes=[permissions.IsAuthenticated], serializer_class=ReportUserSerializer)
     def report(self, request, pk=None):
         user = get_object_or_404(User, pk=pk)
-        serializer = ReportUserSerializer(data=request.GET)
+        serializer = ReportUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(reporter=request.user, user=user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
