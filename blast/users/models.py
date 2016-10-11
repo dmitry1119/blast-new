@@ -301,30 +301,6 @@ class PinnedPosts(models.Model):
         verbose_name_plural = 'Pinned posts'
 
 
-class UserReport(models.Model):
-    OTHER = 0
-    SENSITIVE_CONTENT = 1
-    SPAM = 2
-    DUPLICATED_CONTENT = 3
-    BULLYING = 4
-    INTEL_VIOLATION = 5
-
-    REASONS = (
-        (OTHER, "Other"),
-        (SENSITIVE_CONTENT, "Sensitive content"),
-        (SPAM, "Spam"),
-        (DUPLICATED_CONTENT, "Duplicated content"),
-        (BULLYING, "Bulling"),
-        (INTEL_VIOLATION, "Intel violation"),
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User)
-    reporter = models.ForeignKey(User, related_name='reports')
-    reason = models.IntegerField(choices=REASONS, help_text='Report reason')
-    text = models.CharField(max_length=128, blank=True, help_text='Details')
-
-
 # block user - it is for the purpose of not displaying content from that user on the newsfeed
 # and also with comment notifications users who have been blocked will not be sent to the user
 class BlockedUsers(models.Model):

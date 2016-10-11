@@ -1,5 +1,5 @@
 from django.contrib import admin
-from users.models import User, UserSettings, Follower, UserReport
+from users.models import User, UserSettings, Follower
 
 
 @admin.register(UserSettings)
@@ -16,9 +16,3 @@ class UserAdmin(admin.ModelAdmin):
 @admin.register(Follower)
 class FollowerAdmin(admin.ModelAdmin):
     list_display = ('pk', 'followee', 'follower', 'created_at')
-
-
-@admin.register(UserReport)
-class UserReport(admin.ModelAdmin):
-    list_display = ('pk', 'user', 'reporter', 'reason', 'created_at')
-    search_fields = ('user',)

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from smsconfirmation.models import PhoneConfirmation
-from users.models import User, UserSettings, UserReport
+from users.models import User, UserSettings
 
 
 # TODO: Rename
@@ -214,9 +214,3 @@ class FollowersSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.avatar.url)
         else:
             return None
-
-
-class ReportUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserReport
-        exclude = ('created_at', 'reporter', 'user',)

@@ -1,4 +1,5 @@
 import redis
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -14,11 +15,11 @@ from core.views import ExtendableModelMixin
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
-                               VoteSerializer, ReportPostSerializer)
+                               VoteSerializer)
 
 from datetime import timedelta
 
-
+from reports.serializers import ReportSerializer
 from tags.models import Tag
 from users.models import User, Follower, BlockedUsers, PinnedPosts
 
@@ -312,12 +313,12 @@ class PostsViewSet(PerObjectPermissionMixin,
         """
         return self._update_visibility(pk, False)
 
-    @detail_route(methods=['post'])
+    @detail_route(methods=['put'], permission_classes=[permissions.IsAuthenticated])
     def report(self, request, pk=None):
         """
 
         ---
-        serializer: posts.serializers.ReportPostSerializer
+        serializer: reports.serializers.ReportSerializer
         parameters:
             - name: pk
               description: post id
@@ -325,15 +326,14 @@ class PostsViewSet(PerObjectPermissionMixin,
             - name: reason
               description: OTHER = 0, SENSITIVE_CONTENT = 1, SPAM = 2, DUPLICATED_CONTENT = 3,
                            BULLYING = 4, INTEL_VIOLATION = 5
+            - name: text
+              description: length < 128
         """
-        if request.user.is_anonymous():
-            # TODO: Test this branch
-            self.permission_denied(request, message=getattr(permissions.IsAuthenticated, 'message'))
-
         instance = get_object_or_404(Post, pk=pk)
-        serializer = ReportPostSerializer(data=request.data)
+        serializer = ReportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user, post=instance)
+        serializer.save(user=request.user, object_pk=instance.pk,
+                        content_type=ContentType.objects.get(app_label='posts', model='post'))
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -453,6 +453,30 @@ class CommentsViewSet(PerObjectPermissionMixin,
               description: comment id
         """
         return super().destroy(request, *args, **kwargs)
+
+    @detail_route(methods=['put'], permission_classes=[permissions.IsAuthenticated])
+    def report(self, request, pk=None):
+        """
+
+        ---
+        serializer: reports.serializers.ReportSerializer
+        parameters:
+            - name: pk
+              description: post id
+              type: query
+            - name: reason
+              description: OTHER = 0, SENSITIVE_CONTENT = 1, SPAM = 2, DUPLICATED_CONTENT = 3,
+                           BULLYING = 4, INTEL_VIOLATION = 5
+            - name: text
+              description: length < 128
+        """
+        instance = get_object_or_404(Post, pk=pk)
+        serializer = ReportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user, object_pk=instance.pk,
+                        content_type=ContentType.objects.get(app_label='posts', model='postcomment'))
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class PostSearchViewSet(mixins.ListModelMixin,

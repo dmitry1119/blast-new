@@ -1,5 +1,6 @@
 import logging
 
+from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
@@ -12,11 +13,12 @@ from core.views import ExtendableModelMixin
 from notifications.models import FollowRequest, Notification
 from posts.models import Post
 from posts.serializers import PostPublicSerializer, PreviewPostSerializer
+from reports.serializers import ReportSerializer
 from users.models import User, UserSettings, Follower, BlockedUsers
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
                                ProfilePublicSerializer, ProfileUserSerializer,
                                NotificationSettingsSerializer, ChangePasswordSerializer, ChangePhoneSerializer,
-                               CheckUsernameAndPassword, UsernameSerializer, FollowersSerializer, ReportUserSerializer)
+                               CheckUsernameAndPassword, UsernameSerializer, FollowersSerializer)
 
 from push_notifications.models import APNSDevice
 from notifications.tasks import send_push_notification_to_device
@@ -94,12 +96,27 @@ class UserViewSet(ExtendableModelMixin,
         """
         return super().create(request, *args, **kwarg)
 
-    @detail_route(['put'], permission_classes=[permissions.IsAuthenticated], serializer_class=ReportUserSerializer)
+    @detail_route(['put'], permission_classes=[permissions.IsAuthenticated])
     def report(self, request, pk=None):
+        """
+
+        ---
+        serializer: reports.serializers.ReportSerializer
+        parameters:
+            - name: pk
+              description: post id
+              type: query
+            - name: reason
+              description: OTHER = 0, SENSITIVE_CONTENT = 1, SPAM = 2, DUPLICATED_CONTENT = 3,
+                           BULLYING = 4, INTEL_VIOLATION = 5
+            - name: text
+              description: length < 128
+        """
         user = get_object_or_404(User, pk=pk)
-        serializer = ReportUserSerializer(data=request.data)
+        serializer = ReportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(reporter=request.user, user=user)
+        serializer.save(user=request.user, object_pk=user.pk,
+                        content_type=ContentType.objects.get(model='user'))
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @list_route(['get'])

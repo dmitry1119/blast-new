@@ -1,19 +1,18 @@
 import json
-import uuid
 
 import redis
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy, reverse
-from django.test.client import MULTIPART_CONTENT
 from django.utils import timezone
 from rest_framework import status
 
 from countries.models import Country
 from notifications.models import FollowRequest
 from posts.models import Post
+from reports.models import Report
 from smsconfirmation.models import PhoneConfirmation
 from users.models import User, UserSettings, Follower, BlockedUsers
-from core.tests import BaseTestCase, BaseTestCaseUnauth, create_file
+from core.tests import BaseTestCase
 
 
 class CheckUsernameAndPasswordTest(BaseTestCase):
@@ -809,3 +808,24 @@ class TestCache(BaseTestCase):
 
         self.assertEqual(self.user.followers_count(), 0)
         self.assertEqual(self.user.followers_count(), 0)
+
+
+class ReportTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.other = self.generate_user('other')
+
+    def test_report_route(self):
+        url = reverse_lazy('user-report', kwargs={'pk': self.other.pk})
+
+        text = 'text'
+        response = self.put_json(url, data={'reason': Report.DUPLICATED_CONTENT, 'text': text})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        report = Report.objects.all()[0]
+        self.assertEqual(report.reason, Report.DUPLICATED_CONTENT)
+        self.assertEqual(report.text, text)
+        self.assertEqual(report.user.pk, self.user.pk)
+        self.assertEqual(report.object_pk, self.other.pk)
+

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from posts.models import Post, PostComment, PostVote, PostReport
+from posts.models import Post, PostComment, PostVote
 
 
 # TODO (VM): Exclude user for anonymous posts
@@ -66,12 +66,6 @@ class PostSerializer(serializers.ModelSerializer):
             self.validated_data['user'] = request.user
 
         return super().save()
-
-
-class ReportPostSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostReport
-        exclude = ('created_at', 'user', 'post',)
 
 
 class CommentPublicSerializer(serializers.ModelSerializer):

@@ -6,8 +6,9 @@ from rest_framework import status
 
 from core.tests import BaseTestCase, create_file
 from countries.models import Country
-from users.models import User, Follower, UserSettings, PinnedPosts, UserReport
-from posts.models import Post, PostComment, PostReport, PostVote
+from reports.models import Report
+from users.models import User, Follower, UserSettings, PinnedPosts
+from posts.models import Post, PostComment, PostVote
 from posts.tasks import send_expire_notifications, _get_post_to_users_push_list
 
 
@@ -385,20 +386,34 @@ class ReportTest(BaseTestCase):
 
         self.post = Post.objects.create(user=self.user, video=video, text='text')
 
-    def test_custom_report(self):
-        url = reverse_lazy('post-detail', kwargs={'pk': self.post.pk}) + 'report/'
-        data = {
-            'text': self.text,
-            'reason': PostReport.OTHER
-        }
+    def test_post_report(self):
+        url = reverse_lazy('post-report', kwargs={'pk': self.post.pk})
 
-        response = self.client.post(url, data=data)
+        response = self.put_json(url, data={'reason': Report.OTHER, 'text': self.text})
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(PostReport.objects.count(), 1)
+        self.assertEqual(Report.objects.count(), 1)
 
-        report = PostReport.objects.get(user=self.user)
-        self.assertEqual(report.reason, PostReport.OTHER)
+        report = Report.objects.get(user=self.user)
+        self.assertEqual(report.reason, Report.OTHER)
+        self.assertEqual(report.text, self.text)
+        self.assertEqual(report.object_pk, self.post.pk)
+        self.assertEqual(report.user_id, self.user.pk)
+
+    def test_comment_report(self):
+        comment = PostComment.objects.create(user=self.user, post=self.post, text='fuuuu')
+
+        url = reverse_lazy('comment-report', kwargs={'pk': comment.pk})
+        response = self.put_json(url, data={'reason': Report.BULLYING, 'text': self.text})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(Report.objects.all().count(), 1)
+
+        report = Report.objects.get(user=self.user)
+        self.assertEqual(report.reason, report.BULLYING)
+        self.assertEqual(report.object_pk, comment.pk)
+        self.assertEqual(report.user_id, self.user.pk)
 
 
 class PinPost(BaseTestCase):
@@ -600,22 +615,3 @@ class ExpiredNotificationsTest(BaseTestCase):
         }
 
         self.assertEqual(result, should_be)
-
-
-class ReportUserTest(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        self.other = self.generate_user('other')
-
-    def test_report_route(self):
-        url = reverse_lazy('user-report', kwargs={'pk': self.other.pk})
-
-        text = 'text'
-        response = self.put_json(url, data={'reason': UserReport.DUPLICATED_CONTENT, 'text': text})
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        report = UserReport.objects.all()[0]
-        self.assertEqual(report.reason, UserReport.DUPLICATED_CONTENT)
-        self.assertEqual(report.text, text)
-        self.assertEqual(report.reporter.pk, self.user.pk)

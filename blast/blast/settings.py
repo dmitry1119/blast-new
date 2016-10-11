@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'tags',
     'countries',
     'users',
+    'reports',
     'notifications'
 ]
 

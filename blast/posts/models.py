@@ -171,34 +171,6 @@ class PostComment(models.Model):
         return u'{} for post {}'.format(self.pk, self.post)
 
 
-class PostReport(models.Model):
-    OTHER = 0
-    SENSITIVE_CONTENT = 1
-    SPAM = 2
-    DUPLICATED_CONTENT = 3
-    BULLYING = 4
-    INTEL_VIOLATION = 5
-
-    REASONS = (
-        (OTHER, 0),
-        (SENSITIVE_CONTENT, 1),
-        (SPAM, 2),
-        (DUPLICATED_CONTENT, 3),
-        (BULLYING, 4),
-        (INTEL_VIOLATION, 5),
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    user = models.ForeignKey(User)
-    post = models.ForeignKey(Post)
-
-    reason = models.IntegerField(choices=REASONS,
-                                 help_text='Report reason')
-    text = models.CharField(max_length=128, blank=True,
-                            help_text='Details')
-
-
 USERS_RANGES_COUNT = 4
 
 
