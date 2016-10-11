@@ -47,7 +47,11 @@ class Notification(models.Model):
     TYPE = (
         (STARTED_FOLLOW, 'Started follow'),
         (MENTIONED_IN_COMMENT, 'Mentioned in comment'),
-        (VOTES_REACHED, 'Votes reached')
+        (VOTES_REACHED, 'Votes reached'),
+        (ENDING_SOON_OWNER, 'Ending soon: owner'),
+        (ENDING_SOON_PINNER, 'Ending soon: pinner'),
+        (ENDING_SOON_UPVOTER, 'Ending soon: upvoter'),
+        (ENDING_SOON_DOWNVOTER, 'Ending soon: downvoter')
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
