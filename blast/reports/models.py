@@ -38,4 +38,3 @@ class Report(models.Model):
         get_latest_by = "created_at"
         verbose_name = "Report"
         verbose_name_plural = "Reports"
-        unique_together = ("content_type", "object_pk")
