@@ -25,7 +25,7 @@ class Report(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     user = models.ForeignKey(User)
-    reason = models.IntegerField(choices=REASONS, help_text='Report reason')
+    reason = models.PositiveSmallIntegerField(choices=REASONS, help_text='Report reason')
     text = models.CharField(max_length=128, blank=True, help_text='Details')
 
     content_type = models.ForeignKey(ContentType,

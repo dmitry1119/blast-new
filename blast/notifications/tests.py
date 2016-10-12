@@ -21,7 +21,7 @@ class TestPostVotesNotification(BaseTestCase):
         notifications = Notification.objects.all()
         self.assertEqual(notifications.count(), 10)
         for notification, it in zip(notifications, notify_counter):
-            self.assertEqual(notification.text, Notification.VOTES_REACHED_PATTERN.format(it))
+            self.assertEqual(notification.text, Notification.TEXT_VOTES_REACHED_PATTERN.format(it))
 
         # Checks that Notification creates only for votes which
         # less or equal then 100 and dived by 10
@@ -39,7 +39,7 @@ class TestPostVotesNotification(BaseTestCase):
         notifications = Notification.objects.all()
         self.assertEqual(notifications.count(), 10)
         for notification, it in zip(notifications, range(1000, 10001, 1000)):
-            self.assertEqual(notification.text, Notification.VOTES_REACHED_PATTERN.format(it))
+            self.assertEqual(notification.text, Notification.TEXT_VOTES_REACHED_PATTERN.format(it))
 
 
 class TestPostUserNotification(BaseTestCase):

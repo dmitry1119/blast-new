@@ -93,7 +93,8 @@ class ProfilePublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # TODO: Don't use exclude
-        exclude = ('password', 'user_permissions', 'groups',)
+        exclude = ('password', 'user_permissions', 'groups', 'friends',
+                   'blocked', 'pinned_tags', 'pinned_posts', 'hidden_posts')
 
 
 class PublicUserSerializer(serializers.ModelSerializer):

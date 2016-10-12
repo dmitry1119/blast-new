@@ -1,5 +1,5 @@
 from django.contrib import admin
-from users.models import User, UserSettings, Follower
+from users.models import User, UserSettings, Follower, BlockedUsers
 
 
 @admin.register(UserSettings)
@@ -16,3 +16,8 @@ class UserAdmin(admin.ModelAdmin):
 @admin.register(Follower)
 class FollowerAdmin(admin.ModelAdmin):
     list_display = ('pk', 'followee', 'follower', 'created_at')
+
+
+@admin.register(BlockedUsers)
+class BlockedUsersAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'blocked', 'created_at',)

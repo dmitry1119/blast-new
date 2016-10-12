@@ -26,12 +26,13 @@ from users.utils import bound_posts_to_users
 
 logger = logging.getLogger(__name__)
 
+
 # TODO: use redis
-def filter_followee_users(request, user_ids: list or set):
-    if not request.user.is_authenticated():
+def filter_followee_users(user: User, user_ids: list or set):
+    if not user.is_authenticated():
         return []
 
-    result = Follower.objects.filter(follower=request.user,
+    result = Follower.objects.filter(follower=user,
                                      followee_id__in=user_ids).values_list('followee_id', flat=True)
     return set(result)
 
@@ -43,14 +44,14 @@ def extend_users_response(users: list, request):
         return
 
     user_ids = {it['id'] for it in users}
-    followees = filter_followee_users(request, user_ids)
-    follow_requests = FollowRequest.objects.filter(follower=request.user,
+    followees = filter_followee_users(user, user_ids)
+    follow_requests = FollowRequest.objects.filter(follower=user,
                                                    followee__in=user_ids)
     # TODO: use redis
     follow_requests = {it.followee_id for it in follow_requests}
 
     # TODO: Use redis
-    blocked_users = BlockedUsers.objects.filter(user=request.user, blocked__in=user_ids)
+    blocked_users = BlockedUsers.objects.filter(user=user, blocked__in=user_ids)
     blocked_users = {it.blocked_id for it in blocked_users}
 
     for it in users:
@@ -194,7 +195,7 @@ class UserViewSet(ExtendableModelMixin,
 
         user_ids = {it.pk for it in page}
 
-        followees = filter_followee_users(self.request, user_ids)
+        followees = filter_followee_users(self.request.user, user_ids)
         user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
 
         for it in serializer.data:
@@ -267,7 +268,8 @@ class UserViewSet(ExtendableModelMixin,
         return Response()
 
 
-class UserProfileView(generics.RetrieveUpdateAPIView):
+class UserProfileView(ExtendableModelMixin,
+                      generics.RetrieveUpdateAPIView):
     """
 
     ---
@@ -287,6 +289,10 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             - name: gender
               description: 0 - female, 1 - male.
     """
+
+    def extend_response_data(self, data):
+        extend_users_response(data, self.request)
+
     queryset = User.objects.all()
 
     permission_classes = (permissions.IsAuthenticated,)

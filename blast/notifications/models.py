@@ -38,7 +38,7 @@ class Notification(models.Model):
 
     STARTED_FOLLOW = 0
     MENTIONED_IN_COMMENT = 1
-    VOTES_REACHED = 2,
+    VOTES_REACHED = 2
     ENDING_SOON_OWNER = 3
     ENDING_SOON_PINNER = 4
     ENDING_SOON_UPVOTER = 5
@@ -51,7 +51,7 @@ class Notification(models.Model):
         (ENDING_SOON_OWNER, 'Ending soon: owner'),
         (ENDING_SOON_PINNER, 'Ending soon: pinner'),
         (ENDING_SOON_UPVOTER, 'Ending soon: upvoter'),
-        (ENDING_SOON_DOWNVOTER, 'Ending soon: downvoter')
+        (ENDING_SOON_DOWNVOTER, 'Ending soon: downvoter'),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -157,7 +157,7 @@ def post_save_post(sender, instance: Post, **kwargs):
 
     if (votes <= 100 and votes % 10 == 0) or (votes >= 1000 and votes % 1000 == 0):
         logger.info('Post {} reached {} votes'.format(instance, votes))
-        notification = Notification.objects.create(user=instance.user, post=instance,
+        notification = Notification.objects.create(user=instance.user, post_id=instance.pk,
                                                    votes=votes, type=Notification.VOTES_REACHED)
         send_push_notification.delay(instance.user_id, notification.text,
                                      notification.push_payload)

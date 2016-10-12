@@ -470,7 +470,7 @@ class CommentsViewSet(PerObjectPermissionMixin,
             - name: text
               description: length < 128
         """
-        instance = get_object_or_404(Post, pk=pk)
+        instance = get_object_or_404(PostComment, pk=pk)
         serializer = ReportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user, object_pk=instance.pk,
