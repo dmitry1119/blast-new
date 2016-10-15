@@ -7,17 +7,18 @@ from django.utils import timezone
 from rest_framework import status
 
 from countries.models import Country
-from notifications.models import FollowRequest
+from notifications.models import FollowRequest, Notification
 from posts.models import Post
 from reports.models import Report
 from smsconfirmation.models import PhoneConfirmation
+from tags.models import Tag
 from users.models import User, UserSettings, Follower, BlockedUsers
 from core.tests import BaseTestCase
 
 
 class CheckUsernameAndPasswordTest(BaseTestCase):
 
-    url = reverse_lazy('user-list') + 'check/'
+    url = reverse_lazy('user-check')
 
     def test_taken_phone_and_username(self):
         data = {
@@ -829,3 +830,55 @@ class ReportTest(BaseTestCase):
         self.assertEqual(report.user.pk, self.user.pk)
         self.assertEqual(report.object_pk, self.other.pk)
 
+
+class ShareTest(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.post = Post.objects.create(user=self.user, text='cool video! #tag')
+        self.followers = {self.generate_user('follower{}'.format(it)) for it in range(10)}
+
+        followers = []
+        for f in self.followers:
+            followers.append(Follower(followee=self.user, follower=f))
+        Follower.objects.bulk_create(followers)
+
+    def test_share_post(self):
+        url = reverse_lazy('post-share', kwargs={'pk': self.post.pk})
+
+        count = 5
+        users = [it.pk for it in self.followers][:count]
+
+        response = self.client.post(url, {
+            'post': self.post,
+            'users': users
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        notifications = list(Notification.objects.filter(user__in=users))
+
+        self.assertEqual(len(notifications), count)
+        notifications = {it.user_id: it for it in notifications}
+        for pk in users:
+            self.assertIn(pk, notifications)
+            self.assertEqual(notifications[pk].type, Notification.SHARE_POST)
+
+    def test_share_tag(self):
+        tag = Tag.objects.get(title='tag')
+        url = reverse_lazy('tag-share', kwargs={'pk': tag.pk})
+
+        count = 5
+        users = [it.pk for it in self.followers][:count]
+        response = self.client.post(url, {
+            'tag': tag,
+            'users': users
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        notifications = list(Notification.objects.filter(user__in=users))
+
+        self.assertEqual(len(notifications), count)
+        notifications = {it.user_id: it for it in notifications}
+        for pk in users:
+            self.assertIn(pk, notifications)
+            self.assertEqual(notifications[pk].type, Notification.SHARE_TAG)

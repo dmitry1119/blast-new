@@ -1,15 +1,15 @@
 import logging
 
 import itertools
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 import redis
 
-from posts.serializers import PostPublicSerializer
-
-# Create your views here.
-from rest_framework import viewsets, filters, generics, permissions
+from rest_framework import viewsets, filters, permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
+
+from posts.serializers import PostPublicSerializer
+from notifications.tasks import send_share_notifications
 
 from core.views import ExtendableModelMixin
 
@@ -253,6 +253,14 @@ class TagsViewSet(ExtendableModelMixin,
         extend_posts(serializer.data, request.user, request)
 
         return response
+
+    @detail_route(methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def share(self, request, pk=None):
+        users = request.data.getlist('users')
+
+        send_share_notifications.delay(user_id=self.request.user.pk, tag=pk, users=users)
+
+        return Response()
 
 
 class TagExactSearchView(viewsets.ReadOnlyModelViewSet):

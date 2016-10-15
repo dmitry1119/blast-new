@@ -179,7 +179,6 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
-
 PUSH_NOTIFICATIONS_SETTINGS = {
     'APNS_CERTIFICATE': os.path.join(PARENT_DIR, 'sertificates/apsBlastProd.pem'),
 }

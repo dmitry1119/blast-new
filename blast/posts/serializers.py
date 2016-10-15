@@ -4,6 +4,9 @@ from posts.models import Post, PostComment, PostVote
 
 
 # TODO (VM): Exclude user for anonymous posts
+from users.models import User
+
+
 class PostPublicSerializer(serializers.ModelSerializer):
     comments = serializers.ReadOnlyField(source='comments_count')
     image = serializers.SerializerMethodField()

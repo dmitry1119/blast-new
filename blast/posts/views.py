@@ -19,6 +19,8 @@ from posts.serializers import (PostSerializer, PostPublicSerializer,
 
 from datetime import timedelta
 
+from notifications.tasks import send_share_notifications
+
 from reports.serializers import ReportSerializer
 from tags.models import Tag
 from users.models import User, Follower, BlockedUsers, PinnedPosts
@@ -368,6 +370,15 @@ class PostsViewSet(PerObjectPermissionMixin,
 
         instance = get_object_or_404(Post, pk=pk)
         PinnedPosts.objects.filter(user_id=self.request.user.pk, post_id=pk).delete()
+
+        return Response()
+
+    @detail_route(methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def share(self, request, pk=None):
+        post = get_object_or_404(Post, pk=pk)
+        users = request.data.getlist('users')
+
+        send_share_notifications.delay(user_id=self.request.user.pk, post_id=pk, users=users)
 
         return Response()
 

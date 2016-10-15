@@ -7,7 +7,6 @@ from django.dispatch import receiver
 
 from posts.models import Post, PostComment
 from users.models import User, UserSettings, Follower
-from users.signals import start_following
 
 from notifications.tasks import send_push_notification
 
@@ -36,6 +35,10 @@ class Notification(models.Model):
     TEXT_END_SOON_UPVOTER = 'Upvoted Blast ending soon'
     TEXT_END_SOON_DOWNVOTER = 'Downvoted Blast ending soon'
 
+    TEXT_SHARE_POST = 'Shared a blast'
+    TEXT_SHARE_TAG = 'Shared a tag'
+
+
     STARTED_FOLLOW = 0
     MENTIONED_IN_COMMENT = 1
     VOTES_REACHED = 2
@@ -43,6 +46,9 @@ class Notification(models.Model):
     ENDING_SOON_PINNER = 4
     ENDING_SOON_UPVOTER = 5
     ENDING_SOON_DOWNVOTER = 6
+
+    SHARE_POST = 7
+    SHARE_TAG = 8
 
     TYPE = (
         (STARTED_FOLLOW, 'Started follow'),
@@ -52,6 +58,8 @@ class Notification(models.Model):
         (ENDING_SOON_PINNER, 'Ending soon: pinner'),
         (ENDING_SOON_UPVOTER, 'Ending soon: upvoter'),
         (ENDING_SOON_DOWNVOTER, 'Ending soon: downvoter'),
+        (SHARE_POST, "Shared a blast"),
+        (SHARE_TAG, "Shared a hashtag"),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -82,6 +90,11 @@ class Notification(models.Model):
         elif self.type == Notification.ENDING_SOON_DOWNVOTER:
             return self.TEXT_END_SOON_DOWNVOTER
 
+        elif self.type == Notification.SHARE_POST:
+            return self.TEXT_SHARE_POST
+        elif self.type == Notification.SHARE_TAG:
+            return self.TEXT_SHARE_TAG
+
         logger.error('Unknown notification type')
 
         raise ValueError('Unknown notification type')
@@ -89,6 +102,7 @@ class Notification(models.Model):
     @property
     def push_payload(self):
         return {
+            'sound': 'default',
             'postId': self.post_id,
             'userId': self.other_id,
         }

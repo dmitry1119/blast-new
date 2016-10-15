@@ -7,7 +7,7 @@ import redis
 from PIL import Image
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.core.urlresolvers import reverse_lazy
 
 from countries.models import Country
@@ -26,6 +26,7 @@ def create_file(name, content_file=True):
         return SimpleUploadedFile(name, file.read(), content_type='image/png')
 
 
+@override_settings(CELERY_ALWAYS_EAGER=True)
 class BaseTestCaseUnauth(TestCase):
     phone = '8913123123'
     password = '111111'
