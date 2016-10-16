@@ -375,12 +375,23 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     @detail_route(methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def share(self, request, pk=None):
+        """
+
+        ---
+        omit_serializer: true
+        parameters:
+            - name: pk
+              description: post id
+              type: query
+            - name: users
+              description: list of id of followers
+        """
         post = get_object_or_404(Post, pk=pk)
-        users = request.data.getlist('users')
+        users = request.data.getlist('users', [])
 
         send_share_notifications.delay(user_id=self.request.user.pk, post_id=pk, users=users)
 
-        return Response()
+        return Response({'users': users})
 
 
 class PinnedPostsViewSet(ExtendableModelMixin,

@@ -256,11 +256,21 @@ class TagsViewSet(ExtendableModelMixin,
 
     @detail_route(methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def share(self, request, pk=None):
-        users = request.data.getlist('users')
+        """
+        ---
+        omit_serializer: true
+        parameters:
+            - name: pk
+              description: tag name
+              type: query
+            - name: users
+              description: list of id of followers
+        """
+        users = request.data.getlist('users', [])
 
         send_share_notifications.delay(user_id=self.request.user.pk, tag=pk, users=users)
 
-        return Response()
+        return Response({'users': users})
 
 
 class TagExactSearchView(viewsets.ReadOnlyModelViewSet):
