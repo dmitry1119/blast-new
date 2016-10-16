@@ -387,7 +387,9 @@ class PostsViewSet(PerObjectPermissionMixin,
               description: list of id of followers
         """
         post = get_object_or_404(Post, pk=pk)
-        users = request.data.getlist('users', [])
+        users = reques.data.getlist('users', None)
+        if not users:
+            users = request.data.getlist('users[]', [])
 
         send_share_notifications.delay(user_id=self.request.user.pk, post_id=pk, users=users)
 
