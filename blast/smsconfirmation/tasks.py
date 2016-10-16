@@ -56,15 +56,6 @@ def sinch_request(resource, data, method):
     elif method == 'PUT':
         return requests.put(URL, data=data_str, headers=headers)
 
-    # req = request.Request(URL, data=data_str.encode('utf-8'))
-    # for key, value in headers.items():
-    #     req.add_header(key, value)
-    # req.get_method = lambda: method
-
-    # response = request.urlopen(req)
-    # response = response.read()
-    # return response
-
 
 def send_code_confirmation_request(code, phone):
     response = sinch_request('/verification/v1/verifications/number/{}'.format(phone), data={

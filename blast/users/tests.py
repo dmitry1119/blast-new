@@ -850,7 +850,6 @@ class ShareTest(BaseTestCase):
         users = [it.pk for it in self.followers][:count]
 
         response = self.client.post(url, {
-            'post': self.post,
             'users': users
         })
 
@@ -870,7 +869,6 @@ class ShareTest(BaseTestCase):
         count = 5
         users = [it.pk for it in self.followers][:count]
         response = self.client.post(url, {
-            'tag': tag,
             'users': users
         })
 
