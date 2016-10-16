@@ -861,6 +861,8 @@ class ShareTest(BaseTestCase):
         for pk in users:
             self.assertIn(pk, notifications)
             self.assertEqual(notifications[pk].type, Notification.SHARE_POST)
+            self.assertEqual(notifications[pk].post_id, self.post.id)
+            self.assertEqual(notifications[pk].text, Notification.TEXT_SHARE_POST)
 
     def test_share_tag(self):
         tag = Tag.objects.get(title='tag')
@@ -880,3 +882,5 @@ class ShareTest(BaseTestCase):
         for pk in users:
             self.assertIn(pk, notifications)
             self.assertEqual(notifications[pk].type, Notification.SHARE_TAG)
+            self.assertEqual(notifications[pk].tag_id, tag.pk)
+            self.assertEqual(notifications[pk].text, Notification.TEXT_SHARE_TAG)

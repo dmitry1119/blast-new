@@ -47,7 +47,7 @@ def send_share_notifications(user_id: int, users: List, post_id: int = None, tag
     # Create notifications
     notifications = []
     for user_id in users:
-        instance = Notification(post_id=post_id, user_id=user_id,
+        instance = Notification(post_id=post_id, user_id=user_id, tag_id=tag,
                                 other_id=user_id, type=notification_type)
         notifications.append(instance)
 

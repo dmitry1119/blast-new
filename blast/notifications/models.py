@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from posts.models import Post, PostComment
+from tags.models import Tag
 from users.models import User, UserSettings, Follower
 
 from notifications.tasks import send_push_notification
@@ -35,7 +36,7 @@ class Notification(models.Model):
     TEXT_END_SOON_UPVOTER = 'Upvoted Blast ending soon'
     TEXT_END_SOON_DOWNVOTER = 'Downvoted Blast ending soon'
 
-    TEXT_SHARE_POST = 'Shared a blast'
+    TEXT_SHARE_POST = 'Shared a Blast'
     TEXT_SHARE_TAG = 'Shared a tag'
 
 
@@ -68,6 +69,7 @@ class Notification(models.Model):
     votes = models.PositiveIntegerField(default=0)
     post = models.ForeignKey(Post, blank=True, null=True)
     user = models.ForeignKey(User, related_name='notifications', db_index=True)
+    tag = models.ForeignKey(Tag, blank=True, null=True)
     other = models.ForeignKey(User, null=True, blank=True, related_name='mention_notifications')
 
     type = models.PositiveSmallIntegerField(choices=TYPE)
@@ -103,6 +105,7 @@ class Notification(models.Model):
     def push_payload(self):
         return {
             'sound': 'default',
+            'tagId': self.tag_id,
             'postId': self.post_id,
             'userId': self.other_id,
         }
