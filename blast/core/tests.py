@@ -1,10 +1,13 @@
 import json
+import logging
 import uuid
+
 
 from io import BytesIO
 
 import redis
 from PIL import Image
+from unittest import mock
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, TransactionTestCase, override_settings
@@ -12,6 +15,13 @@ from django.core.urlresolvers import reverse_lazy
 
 from countries.models import Country
 from users.models import User
+
+
+logger = logging.getLogger(__name__)
+
+
+def sinch_request_mok(resource, data, method):
+    logger.info('Send sinch notification %s %s %s', resource, data, method)
 
 
 def create_file(name, content_file=True):
@@ -26,6 +36,7 @@ def create_file(name, content_file=True):
         return SimpleUploadedFile(name, file.read(), content_type='image/png')
 
 
+@mock.patch('core.smsconfirmation.tasks.sinch_request_mok', sinch_request_mok)
 @override_settings(CELERY_ALWAYS_EAGER=True)
 class BaseTestCaseUnauth(TestCase):
     phone = '8913123123'
