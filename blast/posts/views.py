@@ -450,6 +450,18 @@ class CommentsViewSet(PerObjectPermissionMixin,
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('user', 'post', 'parent',)
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        query_params = self.request.query_params
+        if 'parent__is_null' in query_params:
+            if query_params.get('parent__is_null', False):
+                return qs.exclude(parent=None)
+            else:
+                return qs.filter(parent=None)
+
+        return qs
+
     def extend_response_data(self, data):
         attach_users(data, self.request.user, self.request)
 
