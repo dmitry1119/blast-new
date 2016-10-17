@@ -266,9 +266,7 @@ class TagsViewSet(ExtendableModelMixin,
             - name: users
               description: list of id of followers
         """
-        users = request.data.getlist('users', None)
-        if not users:
-            users = request.data.getlist('users[]', [])
+        users = request.data['users']
 
         send_share_notifications.delay(user_id=self.request.user.pk, tag=pk, users=users)
 
