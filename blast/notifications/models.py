@@ -37,7 +37,7 @@ class Notification(models.Model):
     TEXT_END_SOON_DOWNVOTER = 'Downvoted Blast ending soon'
 
     TEXT_SHARE_POST = 'Shared a Blast'
-    TEXT_SHARE_TAG = 'Shared a tag'
+    TEXT_SHARE_TAG = 'Shared a hastag: #{}'
 
 
     STARTED_FOLLOW = 0
@@ -95,7 +95,7 @@ class Notification(models.Model):
         elif self.type == Notification.SHARE_POST:
             return self.TEXT_SHARE_POST
         elif self.type == Notification.SHARE_TAG:
-            return self.TEXT_SHARE_TAG
+            return self.TEXT_SHARE_TAG.format(self.tag_id)
 
         logger.error('Unknown notification type')
 
