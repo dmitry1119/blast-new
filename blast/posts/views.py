@@ -387,7 +387,7 @@ class PostsViewSet(PerObjectPermissionMixin,
               description: list of id of followers
         """
         post = get_object_or_404(Post, pk=pk)
-        users = reques.data.getlist('users', None)
+        users = request.data.getlist('users', None)
         if not users:
             users = request.data.getlist('users[]', [])
 

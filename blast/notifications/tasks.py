@@ -30,12 +30,18 @@ def send_push_notification_to_device(registration_ids, message):
 @celery.app.task
 def send_share_notifications(user_id: int, users: List, post_id: int = None, tag: str = None):
     from notifications.models import Notification
+
+    if not users:
+        logger.info('send_share_notifications: users is empty')
+        return
+
     logger.info(u'Share %s by (%s, %s) to %s', user_id, post_id, tag, users)
 
     users = Follower.objects.filter(followee=user_id, follower_id__in=users)
     users = users.values_list('follower_id', flat=True)
 
     if not users:
+        logger.info('send_share_notifications: users list is empty %s', users)
         return
 
     notification_type = None
