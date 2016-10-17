@@ -103,6 +103,12 @@ class BaseTestCaseUnauth(TestCase):
 
         return self.client.put(url, data=data, content_type='application/json')
 
+    def post_json(self, url, data=''):
+        if type(data) is dict:
+            data = json.dumps(data)
+
+        return self.client.post(url, data=data, content_type='application/json')
+
     def patch_json(self, url, data=''):
         return self.client.patch(url, json.dumps(data),
                                  content_type='application/json')

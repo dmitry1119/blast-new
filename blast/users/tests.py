@@ -849,9 +849,7 @@ class ShareTest(BaseTestCase):
         count = 5
         users = [it.pk for it in self.followers][:count]
 
-        response = self.client.post(url, {
-            'users': users
-        })
+        response = self.post_json(url, {'users': users})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         notifications = list(Notification.objects.filter(user__in=users))
@@ -870,9 +868,7 @@ class ShareTest(BaseTestCase):
 
         count = 5
         users = [it.pk for it in self.followers][:count]
-        response = self.client.post(url, {
-            'users': users
-        })
+        response = self.post_json(url, {'users': users})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         notifications = list(Notification.objects.filter(user__in=users))
