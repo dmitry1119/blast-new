@@ -37,7 +37,7 @@ class Notification(models.Model):
     TEXT_END_SOON_DOWNVOTER = 'Downvoted Blast ending soon'
 
     TEXT_SHARE_POST = 'Shared a Blast'
-    TEXT_SHARE_TAG = 'Shared a hastag: #{}'
+    TEXT_SHARE_TAG = 'Shared a hashtag: #{}'
 
 
     STARTED_FOLLOW = 0
