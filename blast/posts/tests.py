@@ -254,7 +254,7 @@ class CommentTest(BaseTestCase):
         self.assertEqual(len(groups[parent.pk]), 5)
 
         # Should return only parent comments
-        response = self.client.get(url + '?parent__is_null=True')
+        response = self.client.get(url + '?parent__is_null=true')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         results = response.data['results']

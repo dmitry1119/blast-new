@@ -454,9 +454,9 @@ class CommentsViewSet(PerObjectPermissionMixin,
         qs = super().get_queryset()
 
         query_params = self.request.query_params
-        if query_params.get('parent__is_null') == 'True':
+        if query_params.get('parent__is_null', '').lower() == 'true':
             qs = qs.filter(parent=None)
-        elif query_params.get('parent__is_null') == 'False':
+        elif query_params.get('parent__is_null', '').lower() == 'false':
             qs = qs.exclude(parent=None)
 
         return qs
