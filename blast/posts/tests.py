@@ -1,4 +1,6 @@
 import datetime
+
+import itertools
 from django.utils import timezone
 from django.core.urlresolvers import reverse_lazy
 from django.test import TestCase
@@ -226,6 +228,49 @@ class CommentTest(BaseTestCase):
         self.client.delete(url, content_type='application/json')
 
         self.assertEqual(PostComment.objects.filter(post=self.post, user=self.user).count(), 0)
+
+    def test_filter_comments(self):
+        url = reverse_lazy('comment-list')
+        parent = PostComment.objects.create(post=self.post, text='parent', user=self.user)
+
+        for i in range(5):
+            PostComment.objects.create(parent=parent, text=str(i),
+                                       post=self.post, user=self.user)
+
+        # Should return all comments
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 6)
+
+        results = response.data['results']
+        self.assertEqual(len(results), 6)
+
+        groups = {}
+        for k, v in itertools.groupby(results, lambda x: x['parent']):
+            groups[k] = list(v)
+
+        self.assertEqual(len(groups[None]), 1)
+        self.assertEqual(len(groups[parent.pk]), 5)
+
+        # Should return only parent comments
+        response = self.client.get(url + '?parent__is_null=True')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['id'], parent.pk)
+        self.assertEqual(results[0]['id'], parent.post_id)
+
+        # Should return only child comments
+        response = self.client.get(url + '?parent__is_null=False')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+
+        self.assertEqual(len(results), 5)
+        results = sorted(results, key=lambda x: x['id'])
+        for i in range(5):
+            self.assertEqual(results[i]['text'], str(i))
 
 
 class AuthorizedPermissionsTest(BaseTestCase):
