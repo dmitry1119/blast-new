@@ -17,7 +17,6 @@ from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.conf.urls.static import static
-from push_notifications.api.rest_framework import APNSDeviceAuthorizedViewSet
 
 from rest_framework.routers import DefaultRouter
 from countries.views import CountryViewSet
@@ -26,7 +25,7 @@ from tags.views import TagsViewSet, TagExactSearchView
 
 from users.views import (UserViewSet, UserProfileView, UserSettingsView,
                          UserPasswordResetView, UserChangePhoneView, UsernameSearchView, UserSearchView,
-                         UserAuthView)
+                         UserAuthView, APNSDeviceView)
 
 from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
                                    SinchPhoneConfirmationView)
@@ -50,7 +49,7 @@ api_1.register(r'tags/search', TagExactSearchView, base_name='tag-exact-search')
 api_1.register(r'tags', TagsViewSet, base_name='tag')
 api_1.register(r'notifications/follow', FollowRequestViewSet, base_name='followrequest')
 api_1.register(r'notifications', NotificationsViewSet, base_name='notifications')
-api_1.register(r'devices/apns', APNSDeviceAuthorizedViewSet, base_name='apns-device')
+api_1.register(r'devices/apns', APNSDeviceView, base_name='apns-device')
 
 urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),

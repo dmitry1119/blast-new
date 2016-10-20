@@ -4,6 +4,7 @@ import redis
 from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.utils import timezone
+from push_notifications.models import APNSDevice
 from rest_framework import status
 
 from countries.models import Country
@@ -861,6 +862,8 @@ class ShareTest(BaseTestCase):
             self.assertEqual(notifications[pk].type, Notification.SHARE_POST)
             self.assertEqual(notifications[pk].post_id, self.post.id)
             self.assertEqual(notifications[pk].text, Notification.TEXT_SHARE_POST)
+            self.assertEqual(notifications[pk].user_id, pk)
+            self.assertEqual(notifications[pk].other_id, self.user.pk)
 
     def test_share_tag(self):
         tag = Tag.objects.get(title='tag')
@@ -879,4 +882,87 @@ class ShareTest(BaseTestCase):
             self.assertIn(pk, notifications)
             self.assertEqual(notifications[pk].type, Notification.SHARE_TAG)
             self.assertEqual(notifications[pk].tag_id, tag.pk)
-            self.assertEqual(notifications[pk].text, Notification.TEXT_SHARE_TAG)
+            self.assertEqual(notifications[pk].user_id, pk)
+            self.assertEqual(notifications[pk].other_id, self.user.pk)
+            self.assertEqual(notifications[pk].text, Notification.TEXT_SHARE_TAG.format(tag.pk))
+
+
+class TestDevices(BaseTestCase):
+    url = reverse_lazy('apns-device-list')
+
+    id_1 = '4bbc959de41a9632af05244e84b35296b47906dad6d60824a8801ccaf23e9dc7'
+    id_2 = '4bbb959de41a9632af05244e84b35296b47906dad6d60824a8801ccaf23e9dc7'
+
+    def test_user_register_new_device(self):
+        """
+        User has no device in db and register new device
+        """
+        response = self.post_json(self.url, data={
+            'registration_id': self.id_1
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['registration_id'], self.id_1)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user, registration_id=self.id_1).count(), 1)
+
+    def test_same_user_register_same_device(self):
+        """
+        User has device in db and register it again
+        :return:
+        """
+        # Same user with other device
+        data = {
+            'registration_id': self.id_1
+        }
+
+        response = self.post_json(self.url, data=data)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user).count(), 1)
+
+        # --- --- --- --- ---
+        response = self.post_json(self.url, data=data)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user).count(), 1)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user, registration_id=self.id_1).count(), 1)
+
+    def test_same_user_other_device(self):
+        """
+        User has some device in db and register new device
+        """
+        response = self.post_json(self.url, data={
+            'registration_id': self.id_1
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user).count(), 1)
+
+        response = self.post_json(self.url, data={
+            'registration_id': self.id_2
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user).count(), 1)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user, registration_id=self.id_2).count(), 1)
+
+    def test_other_user_register_same_device(self):
+        other = self.generate_user()
+
+        response = self.post_json(self.url, data={
+            'registration_id': self.id_1
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user).count(), 1)
+
+        self.login(other)
+
+        response = self.post_json(self.url, data={
+            'registration_id': self.id_1
+        })
+
+        # TODO: Check push notifincation
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(APNSDevice.objects.filter(user=self.user).count(), 0)
+        self.assertEqual(APNSDevice.objects.filter(user=other).count(), 1)

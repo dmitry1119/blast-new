@@ -2,14 +2,17 @@ import logging
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
+from push_notifications.api.rest_framework import APNSDeviceSerializer, APNSDeviceViewSet
 from rest_framework import viewsets, mixins, permissions, generics, filters, status, views
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
 from core.views import ExtendableModelMixin
+from core.utils import get_or_none
 from notifications.models import FollowRequest, Notification
 from posts.models import Post
 from posts.serializers import PostPublicSerializer, PreviewPostSerializer
@@ -493,22 +496,23 @@ class UsernameSearchView(viewsets.ReadOnlyModelViewSet):
     search_fields = ('username',)
 
 
+def _clear_auth_data(user: User, registration_id: str or None, send_push: bool):
+    Token.objects.filter(user=user).delete()
+
+    devices = APNSDevice.objects.filter(user=user)
+
+    if send_push:
+        # Send message to user device
+        reg_ids = list(it.registration_id for it in devices)
+        if registration_id in reg_ids:
+            reg_ids.remove(registration_id)
+        msg = 'You have been signed out as you have logged in on another device'
+        send_push_notification_to_device.delay(reg_ids, msg)
+
+    devices.delete()
+
+
 class UserAuthView(views.APIView):
-    def _clear_auth_data(self, user: User, registration_id: str or None, send_push: bool):
-        Token.objects.filter(user=user).delete()
-
-        devices = APNSDevice.objects.filter(user=user)
-
-        if send_push:
-            # Send message to user device
-            reg_ids = list(it.registration_id for it in devices)
-            if registration_id in reg_ids:
-                reg_ids.remove(registration_id)
-            msg = 'You have been signed out as you have logged in on another device'
-            send_push_notification_to_device.delay(reg_ids, msg)
-
-        devices.delete()
-
     def post(self, request):
         credentials = {
             'username': request.data.get('username'),
@@ -523,7 +527,7 @@ class UserAuthView(views.APIView):
                     msg = 'User account is disabled.'
                     return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
 
-                self._clear_auth_data(user, request.data.get('registration_id'), True)
+                _clear_auth_data(user, request.data.get('registration_id'), True)
 
                 return Response({
                     'token': Token.objects.create(user=user).key,
@@ -537,6 +541,38 @@ class UserAuthView(views.APIView):
 
     def delete(self):
         if self.request.user.is_authenticated():
-            self._clear_auth_data(self.request.user, None, False)
+            _clear_auth_data(self.request.user, None, False)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class APNSDeviceView(APNSDeviceViewSet):
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        registration_id = request.data['registration_id']
+
+        token_device = get_or_none(APNSDevice, registration_id=registration_id)
+        user_device = get_or_none(APNSDevice, user=request.user)
+
+        if token_device and user_device and token_device.pk == user_device.pk:  # Same user with same device
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if not user_device and token_device:  # Other user register same device
+            _clear_auth_data(token_device.user, registration_id, True)
+
+        if user_device and not token_device:  # Current user has some other device
+            user_device.delete()
+
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        APNSDevice.objects.filter(user=self.request.user).delete()
+        serializer.save(user=self.request.user)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

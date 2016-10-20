@@ -4,6 +4,12 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
+SINCH = {
+    'APP_KEY': '155edefb-991d-4e14-864e-4e9451a21bd6',
+    'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
+}
+
+
 CELERYBEAT_SCHEDULE = {
     'clear-expired-posts': {
         'task': 'posts.tasks.clear_expired_posts',

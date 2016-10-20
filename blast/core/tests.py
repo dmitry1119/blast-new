@@ -45,7 +45,7 @@ class BaseTestCaseUnauth(TestCase):
 
     def generate_user(self, username=None):
         if not username:
-            username = str(uuid.uuid4())
+            username = str(uuid.uuid4())[:15]
 
         return User.objects.create_user(username=username, password=self.password,
                                         country=self.country, phone=uuid.uuid4())
