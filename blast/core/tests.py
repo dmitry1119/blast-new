@@ -104,6 +104,7 @@ class BaseTestCaseUnauth(TestCase):
         return self.client.put(url, data=data, content_type='application/json')
 
     def post_json(self, url, data=''):
+
         if type(data) is dict:
             data = json.dumps(data)
 

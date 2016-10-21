@@ -16,6 +16,7 @@ from core.utils import get_or_none
 from notifications.models import FollowRequest, Notification
 from posts.models import Post
 from posts.serializers import PostPublicSerializer, PreviewPostSerializer
+from posts.utils import mark_voted
 from reports.serializers import ReportSerializer
 from users.models import User, UserSettings, Follower, BlockedUsers
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
@@ -208,9 +209,9 @@ class UserViewSet(ExtendableModelMixin,
             if it['is_private'] and not it['is_followee']:
                 it['posts'] = []
             else:
-                it['posts'] = PreviewPostSerializer(user_post_list[pk],
-                                                    many=True,
-                                                    context=context).data
+                posts = PreviewPostSerializer(user_post_list[pk], many=True, context=context).data
+                posts = mark_voted(posts, self.request.user)
+                it['posts'] = posts
 
             del it['is_private']
 
@@ -512,6 +513,27 @@ def _clear_auth_data(user: User, registration_id: str or None, send_push: bool):
     devices.delete()
 
 
+def _update_device_token(user: User, registration_id: str):
+
+    serializer = APNSDeviceSerializer(data={'registration_id': registration_id})
+    token_device = get_or_none(APNSDevice, registration_id=registration_id)
+    user_device = get_or_none(APNSDevice, user=user)
+
+    if token_device and user_device and token_device.pk == user_device.pk:  # Same user with same device
+        return None
+
+    if not user_device and token_device:  # Other user register same device
+        _clear_auth_data(token_device.user, registration_id, True)
+
+    if user_device and not token_device:  # Current user has some other device
+        user_device.delete()
+
+    serializer.is_valid(raise_exception=True)
+    serializer.save(user=user)
+
+    return serializer.data
+
+
 class UserAuthView(views.APIView):
     def post(self, request):
         credentials = {
@@ -519,24 +541,28 @@ class UserAuthView(views.APIView):
             'password': request.data.get('password')
         }
 
-        if all(credentials.values()):
-            user = authenticate(**credentials)
+        registration_id = request.data.get('registration_id', None)
 
-            if user:
-                if not user.is_active:
-                    msg = 'User account is disabled.'
-                    return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
-
-                _clear_auth_data(user, request.data.get('registration_id'), True)
-
-                return Response({
-                    'token': Token.objects.create(user=user).key,
-                }, status=status.HTTP_200_OK)
-            else:
-                msg = 'Unable to login with provided credentials.'
-                return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
-        else:
+        if not all(credentials.values()):
             msg = 'Must include "username" and "password".'
+            return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
+
+        user = authenticate(**credentials)
+
+        if user:
+            if not user.is_active:
+                msg = 'User account is disabled.'
+                return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
+
+            _clear_auth_data(user, registration_id, True)
+            if registration_id:
+                _update_device_token(user, registration_id, True)
+
+            return Response({
+                'token': Token.objects.create(user=user).key,
+            }, status=status.HTTP_200_OK)
+        else:
+            msg = 'Unable to login with provided credentials.'
             return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
 
     def delete(self):
@@ -547,32 +573,13 @@ class UserAuthView(views.APIView):
 
 
 class APNSDeviceView(APNSDeviceViewSet):
-
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
 
         registration_id = request.data['registration_id']
 
-        token_device = get_or_none(APNSDevice, registration_id=registration_id)
-        user_device = get_or_none(APNSDevice, user=request.user)
-
-        if token_device and user_device and token_device.pk == user_device.pk:  # Same user with same device
+        data = _update_device_token(request.user, registration_id)
+        if data is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        if not user_device and token_device:  # Other user register same device
-            _clear_auth_data(token_device.user, registration_id, True)
-
-        if user_device and not token_device:  # Current user has some other device
-            user_device.delete()
-
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    def perform_create(self, serializer):
-        APNSDevice.objects.filter(user=self.request.user).delete()
-        serializer.save(user=self.request.user)
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        headers = self.get_success_headers(data)
+        return Response(data=data, status=status.HTTP_201_CREATED, headers=headers)

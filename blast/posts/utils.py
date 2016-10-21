@@ -1,3 +1,6 @@
+from typing import List
+
+from posts.models import PostVote
 from users.models import User
 
 
@@ -34,6 +37,22 @@ def attach_users(items: list, user: User, request):
     return items
 
 
+def mark_voted(posts: List, user: User):
+    if user.is_anonymous() or len(posts) == 0:
+        return posts
+
+    ids = {it['id'] for it in posts}
+    votes = list(PostVote.objects.filter(post_id__in=ids))
+    votes = {it.post_id: it.is_positive for it in votes}
+
+    for post in posts:
+        pk = post['id']
+        post['is_upvoted'] = pk in votes and votes[pk] == True
+        post['is_downvoted'] = pk in votes and votes[pk] == False
+
+    return posts
+
+
 def mark_pinned(posts: list, user: User):
     # TODO (VM): Make test
     """
@@ -64,5 +83,6 @@ def extend_posts(posts: list, user: User, request):
     """
     data = mark_pinned(posts, user)
     data = attach_users(data, user, request)
+    data = mark_voted(posts, user)
 
     return data
