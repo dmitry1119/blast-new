@@ -42,7 +42,7 @@ def mark_voted(posts: List, user: User):
         return posts
 
     ids = {it['id'] for it in posts}
-    votes = list(PostVote.objects.filter(post_id__in=ids))
+    votes = list(PostVote.objects.filter(post_id__in=ids, user=user))
     votes = {it.post_id: it.is_positive for it in votes}
 
     for post in posts:
