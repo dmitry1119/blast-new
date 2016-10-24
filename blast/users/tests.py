@@ -15,6 +15,7 @@ from smsconfirmation.models import PhoneConfirmation
 from tags.models import Tag
 from users.models import User, UserSettings, Follower, BlockedUsers
 from core.tests import BaseTestCase
+from users.utils import mark_followee, mark_requested
 
 
 class CheckUsernameAndPasswordTest(BaseTestCase):
@@ -966,3 +967,45 @@ class TestDevices(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(APNSDevice.objects.filter(user=self.user).count(), 0)
         self.assertEqual(APNSDevice.objects.filter(user=other).count(), 1)
+
+
+class TestUtils(BaseTestCase):
+    count = 5
+
+    def setUp(self):
+        super().setUp()
+
+    def test_followee(self):
+        users = []
+        for i in range(self.count * 2):
+            other = self.generate_user()
+            users.append(other)
+
+            if i < self.count:
+                Follower.objects.create(follower=self.user, followee=other)
+
+        users = [{'id': it.id} for it in users]
+        mark_followee(users, self.user)
+
+        for i, v in enumerate(users):
+            if i < self.count:
+                self.assertTrue(v['is_followee'])
+            else:
+                self.assertFalse(v['is_followee'])
+
+    def test_follow_request(self):
+        users = []
+        for i in range(self.count * 2):
+            other = self.generate_user(is_private=True)
+
+            if i < self.count:
+                FollowRequest.objects.create(followee=other, follower=self.user)
+
+        users = [{'id': it.id} for it in users]
+        mark_requested(users, self.user)
+
+        for i, v in enumerate(users):
+            if i < self.count:
+                self.assertTrue(v['is_requested'])
+            else:
+                self.assertFals(v['is_requested'])

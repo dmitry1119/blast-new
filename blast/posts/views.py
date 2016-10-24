@@ -28,6 +28,8 @@ from users.models import User, Follower, BlockedUsers, PinnedPosts
 from users.serializers import UsernameSerializer
 
 from posts.utils import attach_users, extend_posts
+from users.utils import mark_followee
+from users.utils import mark_requested
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -83,6 +85,11 @@ class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
     def extend_response_data(self, data):
         extend_posts(data, self.request.user, self.request)
 
+        # Adds is_requested and is_followee flags
+        authors = [it['author'] for it in data if it['author']]
+        mark_followee(authors, self.request.user)
+        mark_requested(authors, self.request.user)
+
     def get_queryset(self):
         qs = Post.objects.actual()
         user = self.request.user
@@ -91,7 +98,7 @@ class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
             return qs
 
         # Include followers posts
-        # FIXME: write method for geting all followees
+        # FIXME: write method for getting all followees
         followees = User.get_followees(user.pk, 0, 1000)
 
         qs = Post.objects.actual().filter(Q(user__is_private=False) |

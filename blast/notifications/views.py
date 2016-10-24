@@ -1,10 +1,12 @@
-from rest_framework import viewsets, permissions, mixins, generics
+from rest_framework import viewsets, permissions, mixins
 from notifications.models import Notification, FollowRequest
 from core.views import ExtendableModelMixin
 from notifications.serializers import NotificationPublicSerializer, FollowRequestPublicSerializer, \
     FollowRequestSerializer
 
 from  users.models import User, Follower
+from users.serializers import OwnerSerializer
+from users.utils import mark_followee, mark_requested
 
 
 class NotificationsViewSet(ExtendableModelMixin,
@@ -13,26 +15,25 @@ class NotificationsViewSet(ExtendableModelMixin,
         request = self.request
 
         users = {it['other'] for it in data if it['other']}
-        users = User.objects.filter(pk__in=users)
-        followees = Follower.objects.filter(followee__in=users, follower_id=request.user.pk)
-
+        users = list(User.objects.filter(pk__in=users))
         users = {it.pk: it for it in users}
-        followees = {it.followee_id for it in followees}
 
+        context = {'request': request}
+        serialized_users = []
         for it in data:
             if not it['other']:
                 continue
 
-            pk = it['other']
-            user = users[pk]
-            it['user'] = {
-                'id': user.pk,
-                'username': user.username,
-                'avatar': request.build_absolute_uri(user.avatar.url) if user.avatar else None,
-                'is_followee': pk in followees
-            }
+            user = users[it['other']]
+            user = OwnerSerializer(instance=user, context=context).data
+            serialized_users.append(user)
+
+            it['user'] = user
 
             del it['other']
+
+        mark_followee(serialized_users, self.request.user)
+        mark_requested(serialized_users, self.request.user)
 
         return data
 

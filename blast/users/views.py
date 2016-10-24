@@ -26,19 +26,9 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 
 from push_notifications.models import APNSDevice
 from notifications.tasks import send_push_notification_to_device
-from users.utils import bound_posts_to_users
+from users.utils import bound_posts_to_users, filter_followee_users
 
 logger = logging.getLogger(__name__)
-
-
-# TODO: use redis
-def filter_followee_users(user: User, user_ids: list or set):
-    if not user.is_authenticated():
-        return []
-
-    result = Follower.objects.filter(follower=user,
-                                     followee_id__in=user_ids).values_list('followee_id', flat=True)
-    return set(result)
 
 
 def extend_users_response(users: list, request):

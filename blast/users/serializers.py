@@ -215,3 +215,21 @@ class FollowersSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.avatar.url)
         else:
             return None
+
+
+class OwnerSerializer(serializers.ModelSerializer):
+    """
+    nested serializer class for post author or notification payload
+    """
+    avatar = serializers.SerializerMethodField()
+
+    # is_followee
+    # is_requested
+
+    def get_avatar(self, obj):
+        request = self.context['request']
+        return request.build_absolute_uri(obj.avatar.url) if obj.avatar else None
+
+    class Meta:
+        model = User
+        fields = ('id', 'avatar', 'is_private',)

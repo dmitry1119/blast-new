@@ -1,23 +1,27 @@
-from typing import List
+from typing import List, Dict
 
 from posts.models import PostVote
 from users.models import User
 
 
 # TODO: It uses in PostComment.list method and should be refactored.
-def attach_users(items: list, user: User, request):
+from users.serializers import OwnerSerializer
+
+
+def attach_users(items: List[Dict], user: User, request):
     """
     Attaches user to post dictionary
     :param items: list of post dictionaries
     :return: modified list of items
     """
-    if len(items) == 0:
+    if not items:
         return items
 
     users = {it['user'] for it in items if it['user']}
     users = User.objects.filter(pk__in=users)
     users = {it.pk: it for it in users}
 
+    context = {'request': request}
     for post in items:
         author = {}
 
@@ -26,12 +30,8 @@ def attach_users(items: list, user: User, request):
             author['avatar'] = None
         else:
             user = users[post['user']]
-            author['username'] = user.username
-            author['id'] = user.pk
-            if user.avatar:
-                author['avatar'] = request.build_absolute_uri(user.avatar.url)
-            else:
-                author['avatar'] = None
+            author = OwnerSerializer(instance=user, context=context).data
+
         post['author'] = author
 
     return items

@@ -22,6 +22,9 @@ class FollowRequest(models.Model):
     follower = models.ForeignKey(User, related_name='follower_requests', db_index=True)
     followee = models.ForeignKey(User, related_name='followee_requests', db_index=True)
 
+    def __str__(self):
+        return u'{} {}'.format(self.follower_id, self.followee_id)
+
     class Meta:
         unique_together = ('follower', 'followee',)
 
