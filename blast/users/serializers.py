@@ -186,7 +186,7 @@ class ChangePhoneSerializer(serializers.ModelSerializer):
         model = User
         fields = ('password', 'current_phone', 'new_phone',)
 
-
+# FIXME: Looks like OwnerSerializer
 class UsernameSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
 
@@ -199,7 +199,7 @@ class UsernameSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'avatar', 'fullname')
+        fields = ('id', 'username', 'avatar', 'fullname', 'is_private',)
 
 
 class FollowersSerializer(serializers.ModelSerializer):
@@ -232,4 +232,4 @@ class OwnerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'avatar', 'is_private',)
+        fields = ('id', 'username', 'avatar', 'is_private',)

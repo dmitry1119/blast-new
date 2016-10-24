@@ -23,14 +23,8 @@ def attach_users(items: List[Dict], user: User, request):
 
     context = {'request': request}
     for post in items:
-        author = {}
-
-        if not post['user']:
-            author['username'] = 'Anonymous'
-            author['avatar'] = None
-        else:
-            user = users[post['user']]
-            author = OwnerSerializer(instance=user, context=context).data
+        user = users[post['user']]
+        author = OwnerSerializer(instance=user, context=context).data
 
         post['author'] = author
 

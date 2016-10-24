@@ -249,16 +249,8 @@ class PostsViewSet(PerObjectPermissionMixin,
         serializer = UsernameSerializer(users, many=True,
                                         context=self.get_serializer_context())
 
-        if request.user.is_authenticated():
-            followees = Follower.objects.filter(followee__in=users,
-                                                follower=request.user)
-            followees = followees.prefetch_related('followee')
-            followees = {it.followee.pk for it in followees}
-            for it in serializer.data:
-                it['is_followee'] = it['id'] in followees
-        else:
-            for it in serializer.data:
-                it['is_followee'] = False
+        mark_followee(serializer.data, self.request.user)
+        mark_requested(serializer.data, self.request.user)
 
         return self.get_paginated_response(serializer.data)
 
