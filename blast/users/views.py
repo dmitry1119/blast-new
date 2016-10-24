@@ -406,6 +406,9 @@ class UserSearchView(ExtendableModelMixin,
                     break
 
             user['posts'] = PostPublicSerializer(user_posts, many=True, context=context).data
+
+        mark_followee(data, self.request.user)
+        mark_requested(data, self.request.user)
         # user_ids = {it['id'] for it in data}
         # user_to_posts = bound_posts_to_users(user_ids, 3)
         #
@@ -472,6 +475,7 @@ class UserSearchView(ExtendableModelMixin,
         serializer = PublicUserSerializer(users, many=True,
                                           context=self.get_serializer_context())
         self.extend_response_data(serializer.data)
+
         return Response({
             'count': User.get_users_count(),
             'results': serializer.data,
