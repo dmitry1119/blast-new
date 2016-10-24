@@ -556,7 +556,7 @@ class UserAuthView(views.APIView):
 
             _clear_auth_data(user, registration_id, True)
             if registration_id:
-                _update_device_token(user, registration_id, True)
+                _update_device_token(user, registration_id)
 
             return Response({
                 'token': Token.objects.create(user=user).key,

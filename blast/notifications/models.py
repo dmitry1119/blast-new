@@ -59,7 +59,7 @@ class Notification(models.Model):
         (ENDING_SOON_PINNER, 'Ending soon: pinner'),
         (ENDING_SOON_UPVOTER, 'Ending soon: upvoter'),
         (ENDING_SOON_DOWNVOTER, 'Ending soon: downvoter'),
-        (SHARE_POST, "Shared a blast"),
+        (SHARE_POST, "Shared a Blast"),
         (SHARE_TAG, "Shared a hashtag"),
     )
 
@@ -100,6 +100,15 @@ class Notification(models.Model):
         logger.error('Unknown notification type')
 
         raise ValueError('Unknown notification type')
+
+    @property
+    def notification_text(self):
+        if self.type == Notification.SHARE_POST:
+            return u'{} shared a Blast'.format(self.other)
+        elif self.type == Notification.SHARE_TAG:
+            return u'{} shared a tag'.format(self.other)
+        else:
+            return self.text
 
     @property
     def push_payload(self):

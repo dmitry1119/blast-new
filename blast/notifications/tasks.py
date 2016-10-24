@@ -63,4 +63,4 @@ def send_share_notifications(user_id: int, users: List, post_id: int = None, tag
     logger.info('Send share push message %s %s %s %s', user_id, post_id, tag, users)
     notification = notifications[0]
     devices = APNSDevice.objects.filter(user_id__in=users)
-    devices.send_message(notification.text, extra=notification.push_payload)
+    devices.send_message(notification.notification_text, extra=notification.push_payload)
