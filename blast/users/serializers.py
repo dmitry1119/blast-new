@@ -205,16 +205,16 @@ class UsernameSerializer(serializers.ModelSerializer):
 class FollowersSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'avatar', 'fullname', 'is_private')
-
     def get_avatar(self, obj):
         request = self.context['request']
         if obj.avatar:
             return request.build_absolute_uri(obj.avatar.url)
         else:
             return None
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'avatar', 'fullname', 'is_private')
 
 
 class OwnerSerializer(serializers.ModelSerializer):

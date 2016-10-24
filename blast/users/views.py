@@ -26,7 +26,7 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 
 from push_notifications.models import APNSDevice
 from notifications.tasks import send_push_notification_to_device
-from users.utils import bound_posts_to_users, filter_followee_users
+from users.utils import bound_posts_to_users, filter_followee_users, mark_followee, mark_requested
 
 logger = logging.getLogger(__name__)
 
@@ -188,13 +188,15 @@ class UserViewSet(ExtendableModelMixin,
         serializer = FollowersSerializer(page, many=True, context=context)
 
         user_ids = {it.pk for it in page}
-
-        followees = filter_followee_users(self.request.user, user_ids)
         user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
 
-        for it in serializer.data:
+        data = serializer.data
+
+        mark_followee(data, self.request.user)
+        mark_requested(data, self.request.user)
+
+        for it in data:
             pk = it['id']
-            it['is_followee'] = pk in followees
             # TODO: Make test
             if it['is_private'] and not it['is_followee']:
                 it['posts'] = []
@@ -202,8 +204,6 @@ class UserViewSet(ExtendableModelMixin,
                 posts = PreviewPostSerializer(user_post_list[pk], many=True, context=context).data
                 posts = mark_voted(posts, self.request.user)
                 it['posts'] = posts
-
-            del it['is_private']
 
         return self.get_paginated_response(serializer.data)
 
