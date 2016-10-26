@@ -30,17 +30,17 @@ class FollowRequest(models.Model):
 
 
 class Notification(models.Model):
-    TEXT_STARTED_FOLLOW_PATTERN = 'Started following you'
-    TEXT_VOTES_REACHED_PATTERN = 'You blast reached {} votes'
-    TEXT_MENTIONED_IN_COMMENT_PATTERN = '{} mentioned you in comment'
+    TEXT_STARTED_FOLLOW_PATTERN = 'Started following you.'
+    TEXT_VOTES_REACHED_PATTERN = 'You blast reached {} votes.'
+    TEXT_MENTIONED_IN_COMMENT_PATTERN = '{} mentioned you in comment.'
 
-    TEXT_END_SOON_OWNER = 'Your Blast is ending soon'
-    TEXT_END_SOON_PINNER = 'Pinned Blast ending soon'
-    TEXT_END_SOON_UPVOTER = 'Upvoted Blast ending soon'
-    TEXT_END_SOON_DOWNVOTER = 'Downvoted Blast ending soon'
+    TEXT_END_SOON_OWNER = 'Your Blast is ending soon.'
+    TEXT_END_SOON_PINNER = 'Pinned Blast ending soon.'
+    TEXT_END_SOON_UPVOTER = 'Upvoted Blast ending soon.'
+    TEXT_END_SOON_DOWNVOTER = 'Downvoted Blast ending soon.'
 
-    TEXT_SHARE_POST = 'Shared a Blast'
-    TEXT_SHARE_TAG = 'Shared a hashtag: #{}'
+    TEXT_SHARE_POST = 'Shared a Blast.'
+    TEXT_SHARE_TAG = 'Shared a hashtag: #{}.'
 
     STARTED_FOLLOW = 0
     MENTIONED_IN_COMMENT = 1
@@ -85,7 +85,7 @@ class Notification(models.Model):
         elif self.type == Notification.VOTES_REACHED:
             return Notification.TEXT_VOTES_REACHED_PATTERN.format(self.votes)
         elif self.type == Notification.MENTIONED_IN_COMMENT:
-            return Notification.TEXT_MENTIONED_IN_COMMENT_PATTERN.format(self.other.username)
+            return 'Mentioned you in comment.'
 
         elif self.type == Notification.ENDING_SOON_OWNER:
             return self.TEXT_END_SOON_OWNER
@@ -108,11 +108,13 @@ class Notification(models.Model):
     @property
     def notification_text(self):
         if self.type == Notification.STARTED_FOLLOW:
-            return u'{} started following you'
+            return u'{} started following you.'
+        elif self.type == Notification.MENTIONED_IN_COMMENT:
+            return Notification.TEXT_MENTIONED_IN_COMMENT_PATTERN.format(self.other.username)
         elif self.type == Notification.SHARE_POST:
-            return u'{} shared a Blast'.format(self.other)
+            return u'{} shared a Blast.'.format(self.other)
         elif self.type == Notification.SHARE_TAG:
-            return u'{} shared a tag'.format(self.other)
+            return u'{} shared a tag.'.format(self.other)
         else:
             return self.text
 
