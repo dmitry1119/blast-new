@@ -1,4 +1,6 @@
 from rest_framework import viewsets, permissions, mixins
+from rest_framework.response import Response
+
 from notifications.models import Notification, FollowRequest
 from core.views import ExtendableModelMixin
 from notifications.serializers import NotificationPublicSerializer, FollowRequestPublicSerializer, \
@@ -42,6 +44,20 @@ class NotificationsViewSet(ExtendableModelMixin,
 
     def get_queryset(self):
         return Notification.objects.filter(user=self.request.user)
+
+    # FIXME: need to write PUT for this action
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        items = {it.pk for it in page}
+        Notification.objects.filter(id__in=items).update(is_seen=True) # FIXME: need to write PUT for this action
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class FollowRequestViewSet(mixins.RetrieveModelMixin,

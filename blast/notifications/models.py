@@ -42,7 +42,6 @@ class Notification(models.Model):
     TEXT_SHARE_POST = 'Shared a Blast'
     TEXT_SHARE_TAG = 'Shared a hashtag: #{}'
 
-
     STARTED_FOLLOW = 0
     MENTIONED_IN_COMMENT = 1
     VOTES_REACHED = 2
