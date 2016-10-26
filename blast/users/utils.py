@@ -2,11 +2,12 @@ import itertools
 import redis
 
 from notifications.models import FollowRequest
+from posts.serializers import PreviewPostSerializer
+from posts.utils import mark_voted
 from users.models import User, Follower
 from posts.models import Post
 
-from typing import List, Set, Dict
-
+from typing import List, Set, Dict, Iterable
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -42,27 +43,6 @@ def mark_requested(users: List[Dict], user: User) -> List[Dict]:
     return users
 
 
-def bound_posts_to_users(user_ids: List[int] or Set[int], n: int):
-    """Returns dict of lists of last n posts for each user in user_ids"""
-    users_to_posts = {}
-    posts = []
-    for user in user_ids:
-        user_posts_ids = User.get_posts(user, 0, n-1)
-        users_to_posts[user] = user_posts_ids
-        posts.extend(user_posts_ids)
-
-    # Pulls posts from db and builds in-memory index
-    posts = Post.objects.actual().filter(pk__in=posts)
-    posts = {it.pk: it for it in posts}
-
-    results = {}
-    for user in user_ids:
-        user_posts_ids = users_to_posts[user]
-        results[user] = [v for (k, v) in posts.items() if k in user_posts_ids]
-
-    return results
-
-
 def get_recent_posts(users: List[int] or Set[int], count: int) -> Dict:
     """Returns last posts for each user in users list"""
     # users = User.objects.filter(id__in=users)
@@ -82,3 +62,22 @@ def get_recent_posts(users: List[int] or Set[int], count: int) -> Dict:
             result[it] = []
 
     return result
+
+
+def attach_recent_posts_to_users(data: Iterable, request):
+    user_ids = {it['id'] for it in data}
+
+    user_to_posts = get_recent_posts(user_ids, 3)
+    for user_pk in user_to_posts:
+        posts = user_to_posts[user_pk]
+        user_to_posts[user_pk] = PreviewPostSerializer(posts, many=True, context={'request': request}).data
+
+    posts = user_to_posts.values()
+    posts = [it for sublist in posts for it in sublist]  # Flat list of posts
+
+    mark_voted(posts, request.user)
+
+    for it in data:
+        pk = it['id']
+        it['posts'] = [] if it['is_private'] and not it['is_followee'] else user_to_posts[pk]
+

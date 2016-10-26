@@ -2,7 +2,6 @@ import logging
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
-from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
 from push_notifications.api.rest_framework import APNSDeviceSerializer, APNSDeviceViewSet
@@ -14,9 +13,6 @@ from rest_framework.authtoken.models import Token
 from core.views import ExtendableModelMixin
 from core.utils import get_or_none
 from notifications.models import FollowRequest, Notification
-from posts.models import Post
-from posts.serializers import PostPublicSerializer, PreviewPostSerializer
-from posts.utils import mark_voted
 from reports.serializers import ReportSerializer
 from users.models import User, UserSettings, Follower, BlockedUsers
 from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
@@ -26,7 +22,8 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 
 from push_notifications.models import APNSDevice
 from notifications.tasks import send_push_notification_to_device
-from users.utils import bound_posts_to_users, filter_followee_users, mark_followee, mark_requested, get_recent_posts
+from users.utils import filter_followee_users, mark_followee, mark_requested, \
+    attach_recent_posts_to_users
 
 logger = logging.getLogger(__name__)
 
@@ -178,24 +175,10 @@ class UserViewSet(ExtendableModelMixin,
         serializer = FollowersSerializer(page, many=True, context=context)
         data = serializer.data
 
-        user_ids = {it.pk for it in page}
-        user_to_posts = get_recent_posts(user_ids, 3)
-
         mark_followee(data, self.request.user)
         mark_requested(data, self.request.user)
 
-        for user_pk in user_to_posts:
-            posts = user_to_posts[user_pk]
-            user_to_posts[user_pk] = PreviewPostSerializer(posts, many=True, context=context).data
-
-        posts = user_to_posts.values()
-        posts = [it for sublist in posts for it in sublist]  # Flat list of posts
-
-        mark_voted(posts, self.request.user)
-
-        for it in data:
-            pk = it['id']
-            it['posts'] = [] if it['is_private'] and not it['is_followee'] else user_to_posts[pk]
+        attach_recent_posts_to_users(data, self.request)
 
         return self.get_paginated_response(data)
 
@@ -375,40 +358,10 @@ class UserSearchView(ExtendableModelMixin,
     search_fields = ('username', 'fullname',)
 
     def extend_response_data(self, data):
-        users_to_posts = {}
-        posts = []
-        for user in data:
-            user_posts_ids = User.get_posts(user['id'], 0, 5)
-            users_to_posts[user['id']] = user_posts_ids
-            posts.extend(user_posts_ids)
-
-        # Pulls posts from memory and builds in-memory index
-        posts = Post.objects.actual().filter(pk__in=posts)
-        posts = {it.pk: it for it in posts}
-
-        context = self.get_serializer_context()
-        for user in data:
-            user_posts_ids = users_to_posts[user['id']]
-
-            user_posts = []
-            for post_id in user_posts_ids:
-                if post_id in posts:
-                    user_posts.append(posts[post_id])
-                if len(user_posts) >= 3:  # FIXME: Magic number.
-                    break
-
-            user['posts'] = PostPublicSerializer(user_posts, many=True, context=context).data
-
         mark_followee(data, self.request.user)
         mark_requested(data, self.request.user)
-        # user_ids = {it['id'] for it in data}
-        # user_to_posts = bound_posts_to_users(user_ids, 3)
-        #
-        # context = self.get_serializer_context()
-        # for it in data:
-        #     pk = it['id']
-        #     posts = user_to_posts[pk]
-        #     it['posts'] = PostPublicSerializer(posts, many=True, context=context).data
+
+        attach_recent_posts_to_users(data, self.request)
 
         return data
 
