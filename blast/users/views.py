@@ -382,7 +382,7 @@ class UserSearchView(ExtendableModelMixin,
         start = page * page_size
         end = (page + 1) * page_size - 1
 
-        users = User.objects.filter().order_by('popularity')[start:end]
+        users = User.objects.filter().order_by('-popularity')[start:end]
 
         # Pulls users and sort according to cached popularity
         # sort_keys = {it: i for i, it in enumerate(users)}
