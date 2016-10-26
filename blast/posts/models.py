@@ -14,7 +14,7 @@ from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
 from tags.models import Tag
-from users.models import User
+from users.models import User, USER_RECENT_POSTS_KEY
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFill
 
@@ -175,7 +175,7 @@ USERS_RANGES_COUNT = 4
 
 
 @receiver(pre_delete, sender=Post, dispatch_uid='post_delete_clear_files')
-def post_delete_clear_files(sender, instance: Post, **kwargs):
+def post_pre_delete(sender, instance: Post, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
     if instance.video:
         logger.info('Delete {} image of {} post'.format(instance.image, instance.pk))
@@ -198,9 +198,13 @@ def post_delete_clear_files(sender, instance: Post, **kwargs):
     # Updates user popularity
     User.objects.filter(pk=instance.user_id).update(popularity=F('popularity') - 1)
 
+    # Update user recent posts
+    key = USER_RECENT_POSTS_KEY.format(instance.user_id)
+    r.lrem(key, 1, instance.pk)
+
 
 @receiver(post_save, sender=Post, dispatch_uid='post_update_caches')
-def post_update_cache(sender, instance: Post, **kwargs):
+def post_post_save(sender, instance: Post, **kwargs):
     if not kwargs['created']:
         return
 
@@ -218,6 +222,10 @@ def post_update_cache(sender, instance: Post, **kwargs):
 
     # Updates user popularity
     User.objects.filter(pk=instance.user_id).update(popularity=F('popularity') + 1)
+
+    # Update user recent posts
+    key = USER_RECENT_POSTS_KEY.format(instance.user_id)
+    r.lpush(key, instance.pk)
 
 
 @receiver(post_save, sender=PostVote, dispatch_uid='posts_post_save_vote_handler')

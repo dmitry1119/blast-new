@@ -26,7 +26,7 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 
 from push_notifications.models import APNSDevice
 from notifications.tasks import send_push_notification_to_device
-from users.utils import bound_posts_to_users, filter_followee_users, mark_followee, mark_requested
+from users.utils import bound_posts_to_users, filter_followee_users, mark_followee, mark_requested, get_recent_posts
 
 logger = logging.getLogger(__name__)
 
@@ -172,40 +172,32 @@ class UserViewSet(ExtendableModelMixin,
 
         return Response()
 
-    def _get_user_recent_posts(self, data: list, user_ids: set):
-        """Returns dict with three last post for users in user_ids"""
-        # Adds last three post to each user
-        # TODO: Use Redis sorted set, like User.get_posts(user['id'], 0, 5)
-        result = {}
-        for user in data:
-            pk = user['id']
-            result[pk] = Post.objects.filter(user_id=pk).order_by('-created_at')[:3]
-
-        return result
-
+    # TODO: Make test
     def _extend_follow_response(self, page):
         context = self.get_serializer_context()
         serializer = FollowersSerializer(page, many=True, context=context)
+        data = serializer.data
 
         user_ids = {it.pk for it in page}
-        user_post_list = self._get_user_recent_posts(serializer.data, user_ids)
-
-        data = serializer.data
+        user_to_posts = get_recent_posts(user_ids, 3)
 
         mark_followee(data, self.request.user)
         mark_requested(data, self.request.user)
 
+        for user_pk in user_to_posts:
+            posts = user_to_posts[user_pk]
+            user_to_posts[user_pk] = PreviewPostSerializer(posts, many=True, context=context).data
+
+        posts = user_to_posts.values()
+        posts = [it for sublist in posts for it in sublist]  # Flat list of posts
+
+        mark_voted(posts, self.request.user)
+
         for it in data:
             pk = it['id']
-            # TODO: Make test
-            if it['is_private'] and not it['is_followee']:
-                it['posts'] = []
-            else:
-                posts = PreviewPostSerializer(user_post_list[pk], many=True, context=context).data
-                posts = mark_voted(posts, self.request.user)
-                it['posts'] = posts
+            it['posts'] = [] if it['is_private'] and not it['is_followee'] else user_to_posts[pk]
 
-        return self.get_paginated_response(serializer.data)
+        return self.get_paginated_response(data)
 
     @detail_route(['get'])
     def followers(self, request, pk=None):

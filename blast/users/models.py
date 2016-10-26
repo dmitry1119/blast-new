@@ -16,7 +16,7 @@ from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
-from core.decorators import save_to_zset
+from core.decorators import save_to_zset, memoize_list
 from countries.models import Country
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -69,6 +69,7 @@ class UserManager(BaseUserManager):
 USER_POSTS_KEY = u'user:{}:posts'
 USER_FOLLOWERS_KEY = u'user:{}:followers'
 USER_FOLLOWEES_KEY = u'user:{}:followees'
+USER_RECENT_POSTS_KEY = u'user:{}:recent:posts'
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -193,6 +194,12 @@ class User(AbstractBaseUser, PermissionsMixin):
             result.append(it)
 
         return result
+
+    @staticmethod
+    @memoize_list(USER_RECENT_POSTS_KEY)
+    def get_recent_posts(user_id: int, start: int, end: int):
+        from posts.models import Post
+        return list(Post.objects.filter(user=user_id).all().order_by('created_at').values_list('pk', flat=True))
 
     def followers_count(self):
         # return Follower.objects.filter(followee_id=self.pk).count()

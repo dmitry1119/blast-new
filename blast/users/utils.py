@@ -1,8 +1,14 @@
+import itertools
+import redis
+
 from notifications.models import FollowRequest
 from users.models import User, Follower
 from posts.models import Post
 
 from typing import List, Set, Dict
+
+
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
 def filter_followee_users(user: User, user_ids: list or set):
@@ -55,3 +61,24 @@ def bound_posts_to_users(user_ids: List[int] or Set[int], n: int):
         results[user] = [v for (k, v) in posts.items() if k in user_posts_ids]
 
     return results
+
+
+def get_recent_posts(users: List[int] or Set[int], count: int) -> Dict:
+    """Returns last posts for each user in users list"""
+    # users = User.objects.filter(id__in=users)
+
+    post_ids = []
+    for it in users:
+        ids = User.get_recent_posts(it, 0, count - 1)
+        post_ids.extend(ids)
+
+    posts = list(Post.objects.filter(id__in=post_ids))
+
+    grouped = itertools.groupby(posts, lambda post: post.user_id)
+    result = {k: list(v) for k, v in grouped}
+
+    for it in users:
+        if it not in result:
+            result[it] = []
+
+    return result
