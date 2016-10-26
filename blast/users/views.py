@@ -382,12 +382,12 @@ class UserSearchView(ExtendableModelMixin,
         start = page * page_size
         end = (page + 1) * page_size - 1
 
-        users = User.get_most_popular_ids(start, end)
+        users = User.objects.filter().order_by('popularity')[start:end]
 
         # Pulls users and sort according to cached popularity
-        sort_keys = {it: i for i, it in enumerate(users)}
-        users = User.objects.filter(pk__in=users)
-        users = sorted(users, key=lambda it: sort_keys[it.pk])
+        # sort_keys = {it: i for i, it in enumerate(users)}
+        # users = User.objects.filter(pk__in=users)
+        # users = sorted(users, key=lambda it: sort_keys[it.pk])
 
         serializer = PublicUserSerializer(users, many=True,
                                           context=self.get_serializer_context())
