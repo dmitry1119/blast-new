@@ -54,7 +54,7 @@ def get_recent_posts(users: List[int] or Set[int], count: int) -> Dict:
 
     posts = list(Post.objects.filter(id__in=post_ids))
 
-    posts = sorted(posts, lambda post: post.user_id)
+    posts = sorted(posts, key=lambda post: post.user_id)
     grouped = itertools.groupby(posts, lambda post: post.user_id)
     result = {k: list(v) for k, v in grouped}
 
