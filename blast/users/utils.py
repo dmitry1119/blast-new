@@ -23,6 +23,8 @@ def filter_followee_users(user: User, user_ids: list or set):
 
 def mark_followee(users: List[Dict], user: User) -> List[Dict]:
     if not user.is_authenticated():
+        for it in users:
+            it['is_followee'] = False
         return users
 
     followees = filter_followee_users(user, {it['id'] for it in users})
@@ -30,9 +32,14 @@ def mark_followee(users: List[Dict], user: User) -> List[Dict]:
         pk = it['id']
         it['is_followee'] = pk in followees
 
+    return users
+
 
 def mark_requested(users: List[Dict], user: User) -> List[Dict]:
     if not user.is_authenticated():
+        for it in users:
+            it['is_requested'] = False
+
         return users
 
     requests = FollowRequest.objects.filter(follower=user, followee_id__in={it['id'] for it in users})

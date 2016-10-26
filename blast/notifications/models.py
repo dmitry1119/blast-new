@@ -30,7 +30,7 @@ class FollowRequest(models.Model):
 
 
 class Notification(models.Model):
-    TEXT_STARTED_FOLLOW_PATTERN = '{} started following you'
+    TEXT_STARTED_FOLLOW_PATTERN = 'Started following you'
     TEXT_VOTES_REACHED_PATTERN = 'You blast reached {} votes'
     TEXT_MENTIONED_IN_COMMENT_PATTERN = '{} mentioned you in comment'
 
@@ -107,7 +107,9 @@ class Notification(models.Model):
 
     @property
     def notification_text(self):
-        if self.type == Notification.SHARE_POST:
+        if self.type == Notification.STARTED_FOLLOW:
+            return u'{} started following you'
+        elif self.type == Notification.SHARE_POST:
             return u'{} shared a Blast'.format(self.other)
         elif self.type == Notification.SHARE_TAG:
             return u'{} shared a tag'.format(self.other)
@@ -157,7 +159,7 @@ def notify_users(users: list, post: Post, author: User):
     Notification.objects.bulk_create(notifications)
 
     for it in notifications:
-        send_push_notification.delay(it.user_id, it.text, it.push_payload)
+        send_push_notification.delay(it.user_id, it.notification_text, it.push_payload)
 
 
 @receiver(post_save, sender=PostComment, dispatch_uid='notifications_comments')
@@ -189,7 +191,7 @@ def post_save_post(sender, instance: Post, **kwargs):
         logger.info('Post {} reached {} votes'.format(instance, votes))
         notification = Notification.objects.create(user=instance.user, post_id=instance.pk,
                                                    votes=votes, type=Notification.VOTES_REACHED)
-        send_push_notification.delay(instance.user_id, notification.text,
+        send_push_notification.delay(instance.user_id, notification.notification_text,
                                      notification.push_payload)
 
 
@@ -206,4 +208,4 @@ def start_following_handler(sender, instance: Follower, **kwargs):
     logger.info('Create following notification {} {}'.format(follower, followee))
     notification = Notification.objects.create(user_id=followee, other_id=follower,
                                                type=Notification.STARTED_FOLLOW)
-    send_push_notification.delay(followee, notification.text, notification.push_payload)
+    send_push_notification.delay(followee, notification.notification_text, notification.push_payload)
