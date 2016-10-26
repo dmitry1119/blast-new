@@ -77,6 +77,8 @@ class Notification(models.Model):
 
     type = models.PositiveSmallIntegerField(choices=TYPE)
 
+    is_seen = models.BooleanField(default=False)
+
     @property
     def text(self):
         if self.type == Notification.STARTED_FOLLOW:
