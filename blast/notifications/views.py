@@ -47,17 +47,14 @@ class NotificationsViewSet(ExtendableModelMixin,
 
     # FIXME: need to write PUT for this action
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        response = super().list(request, *args, **kwargs)
+        results = response.data.get('results', [])
+        ids = {it['id'] for it in results}
 
-        page = self.paginate_queryset(queryset)
-        items = {it.pk for it in page}
-        Notification.objects.filter(id__in=items).update(is_seen=True) # FIXME: need to write PUT for this action
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+        # FIXME: need to write PUT for this action
+        Notification.objects.filter(id__in=ids, is_seen=False).update(is_seen=True)
 
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return response
 
 
 class FollowRequestViewSet(mixins.RetrieveModelMixin,
