@@ -46,7 +46,7 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
     devices = APNSDevice.objects.filter(user_id__in=users)
     devices.send_message(message, sound='default', extra={'postId': post_id})
 
-    author_id = Post.objects.get(user_id=post_id).user_id
+    author_id = Post.objects.get(id=post_id).user_id
     # Create notifications
     try:
         notify_type = None
