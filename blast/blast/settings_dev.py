@@ -17,7 +17,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'send-notifications': {
         'task': 'posts.tasks.send_expire_notifications',
-        'schedule': timedelta(seconds=60*3)
+        'schedule': timedelta(seconds=60)
     }
 }
 
