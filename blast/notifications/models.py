@@ -43,7 +43,6 @@ class FollowRequest(models.Model):
 class Notification(models.Model):
     TEXT_STARTED_FOLLOW_PATTERN = 'Started following you.'
     TEXT_VOTES_REACHED_PATTERN = 'You blast reached {} votes.'
-    TEXT_MENTIONED_IN_COMMENT_PATTERN = '{} mentioned you in comment.'
 
     TEXT_END_SOON_OWNER = 'Your Blast is ending soon.'
     TEXT_END_SOON_PINNER = 'Pinned Blast ending soon.'
@@ -107,7 +106,6 @@ class Notification(models.Model):
             return self.TEXT_END_SOON_UPVOTER
         elif self.type == Notification.ENDING_SOON_DOWNVOTER:
             return self.TEXT_END_SOON_DOWNVOTER
-
         elif self.type == Notification.SHARE_POST:
             return self.TEXT_SHARE_POST
         elif self.type == Notification.SHARE_TAG:
@@ -120,13 +118,13 @@ class Notification(models.Model):
     @property
     def notification_text(self):
         if self.type == Notification.STARTED_FOLLOW:
-            return u'{} started following you.'.format(self.other)
-        elif self.type == Notification.MENTIONED_IN_COMMENT:
-            return u'{} commented: {}'.format(self.other.username, self.comment.text)
+            return u'{} started following you.'.format(self.other.username)
         elif self.type == Notification.SHARE_POST:
-            return u'{} shared a Blast.'.format(self.other)
+            return u'{} shared a Blast.'.format(self.other.username)
         elif self.type == Notification.SHARE_TAG:
-            return u'{} shared a tag.'.format(self.other)
+            return u'{} shared a tag.'.format(self.other.username)
+        elif self.type == Notification.MENTIONED_IN_COMMENT:
+            return u'{} mentioned you in comment.'.format(self.other.username)
         else:
             return self.text
 
