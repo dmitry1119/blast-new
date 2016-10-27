@@ -62,7 +62,7 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
         logger.info('Creating notifications for %s, %s, notify_type is %s', post_id, users, notify_type)
         notifications = []
         for user_id in users:
-            notify = Notification(post_id=post_id, user_id=user_id, other=author_id, type=notify_type)
+            notify = Notification(post_id=post_id, user_id=user_id, other_id=author_id, type=notify_type)
             notifications.append(notify)
 
         Notification.objects.bulk_create(notifications)
