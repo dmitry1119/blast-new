@@ -24,13 +24,13 @@ class FollowRequest(models.Model):
 
     @property
     def notification_text(self):
-        return '{} has requested to follow you'.format(self.follower.username)
+        return '{} has requested to follow you.'.format(self.follower.username)
 
     @property
     def push_payload(self):
         return {
             'sound': 'default',
-            'follower': self.followee_id,
+            'userId': self.followee_id,
         }
 
     def __str__(self):
