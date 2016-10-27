@@ -374,20 +374,15 @@ class UserSearchView(ExtendableModelMixin,
 
         try:
             page = int(page)
-            page_size = min(int(page_size), 250)
+            page_size = min(int(page_size), 100)
         except ValueError:
             logging.error('Failed to cast page {} and page_size {} to int'.format(page, page_size))
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         start = page * page_size
-        end = (page + 1) * page_size - 1
+        end = (page + 1) * page_size
 
         users = User.objects.filter().order_by('-popularity')[start:end]
-
-        # Pulls users and sort according to cached popularity
-        # sort_keys = {it: i for i, it in enumerate(users)}
-        # users = User.objects.filter(pk__in=users)
-        # users = sorted(users, key=lambda it: sort_keys[it.pk])
 
         serializer = PublicUserSerializer(users, many=True,
                                           context=self.get_serializer_context())

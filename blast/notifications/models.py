@@ -22,6 +22,17 @@ class FollowRequest(models.Model):
     follower = models.ForeignKey(User, related_name='follower_requests', db_index=True)
     followee = models.ForeignKey(User, related_name='followee_requests', db_index=True)
 
+    @property
+    def notification_text(self):
+        return '{} has requested to follow you'.format(self.follower.username)
+
+    @property
+    def push_payload(self):
+        return {
+            'sound': 'default',
+            'follower': self.followee_id,
+        }
+
     def __str__(self):
         return u'{} {}'.format(self.follower_id, self.followee_id)
 
@@ -70,6 +81,7 @@ class Notification(models.Model):
 
     votes = models.PositiveIntegerField(default=0)
     post = models.ForeignKey(Post, blank=True, null=True)
+    comment = models.ForeignKey(PostComment, blank=True, null=True)
     user = models.ForeignKey(User, related_name='notifications', db_index=True)
     tag = models.ForeignKey(Tag, blank=True, null=True)
     other = models.ForeignKey(User, null=True, blank=True, related_name='mention_notifications')
@@ -108,9 +120,9 @@ class Notification(models.Model):
     @property
     def notification_text(self):
         if self.type == Notification.STARTED_FOLLOW:
-            return u'{} started following you.'
+            return u'{} started following you.'.format(self.other)
         elif self.type == Notification.MENTIONED_IN_COMMENT:
-            return Notification.TEXT_MENTIONED_IN_COMMENT_PATTERN.format(self.other.username)
+            return u'{} commented: {}'.format(self.other.username, self.comment.text)
         elif self.type == Notification.SHARE_POST:
             return u'{} shared a Blast.'.format(self.other)
         elif self.type == Notification.SHARE_TAG:
@@ -131,7 +143,7 @@ class Notification(models.Model):
         return '{} - {}'.format(self.user, self.text)
 
 
-def notify_users(users: list, post: Post, author: User):
+def notify_users(users: list, post: Post, comment: PostComment or None, author: User):
     # TODO: author can be None
     if not users:
         return
@@ -154,7 +166,8 @@ def notify_users(users: list, post: Post, author: User):
         for_everyone = it.settings.notify_comments == UserSettings.EVERYONE
         for_follower = (it.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW and is_follow)
         if for_everyone or for_follower:
-            notification = Notification(user=it, post=post, other=author,
+            notification = Notification(user=it, post=post,
+                                        other=author, comment=comment,
                                         type=Notification.MENTIONED_IN_COMMENT)
             notifications.append(notification)
 
@@ -172,7 +185,7 @@ def post_save_comment(sender, **kwargs):
     instance = kwargs['instance']
 
     users = instance.notified_users
-    notify_users(users, instance.post, instance.user)
+    notify_users(users, instance.post, instance, instance.user)
 
 
 @receiver(post_save, sender=Post, dispatch_uid='notifications_posts')
@@ -184,7 +197,7 @@ def post_save_post(sender, instance: Post, **kwargs):
     votes = instance.voted_count
 
     users = instance.notified_users
-    notify_users(users, instance, instance.user)
+    notify_users(users, instance, None, instance.user)
 
     if votes == 0 or votes % 10:
         return
@@ -211,3 +224,16 @@ def start_following_handler(sender, instance: Follower, **kwargs):
     notification = Notification.objects.create(user_id=followee, other_id=follower,
                                                type=Notification.STARTED_FOLLOW)
     send_push_notification.delay(followee, notification.notification_text, notification.push_payload)
+
+
+@receiver(post_save, sender=FollowRequest, dispatch_uid='notification_follow_request')
+def follow_request_created(sender, instance: FollowRequest, created: bool, **kwargs):
+    if not created:
+        return False
+
+    logger.info('Send follow request push message for id = %s, follower = %s', instance.pk,
+                instance.followee_id)
+
+    send_push_notification.delay(instance.followee_id,
+                                 instance.notification_text,
+                                 instance.push_payload)
