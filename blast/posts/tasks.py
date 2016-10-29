@@ -44,7 +44,16 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
     logger.info('Send ending soon PUSH message to %s: %s', post_id, users)
 
     devices = APNSDevice.objects.filter(user_id__in=users)
-    devices.send_message(message, sound='default', extra={'postId': post_id})
+    token_to_user_id = {it.registration_id: it.user_id for it in devices}
+
+    def get_badge(token):
+        if token not in token_to_user_id:
+            return 0
+        else:
+            return Notification.unseen_count(token_to_user_id[token])
+
+    devices.send_message(message, sound='default',
+                         badge=get_badge, extra={'postId': post_id})
 
     author_id = Post.objects.get(id=post_id).user_id
     # Create notifications
