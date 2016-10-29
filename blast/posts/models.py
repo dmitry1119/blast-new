@@ -74,7 +74,7 @@ class Post(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     expired_at = models.DateTimeField(default=get_expiration_date)
 
-    text = models.CharField(max_length=256, blank=True)
+    text = models.CharField(max_length=1024, blank=True)
 
     # TODO: Remove black, null.
     user = models.ForeignKey(User, db_index=True, blank=True, null=True)
