@@ -235,7 +235,7 @@ class TagsViewSet(ExtendableModelMixin,
         order = request.query_params.get('order', 'feature')
 
         if order == 'feature':
-            order = u'created_at'
+            order = u'-voted_count'
         else:
             order = u'-created_at'
 
