@@ -193,7 +193,7 @@ def save_comment_notifications(sender, **kwargs):
 
 
 @receiver(post_save, sender=Post, dispatch_uid='notifications_posts')
-def blast_save_blast_notifications(sender, instance: Post, **kwargs):
+def blast_save_notifications(sender, instance: Post, **kwargs):
     """Handles changing of votes counter and creates notification"""
     if not kwargs['created']:
         return
@@ -210,8 +210,10 @@ def blast_save_blast_notifications(sender, instance: Post, **kwargs):
         logger.info('Post {} reached {} votes'.format(instance, votes))
         notification = Notification.objects.create(user=instance.user, post_id=instance.pk,
                                                    votes=votes, type=Notification.VOTES_REACHED)
-        send_push_notification.delay(instance.user_id, notification.notification_text,
-                                     notification.push_payload)
+
+        if instance.user.settings.notify_votes:
+            send_push_notification.delay(instance.user_id, notification.notification_text,
+                                         notification.push_payload)
 
 
 @receiver(post_save, sender=Follower, dispatch_uid='notifications_follow')
