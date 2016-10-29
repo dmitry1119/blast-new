@@ -470,9 +470,9 @@ class UserAuthView(views.APIView):
             msg = 'Unable to login with provided credentials.'
             return Response({'errors': [msg]}, status=status.HTTP_403_FORBIDDEN)
 
-    def delete(self):
-        if self.request.user.is_authenticated():
-            _clear_auth_data(self.request.user, None, False)
+    def delete(self, request):
+        if request.user.is_authenticated():
+            _clear_auth_data(request.user, None, False)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
