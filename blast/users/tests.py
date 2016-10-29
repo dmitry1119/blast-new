@@ -1009,3 +1009,53 @@ class TestUtils(BaseTestCase):
                 self.assertTrue(v['is_requested'])
             else:
                 self.assertFals(v['is_requested'])
+
+
+class TestPopularity(BaseTestCase):
+
+    def setUp(self):
+        super().setUp()
+
+    def test_follower_up_down_popularity(self):
+        user = self.generate_user()
+
+        # Test up popularity
+        url = reverse_lazy('user-follow', kwargs={'pk': user.pk})
+
+        response = self.client.put(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+        self.assertEqual(user.popularity, 1)
+
+        # Test down popularity
+        url = reverse_lazy('user-unfollow', kwargs={'pk': user.pk})
+        response = self.client.put(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+        self.assertEqual(user.popularity, 0)
+
+    def test_post_up_down_popularity(self):
+        # Test up popularity
+        url = reverse_lazy('post-list')
+
+        response = self.post_json(url, data={
+            'text': 'Hello',
+            'is_anonymous': False
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.popularity, 1)
+
+        # Test down popularity
+        url = reverse_lazy('post-detail', kwargs={'pk': response.data.get('id')})
+
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.popularity, 0)
