@@ -15,10 +15,11 @@ logger = logging.Logger(__name__)
 
 @shared_task(bind=False)
 def send_push_notification(user_id: int, message: str, payload: dict):
+    from notifications.models import Notification
     logger.info(u'Send push notification to {} user with {}'.format(user_id, payload))
 
     devices = APNSDevice.objects.filter(user=user_id)
-    devices.send_message(message, sound='default', extra=payload)
+    devices.send_message(message, sound='default', badge=Notification.unseen_count(user_id), extra=payload)
 
 
 @shared_task(bind=False)
@@ -63,4 +64,14 @@ def send_share_notifications(user_id: int, users: List, post_id: int = None, tag
     logger.info('Send share push message %s %s %s %s', user_id, post_id, tag, users)
     notification = notifications[0]
     devices = APNSDevice.objects.filter(user_id__in=users)
-    devices.send_message(notification.notification_text, extra=notification.push_payload)
+
+    user_to_device = {it.registration_id: it.user_id for it in devices}
+
+    def get_badge(token):
+        if token not in user_to_device:
+            return 0
+        else:
+            return Notification.unseen_count(user_to_device[token])
+
+    devices.send_message(notification.notification_text, sound='default',
+                         badge=get_badge, extra=notification.push_payload)

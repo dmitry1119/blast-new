@@ -31,13 +31,8 @@ class FollowRequest(models.Model):
 
     @property
     def push_payload(self):
-        count = Notification.objects.filter(user_id=self.follower_id, is_seen=False).count()
-        count += FollowRequest.objects.filter(followee_id=self.follower_id, is_seen=False).count()
-
         return {
-            'sound': 'default',
             'userId': self.follower_id,
-            'badge': count
         }
 
     def __str__(self):
@@ -96,6 +91,12 @@ class Notification(models.Model):
 
     is_seen = models.BooleanField(default=False)
 
+    @staticmethod
+    def unseen_count(user_id):
+        count = Notification.objects.filter(user_id=user_id, is_seen=False).count()
+        count += FollowRequest.objects.filter(followee_id=user_id, is_seen=False).count()
+        return count
+
     @property
     def text(self):
         if self.type == Notification.STARTED_FOLLOW:
@@ -137,14 +138,9 @@ class Notification(models.Model):
 
     @property
     def push_payload(self):
-        count = Notification.objects.filter(user_id=self.user_id, is_seen=False).count()
-        count += FollowRequest.objects.filter(followee_id=self.user_id, is_seen=False).count()
-
         return {
-            'sound': 'default',
             'tagId': self.tag_id,
             'postId': self.post_id,
-            'badge': count
         }
 
     def __str__(self):
