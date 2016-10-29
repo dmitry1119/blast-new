@@ -300,9 +300,3 @@ class TagExactSearchView(viewsets.ReadOnlyModelViewSet):
             qs = qs.order_by('-created_at')
 
         return qs
-
-
-class TagViewSet(ExtendableModelMixin,
-                 viewsets.ReadOnlyModelViewSet):
-    queryset = Tag.objects.all().order_by('-total_posts')
-    serializer_class = TagPublicSerializer

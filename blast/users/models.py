@@ -330,9 +330,9 @@ class UserSettings(models.Model):
     EVERYONE = 2
 
     CHOICES = (
-        (OFF, 0),
-        (PEOPLE_I_FOLLOW, 1),
-        (EVERYONE, 2)
+        (OFF, 'Off'),
+        (PEOPLE_I_FOLLOW, 'People I follow'),
+        (EVERYONE, 'Everyone')
     )
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')

@@ -13,8 +13,9 @@ from django.db.backends.dummy.base import IntegrityError
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
+from notifications.tasks import send_push_notification
 from tags.models import Tag
-from users.models import User, USER_RECENT_POSTS_KEY
+from users.models import User, USER_RECENT_POSTS_KEY, UserSettings, Follower
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFill
 
@@ -298,3 +299,23 @@ def blast_delete_handle_tags(sender, instance: Post, **kwargs):
         Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') - 1)
     except IntegrityError as e:
         logger.error('{}'.format(e))
+
+
+@receiver(post_save, sender=PostComment, dispatch_uid='blast_comment_notificaiton')
+def blast_comment_notificaiton(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    user = User.objects.select_related('settings').get(id=instance.post.user_id)
+    # Check that user allow to send push
+    if user.settings.notify_comments == UserSettings.EVERYONE:
+        pass
+    elif user.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW:
+        is_follower = Follower.objects.filter(followee_id=user.id, follower=instance.user_id).exists()
+        if not is_follower:
+            return
+    elif user.settings.notify_comments == UserSettings.OFF:
+        return
+
+    message = "{} commented: {}".format(instance.user.username, instance.text)
+    send_push_notification.delay(user.pk, message, {'userId': instance.user_id})
