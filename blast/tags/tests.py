@@ -57,7 +57,7 @@ class PostTagsTest(BaseTestCase):
 
 
 class TagSearchTest(BaseTestCase):
-    tags = ['testTag1', 'testTag2', 'testTag3', 'otherTag']
+    tags = ['testtag1', 'testtag2', 'testtag3', 'othertag']
 
     def setUp(self):
         super().setUp()
@@ -75,19 +75,19 @@ class TagSearchTest(BaseTestCase):
             post.save()
 
         self.posts = list(Post.objects.all())
-        self.user.pinned_tags.add(Tag.objects.get(title=self.tags[1]))
+        self.user.pinned_tags.add(Tag.objects.get(title__iexact=self.tags[1]))
         self.user.save()
 
     def test_tag_search(self):
         """Should return unpinned tags"""
-        url = reverse_lazy('tag-list') + '?search={}'.format('testTag')
+        url = reverse_lazy('tag-list') + '?search={}'.format('testtag')
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         results = response.data['results']
         self.assertEqual(len(results), 3)
 
-        for tag in ('testTag1', 'testTag3'):
+        for tag in ('testtag1', 'testtag3'):
             result = list(filter(lambda it: it['title'] == tag, results))
             self.assertEqual(len(result), 1)
             result = result[0]

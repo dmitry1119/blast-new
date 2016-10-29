@@ -107,7 +107,7 @@ class Post(models.Model):
 
     def get_tag_titles(self):
         expr = re.compile(r'(?:(?<=\s)|^)#(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
-        return [it.lower() for it in expr.findall(self.text)]
+        return {it.lower() for it in expr.findall(self.text)}
 
     @property
     def time_remains(self):
