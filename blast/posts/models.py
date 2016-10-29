@@ -157,7 +157,7 @@ class PostComment(models.Model):
                                blank=True, null=True)
     user = models.ForeignKey(User, db_index=True)
     post = models.ForeignKey(Post, db_index=True)
-    text = models.CharField(max_length=256)
+    text = models.CharField(max_length=1024)
 
     def replies_count(self):
         # TODO (VM): Add redis cache

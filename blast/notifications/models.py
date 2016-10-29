@@ -14,6 +14,7 @@ from notifications.tasks import send_push_notification
 logger = logging.getLogger(__name__)
 
 
+# TODO: Use proxy model for FollowRequest
 class FollowRequest(models.Model):
     """ Follow request for private user """
     created_at = models.DateTimeField(auto_now_add=True)
@@ -21,6 +22,8 @@ class FollowRequest(models.Model):
 
     follower = models.ForeignKey(User, related_name='follower_requests', db_index=True)
     followee = models.ForeignKey(User, related_name='followee_requests', db_index=True)
+
+    is_seen = models.BooleanField(default=False)
 
     @property
     def notification_text(self):
