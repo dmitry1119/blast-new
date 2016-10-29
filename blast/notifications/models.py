@@ -168,7 +168,7 @@ def notify_users(users: list, post: Post, comment: PostComment or None, author: 
             continue
 
         for_everyone = it.settings.notify_comments == UserSettings.EVERYONE
-        for_follower = (it.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW and is_follow)
+        for_follower = it.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW and is_follow
         if for_everyone or for_follower:
             notification = Notification(user=it, post=post,
                                         other=author, comment=comment,
@@ -182,7 +182,7 @@ def notify_users(users: list, post: Post, comment: PostComment or None, author: 
 
 
 @receiver(post_save, sender=PostComment, dispatch_uid='notifications_comments')
-def post_save_comment(sender, **kwargs):
+def save_comment_notifications(sender, **kwargs):
     if not kwargs['created']:
         return
 
@@ -193,7 +193,7 @@ def post_save_comment(sender, **kwargs):
 
 
 @receiver(post_save, sender=Post, dispatch_uid='notifications_posts')
-def post_save_post(sender, instance: Post, **kwargs):
+def blast_save_blast_notifications(sender, instance: Post, **kwargs):
     """Handles changing of votes counter and creates notification"""
     if not kwargs['created']:
         return

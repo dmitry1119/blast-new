@@ -174,8 +174,8 @@ class PostComment(models.Model):
 USERS_RANGES_COUNT = 4
 
 
-@receiver(pre_delete, sender=Post, dispatch_uid='post_delete_clear_files')
-def post_pre_delete(sender, instance: Post, **kwargs):
+@receiver(pre_delete, sender=Post, dispatch_uid='on_blast_delete')
+def blast_delete_handler(sender, instance: Post, **kwargs):
     logging.info('pre_delete for {} post'.format(instance.pk))
     if instance.video:
         logger.info('Delete {} image of {} post'.format(instance.image, instance.pk))
@@ -203,8 +203,8 @@ def post_pre_delete(sender, instance: Post, **kwargs):
     r.lrem(key, 1, instance.pk)
 
 
-@receiver(post_save, sender=Post, dispatch_uid='post_update_caches')
-def post_post_save(sender, instance: Post, **kwargs):
+@receiver(post_save, sender=Post, dispatch_uid='on_blast_save')
+def blast_save_handler(sender, instance: Post, **kwargs):
     if not kwargs['created']:
         return
 
@@ -229,7 +229,7 @@ def post_post_save(sender, instance: Post, **kwargs):
 
 
 @receiver(post_save, sender=PostVote, dispatch_uid='posts_post_save_vote_handler')
-def post_save_vote(sender, instance: PostVote, created: bool, **kwargs):
+def vote_save(sender, instance: PostVote, created: bool, **kwargs):
     if not created or instance.is_positive is None:
         return
 
@@ -249,7 +249,7 @@ def post_save_vote(sender, instance: PostVote, created: bool, **kwargs):
 
 
 @receiver(post_save, sender=Post, dispatch_uid='post_create_tags')
-def post_create_tags(sender, instance: Post, **kwargs):
+def blast_save_handle_tags(sender, instance: Post, **kwargs):
     if not kwargs['created']:
         return
 
@@ -285,7 +285,7 @@ def post_create_tags(sender, instance: Post, **kwargs):
 
 
 @receiver(pre_delete, sender=Post, dispatch_uid='post_clear_cache')
-def post_clear_cache(sender, instance: Post, **kwargs):
+def blast_delete_handle_tags(sender, instance: Post, **kwargs):
     tags = list(instance.tags.all())
     tags = {it.title for it in tags}
     logging.info('pre_delete: Post. Update tag counters. {}'.format(tags))
