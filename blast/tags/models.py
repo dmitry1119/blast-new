@@ -55,6 +55,10 @@ class Tag(models.Model):
 
         return result
 
+    def save(self, **kwargs):
+        self.title = self.title.lower()
+        return super().save(**kwargs)
+
     def __str__(self):
         return u'{} - {}'.format(self.title, self.total_posts)
 
