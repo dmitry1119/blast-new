@@ -420,7 +420,6 @@ def _clear_auth_data(user: User, registration_id: str or None, send_push: bool):
 
 
 def _update_device_token(user: User, registration_id: str):
-
     serializer = APNSDeviceSerializer(data={'registration_id': registration_id})
     token_device = get_or_none(APNSDevice, registration_id=registration_id)
     user_device = get_or_none(APNSDevice, user=user)

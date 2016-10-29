@@ -232,9 +232,9 @@ class TagsViewSet(ExtendableModelMixin,
                   type: string
                   description: tag name
         """
-        order = request.query_params.get('order', 'featured')
+        order = request.query_params.get('order', 'feature')
 
-        if order == 'featured':
+        if order == 'feature':
             order = u'created_at'
         else:
             order = u'-created_at'
