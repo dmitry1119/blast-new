@@ -37,7 +37,7 @@ class FollowRequestPublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = FollowRequest
-        fields = ('id', 'follower', 'created_at')
+        fields = ('id', 'follower', 'created_at', 'is_seen')
 
 
 class FollowRequestSerializer(serializers.ModelSerializer):

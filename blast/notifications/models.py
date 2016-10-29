@@ -31,12 +31,12 @@ class FollowRequest(models.Model):
 
     @property
     def push_payload(self):
-        count = Notification.objects.filter(user_id=self.user_id).count()
-        count += FollowRequest.objects.filter(follwee_id=self.user_id).count()
+        count = Notification.objects.filter(user_id=self.follower_id).count()
+        count += FollowRequest.objects.filter(followee_id=self.follower_id).count()
 
         return {
             'sound': 'default',
-            'userId': self.followee_id,
+            'userId': self.follower_id,
             'badge': count
         }
 
@@ -138,7 +138,7 @@ class Notification(models.Model):
     @property
     def push_payload(self):
         count = Notification.objects.filter(user_id=self.user_id).count()
-        count += FollowRequest.objects.filter(follwee_id=self.user_id).count()
+        count += FollowRequest.objects.filter(followee_id=self.user_id).count()
 
         return {
             'sound': 'default',

@@ -71,3 +71,14 @@ class FollowRequestViewSet(mixins.RetrieveModelMixin,
             return FollowRequestPublicSerializer
         else:
             return FollowRequestSerializer
+
+    # FIXME: need to write PUT for this action
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        results = response.data.get('results', [])
+        ids = {it['id'] for it in results}
+
+        # FIXME: need to write PUT for this action
+        self.get_queryset().filter(id__in=ids, is_seen=False).update(is_seen=True)
+
+        return response
