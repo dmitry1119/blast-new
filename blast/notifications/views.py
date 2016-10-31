@@ -61,7 +61,7 @@ class NotificationsViewSet(ExtendableModelMixin,
     @list_route(methods=['get'])
     def unseen(self, request):
         return Response({
-            'count': Notification.unseen_count(self.request.user.pk)
+            'count': Notification.unseen_count(request.user.pk)
         })
 
 
