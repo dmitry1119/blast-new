@@ -73,5 +73,6 @@ def send_share_notifications(user_id: int, users: List, post_id: int = None, tag
         else:
             return Notification.unseen_count(user_to_device[token])
 
-    devices.send_message(notification.notification_text, sound='default',
-                         badge=get_badge, extra=notification.push_payload)
+    for device in devices:
+        device.send_message(notification.notification_text, sound='default',
+                            badge=get_badge(device.registration_id), extra=notification.push_payload)

@@ -52,8 +52,9 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
         else:
             return Notification.unseen_count(token_to_user_id[token])
 
-    devices.send_message(message, sound='default',
-                         badge=get_badge, extra={'postId': post_id})
+    for device in devices:
+        device.send_message(message, sound='default',
+                            badge=get_badge(device.registration_id), extra={'postId': post_id})
 
     author_id = Post.objects.get(id=post_id).user_id
     # Create notifications
