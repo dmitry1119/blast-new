@@ -1,4 +1,6 @@
+from celery.bin.celery import list_
 from rest_framework import viewsets, permissions, mixins
+from rest_framework.decorators import list_route
 from rest_framework.response import Response
 
 from notifications.models import Notification, FollowRequest
@@ -55,6 +57,12 @@ class NotificationsViewSet(ExtendableModelMixin,
         Notification.objects.filter(id__in=ids, is_seen=False).update(is_seen=True)
 
         return response
+
+    @list_route(methods=['get'])
+    def unseen(self, request):
+        return Response({
+            'count': Notification.unseen_count(self.request.user.pk)
+        })
 
 
 class FollowRequestViewSet(mixins.RetrieveModelMixin,
