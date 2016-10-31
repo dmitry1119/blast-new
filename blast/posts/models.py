@@ -301,8 +301,8 @@ def blast_delete_handle_tags(sender, instance: Post, **kwargs):
         logger.error('{}'.format(e))
 
 
-@receiver(post_save, sender=PostComment, dispatch_uid='blast_comment_notificaiton')
-def blast_comment_notificaiton(sender, instance, created, **kwargs):
+@receiver(post_save, sender=PostComment, dispatch_uid='blast_comment_notification')
+def blast_comment_notificaiton(sender, instance: PostComment, created, **kwargs):
     if not created:
         return
 
@@ -318,4 +318,4 @@ def blast_comment_notificaiton(sender, instance, created, **kwargs):
         return
 
     message = "{} commented: {}".format(instance.user.username, instance.text)
-    send_push_notification.delay(user.pk, message, {'userId': instance.user_id})
+    send_push_notification.delay(user.pk, message, {'userId': instance.user_id, 'postId': instance.post_id})
