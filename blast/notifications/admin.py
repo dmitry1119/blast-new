@@ -13,7 +13,7 @@ resend.short_description = 'Send push notifications'
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'text', 'created_at')
+    list_display = ('id', 'user', 'text', 'type', 'created_at')
     actions = [resend]
 
 

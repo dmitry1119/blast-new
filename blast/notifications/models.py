@@ -92,7 +92,7 @@ class Notification(models.Model):
     is_seen = models.BooleanField(default=False)
 
     @staticmethod
-    def unseen_count(user_id):
+    def unseen_count(user_id: int):
         count = Notification.objects.filter(user_id=user_id, is_seen=False).count()
         count += FollowRequest.objects.filter(followee_id=user_id, is_seen=False).count()
         return count
