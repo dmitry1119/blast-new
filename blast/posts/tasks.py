@@ -83,7 +83,7 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
     logger.info('Set up ending soon markers for %s %s', post_id, users)
     for it in users:
         key = send_marker_key.format(it)
-        r.set(key, '1', ex=60 * 10)
+        r.set(key, '1', ex=60 * 10 + 60)
 
 
 def _get_post_to_users_push_list() -> dict:

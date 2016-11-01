@@ -39,7 +39,7 @@ def send_share_notifications(user_id: int, users: List, post_id: int = None, tag
     logger.info(u'Share %s by (%s, %s) to %s', user_id, post_id, tag, users)
 
     users = Follower.objects.filter(followee=user_id, follower_id__in=users)
-    users = users.values_list('follower_id', flat=True)
+    users = set(users.values_list('follower_id', flat=True))
 
     if not users:
         logger.info('send_share_notifications: users list is empty %s', users)

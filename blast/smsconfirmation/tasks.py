@@ -7,7 +7,7 @@ import logging
 
 import requests
 
-import blast.celery
+import blast.celery  # Need for correct worker run
 
 from django.conf import settings
 
