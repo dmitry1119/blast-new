@@ -302,11 +302,13 @@ def blast_delete_handle_tags(sender, instance: Post, **kwargs):
 
 
 @receiver(post_save, sender=PostComment, dispatch_uid='blast_comment_notification')
-def blast_comment_notificaiton(sender, instance: PostComment, created, **kwargs):
+def blast_comment_notification(sender, instance: PostComment, created, **kwargs):
+    from notifications.models import Notification
     if not created:
         return
 
-    user = User.objects.select_related('settings').get(id=instance.post.user_id)
+    post = instance.post
+    user = User.objects.select_related('settings').get(id=post.user_id)
     # Check that user allow to send push
     if user.settings.notify_comments == UserSettings.EVERYONE:
         pass
@@ -317,5 +319,7 @@ def blast_comment_notificaiton(sender, instance: PostComment, created, **kwargs)
     elif user.settings.notify_comments == UserSettings.OFF:
         return
 
-    message = "{} commented: {}".format(instance.user.username, instance.text)
-    send_push_notification.delay(user.pk, message, {'userId': instance.user_id, 'postId': instance.post_id})
+    notification = Notification(comment_id=instance.pk, post_id=instance.post_id,
+                                user=user.pk, other=instance.user_id)
+    notification.save()
+    notification.send_push_message()

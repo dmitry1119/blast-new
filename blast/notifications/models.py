@@ -35,6 +35,10 @@ class FollowRequest(models.Model):
             'userId': self.follower_id,
         }
 
+    def send_push_message(self):
+        logger.info('Send follow request push message for id = %s, follower = %s', self.followee_id, self.follower_id)
+        send_push_notification.delay(self.followee_id, self.notification_text, self.push_payload)
+
     def __str__(self):
         return u'{} {}'.format(self.follower_id, self.followee_id)
 
@@ -66,6 +70,8 @@ class Notification(models.Model):
     SHARE_POST = 7
     SHARE_TAG = 8
 
+    COMMENTED_POST = 9
+
     TYPE = (
         (STARTED_FOLLOW, 'Started follow'),
         (MENTIONED_IN_COMMENT, 'Mentioned in comment'),
@@ -76,6 +82,7 @@ class Notification(models.Model):
         (ENDING_SOON_DOWNVOTER, 'Ending soon: downvoter'),
         (SHARE_POST, "Shared a Blast"),
         (SHARE_TAG, "Shared a hashtag"),
+        (COMMENTED_POST, "Commented post"),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -119,8 +126,8 @@ class Notification(models.Model):
             return self.TEXT_SHARE_POST
         elif self.type == Notification.SHARE_TAG:
             return self.TEXT_SHARE_TAG.format(self.tag_id)
-
-        logger.error('Unknown notification type')
+        elif self.type == Notification.COMMENTED_POST:
+            return u'Commented: {}'.format(self.comment.text)
 
         raise ValueError('Unknown notification type')
 
@@ -134,15 +141,30 @@ class Notification(models.Model):
             return u'@{} shared a tag.'.format(self.other.username)
         elif self.type == Notification.MENTIONED_IN_COMMENT:
             return u'@{} mentioned you in comment.'.format(self.other.username)
+        elif self.type == Notification.COMMENTED_POST:
+            return u'{} commented: {}'.format(self.other.username, self.comment.text)
         else:
             return self.text
 
     @property
     def push_payload(self):
-        return {
-            'tagId': self.tag_id,
-            'postId': self.post_id,
-        }
+        payload = {}
+        if self.tag_id:
+            payload['tagId'] = self.tag_id
+
+        if self.post_id:
+            payload['postId'] = self.post_id
+
+        if self.other_id:
+            payload['userId'] = self.other_id
+
+        return payload
+
+    def send_push_message(self):
+        logger.info('Send push message: type=%s, user=%s, text=%s, payload=%s', self.type, self.user_id,
+                    self.notification_text, self.push_payload)
+
+        send_push_notification.delay(self.user_id, self.notification_text, self.push_payload)
 
     def __str__(self):
         return '{} - {}'.format(self.user, self.text)
@@ -182,15 +204,13 @@ def notify_users(users: list, post: Post, comment: PostComment or None, author: 
     Notification.objects.bulk_create(notifications)
 
     for it in notifications:
-        send_push_notification.delay(it.user_id, it.notification_text, it.push_payload)
+        it.send_push_message()
 
 
 @receiver(post_save, sender=PostComment, dispatch_uid='notifications_comments')
-def save_comment_notifications(sender, **kwargs):
+def save_comment_notifications(sender, instance: PostComment, **kwargs):
     if not kwargs['created']:
         return
-
-    instance = kwargs['instance']
 
     users = instance.notified_users
     notify_users(users, instance.post, instance, instance.user)
@@ -216,8 +236,7 @@ def blast_save_notifications(sender, instance: Post, **kwargs):
                                                    votes=votes, type=Notification.VOTES_REACHED)
 
         if instance.user.settings.notify_votes:
-            send_push_notification.delay(instance.user_id, notification.notification_text,
-                                         notification.push_payload)
+            notification.send_push_message()
 
 
 @receiver(post_save, sender=Follower, dispatch_uid='notifications_follow')
@@ -233,7 +252,7 @@ def start_following_handler(sender, instance: Follower, **kwargs):
     logger.info('Create following notification {} {}'.format(follower, followee))
     notification = Notification.objects.create(user_id=followee, other_id=follower,
                                                type=Notification.STARTED_FOLLOW)
-    send_push_notification.delay(followee, notification.notification_text, notification.push_payload)
+    notification.send_push_message()
 
 
 @receiver(post_save, sender=FollowRequest, dispatch_uid='notification_follow_request')
@@ -241,9 +260,4 @@ def follow_request_created(sender, instance: FollowRequest, created: bool, **kwa
     if not created:
         return False
 
-    logger.info('Send follow request push message for id = %s, follower = %s', instance.pk,
-                instance.followee_id)
-
-    send_push_notification.delay(instance.followee_id,
-                                 instance.notification_text,
-                                 instance.push_payload)
+    instance.send_push_message()

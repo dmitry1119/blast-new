@@ -14,7 +14,7 @@ class TestPostVotesNotification(BaseTestCase):
         super().setUp()
 
     def test_post_votes_notification(self):
-        notify_counter = range(10, 101, 10)
+        notify_counter = reversed(range(10, 101, 10))
         for it in notify_counter:
             Post.objects.create(user=self.user, voted_count=it)
 
@@ -31,7 +31,7 @@ class TestPostVotesNotification(BaseTestCase):
 
     def test_post_votes_large_votes_notification(self):
         """Checks that Notification creates for each 1000 votes"""
-        notify_counter = range(500, 10001, 500)
+        notify_counter = reversed(range(500, 10001, 500))
 
         for it in notify_counter:
             Post.objects.create(user=self.user, voted_count=it)
