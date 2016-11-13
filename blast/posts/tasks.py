@@ -6,7 +6,6 @@ import itertools
 import redis
 from django.utils import timezone
 
-from push_notifications.apns import apns_send_bulk_message
 from push_notifications.models import APNSDevice
 
 from celery import shared_task
@@ -14,6 +13,9 @@ from celery import shared_task
 from notifications.models import Notification
 from posts.models import Post, PostVote
 from users.models import User, PinnedPosts
+
+
+EXPIRE_LIMIT_MINUTES = 10
 
 
 logger = logging.getLogger(__name__)
@@ -83,11 +85,11 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
     logger.info('Set up ending soon markers for %s %s', post_id, users)
     for it in users:
         key = send_marker_key.format(it)
-        r.set(key, '1', ex=60 * 10 + 60)
+        r.set(key, '1', ex=60 * (EXPIRE_LIMIT_MINUTES + 1))
 
 
 def _get_post_to_users_push_list() -> dict:
-    expired_posts = Post.objects.filter(expired_at__lte=timezone.now() + timedelta(minutes=10))
+    expired_posts = Post.objects.actual().filter(expired_at__lte=timezone.now() + timedelta(minutes=EXPIRE_LIMIT_MINUTES))
     expired_posts = expired_posts.values('id', 'user_id')
     expired_posts = [{'post_id': it['id'], 'user_id': it['user_id']} for it in expired_posts]
     expired_ids = {it['post_id'] for it in expired_posts}
