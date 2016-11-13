@@ -14,7 +14,7 @@ from notifications.tasks import send_push_notification
 logger = logging.getLogger(__name__)
 
 
-# TODO: Use proxy model for FollowRequest
+# TODO: make proxy model for Notification
 class FollowRequest(models.Model):
     """ Follow request for private user """
     created_at = models.DateTimeField(auto_now_add=True)
@@ -27,7 +27,7 @@ class FollowRequest(models.Model):
 
     @property
     def notification_text(self):
-        return '{} has requested to follow you.'.format(self.follower.username)
+        return '@{} has requested to follow you.'.format(self.follower.username)
 
     @property
     def push_payload(self):
@@ -40,6 +40,7 @@ class FollowRequest(models.Model):
 
     class Meta:
         unique_together = ('follower', 'followee',)
+        ordering = ('-id',)
 
 
 class Notification(models.Model):
@@ -126,13 +127,13 @@ class Notification(models.Model):
     @property
     def notification_text(self):
         if self.type == Notification.STARTED_FOLLOW:
-            return u'{} started following you.'.format(self.other.username)
+            return u'@{} started following you.'.format(self.other.username)
         elif self.type == Notification.SHARE_POST:
-            return u'{} shared a Blast.'.format(self.other.username)
+            return u'@{} shared a Blast.'.format(self.other.username)
         elif self.type == Notification.SHARE_TAG:
-            return u'{} shared a tag.'.format(self.other.username)
+            return u'@{} shared a tag.'.format(self.other.username)
         elif self.type == Notification.MENTIONED_IN_COMMENT:
-            return u'{} mentioned you in comment.'.format(self.other.username)
+            return u'@{} mentioned you in comment.'.format(self.other.username)
         else:
             return self.text
 
@@ -145,6 +146,9 @@ class Notification(models.Model):
 
     def __str__(self):
         return '{} - {}'.format(self.user, self.text)
+
+    class Meta:
+        ordering = ('-id',)
 
 
 def notify_users(users: list, post: Post, comment: PostComment or None, author: User):
