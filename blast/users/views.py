@@ -142,7 +142,6 @@ class UserViewSet(ExtendableModelMixin,
                                                                  followee=user)
             else:
                 logging.info('{} stated to follow by {}'.format(request.user, user))
-                # start_following.send(sender=user, follower=request.user, followee=user)
                 Follower.objects.create(followee=user, follower=request.user)
 
         return Response()

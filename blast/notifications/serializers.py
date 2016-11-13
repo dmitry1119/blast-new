@@ -3,8 +3,8 @@ from rest_framework import serializers
 from notifications.models import Notification, FollowRequest
 from posts.serializers import PreviewPostSerializer
 from users.models import Follower
-from users.signals import start_following
 
+from notifications.tasks import send_push_notification
 
 class NotificationPublicSerializer(serializers.ModelSerializer):
     # user = serializers.SerializerMethodField()
@@ -43,13 +43,12 @@ class FollowRequestPublicSerializer(serializers.ModelSerializer):
 class FollowRequestSerializer(serializers.ModelSerializer):
     accept = serializers.BooleanField(required=False)
 
-    def _process_request(self, instance, validated_data):
+    def _process_request(self, instance: FollowRequest, validated_data):
         if validated_data['accept']:
             Follower.objects.create(followee=instance.followee, follower=instance.follower)
-            start_following.send(sender=instance.followee,
-                                 follower=instance.follower,
-                                 followee=instance.followee)
-
+            send_push_notification.delay(instance.follower_id,
+                                         '@{} accepted your follow request.'.format(instance.followee.username),
+                                         {'userId': instance.followee.pk})
         instance.delete()
 
         return instance
