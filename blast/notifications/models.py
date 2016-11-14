@@ -242,15 +242,15 @@ def blast_save_notifications(sender, instance: Post, **kwargs):
 @receiver(post_save, sender=Follower, dispatch_uid='notifications_follow')
 def start_following_handler(sender, instance: Follower, **kwargs):
     """Handles following event"""
-    followee = instance.followee_id
-    follower = instance.follower_id
+    followee_id = instance.followee_id
+    follower_id = instance.follower_id
 
-    if followee == User.objects.anonymous_id:
+    if followee_id == User.objects.anonymous_id:
         # Ignore anonymous user because he followee by default
         return
 
-    logger.info('Create following notification {} {}'.format(follower, followee))
-    notification = Notification.objects.create(user_id=followee, other_id=follower,
+    logger.info('Create following notification {} {}'.format(follower_id, followee_id))
+    notification = Notification.objects.create(user_id=followee_id, other_id=follower_id,
                                                type=Notification.STARTED_FOLLOW)
     notification.send_push_message()
 
@@ -261,3 +261,4 @@ def follow_request_created(sender, instance: FollowRequest, created: bool, **kwa
         return False
 
     instance.send_push_message()
+
