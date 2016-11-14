@@ -320,6 +320,7 @@ def blast_comment_notification(sender, instance: PostComment, created, **kwargs)
         return
 
     notification = Notification(comment_id=instance.pk, post_id=instance.post_id,
-                                user=user.pk, other=instance.user_id)
+                                user_id=user.pk, other_id=instance.user_id)
     notification.save()
     notification.send_push_message()
+
