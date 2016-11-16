@@ -11,7 +11,7 @@ from countries.models import Country
 from reports.models import Report
 from users.models import User, Follower, UserSettings, PinnedPosts
 from posts.models import Post, PostComment, PostVote
-from posts.tasks import send_expire_notifications, _get_post_to_users_push_list
+from posts.tasks import send_expire_notifications, _get_post_for_users_push_list
 
 
 class AnyPermissionTest(TestCase):
@@ -639,7 +639,7 @@ class ExpiredNotificationsTest(BaseTestCase):
             }
         }
 
-        result = _get_post_to_users_push_list()
+        result = _get_post_for_users_push_list()
 
         self.assertEqual(result, should_be)
 
@@ -650,7 +650,7 @@ class ExpiredNotificationsTest(BaseTestCase):
 
         PinnedPosts.objects.create(user=self.user1, post=post)
 
-        result = _get_post_to_users_push_list()
+        result = _get_post_for_users_push_list()
 
         should_be = {
             'owner': {post.pk: {self.user.pk}},

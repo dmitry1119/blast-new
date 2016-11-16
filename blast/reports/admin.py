@@ -20,10 +20,11 @@ def mark_for_removal(modeladmin, request, qs):
     # Mark post for removal
     post_ids = {it['object_pk'] for it in reports}
     Post.objects.filter(pk__in=post_ids).update(expired_at=expired_at, is_marked_for_removal=True)
+    posts = list(Post.objects.filter(pk__in=post_ids))
 
     # Send notification PUSH'es
-    for it in reports:
-        notification = Notification.objects.create_marked_for_removal(it['user_id'], it['object_pk'])
+    for post in posts:
+        notification = Notification.objects.create_marked_for_removal(post.user_id, post.pk)
         notification.send_push_message()
 
 

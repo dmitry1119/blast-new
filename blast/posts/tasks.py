@@ -88,8 +88,9 @@ def send_ending_soon_notification(post_id: int, users: set, message: str):
         r.set(key, '1', ex=60 * (EXPIRE_LIMIT_MINUTES + 1))
 
 
-def _get_post_to_users_push_list() -> dict:
+def _get_post_for_users_push_list() -> dict:
     expired_posts = Post.objects.actual().filter(expired_at__lte=timezone.now() + timedelta(minutes=EXPIRE_LIMIT_MINUTES))
+    expired_posts = expired_posts.filter(is_marked_for_removal=False)
     expired_posts = expired_posts.values('id', 'user_id')
     expired_posts = [{'post_id': it['id'], 'user_id': it['user_id']} for it in expired_posts]
     expired_ids = {it['post_id'] for it in expired_posts}
@@ -185,7 +186,7 @@ def _get_post_to_users_push_list() -> dict:
         'downvote': map_post_to_users(False),
     }
 
-    logger.info('_get_post_to_users_push_list result is %s', result)
+    logger.info('_get_post_for_users_push_list result is %s', result)
 
     return result
 
@@ -199,7 +200,7 @@ def send_expire_notifications():
         'downvote': Notification.TEXT_END_SOON_DOWNVOTER
     }
 
-    post_dict = _get_post_to_users_push_list()
+    post_dict = _get_post_for_users_push_list()
     if not post_dict:
         return
 

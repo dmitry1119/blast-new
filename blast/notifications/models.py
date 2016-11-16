@@ -51,7 +51,8 @@ class NotificationManager(models.Manager):
 
     @staticmethod
     def create_marked_for_removal(user_id: int, post_id: int):
-        return Notification.objects.create(user_id=user_id, post_id=post_id, type=Notification.MARKED_FOR_REMOVAL)
+        return Notification.objects.create(user_id=user_id, other_id=user_id,
+                                           post_id=post_id, type=Notification.MARKED_FOR_REMOVAL)
 
 
 class Notification(models.Model):
