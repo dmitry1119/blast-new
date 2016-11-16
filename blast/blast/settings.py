@@ -278,39 +278,39 @@ LOGGING = {
         # },
         'core': {
             'handlers': ['console', 'production_file', 'debug_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'posts': {
             'handlers': ['console', 'production_file', 'debug_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'users': {
             'handlers': ['console', 'production_file', 'debug_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'notifications': {
             'handlers': ['console', 'production_file', 'debug_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'reports': {
             'handlers': ['console', 'production_file', 'debug_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'countries': {
             'handlers': ['console', 'production_file', 'debug_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'smsconfirmation': {
             'handlers': ['console', 'production_file', 'debug_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'tags': {
             'handlers': ['console', 'production_file', 'debug_file'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         'django.db': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
     },
 }

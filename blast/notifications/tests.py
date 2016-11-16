@@ -5,7 +5,7 @@ from rest_framework import status
 
 from core.tests import BaseTestCase
 from notifications.models import Notification, FollowRequest
-from posts.models import Post
+from posts.models import Post, PostComment
 from users.models import User, UserSettings, Follower
 
 
@@ -156,3 +156,29 @@ class TestFollowRequest(BaseTestCase):
         self.assertFalse(Follower.objects.filter(followee=self.private_user).exists())
         self.assertFalse(FollowRequest.objects.filter(followee=self.user.pk,
                                                       follower=self.private_user.pk).exists())
+
+
+class TestPostCommentNotification(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.user.settings.notify_comments = UserSettings.EVERYONE
+        self.user.settings.save()
+
+        self.post = Post.objects.create(text='text', user=self.user)
+
+    def test_make_notification(self):
+        """Should create notification for post owner"""
+        other = self.generate_user()
+
+        PostComment.objects.create(user=other, text='hello!', post=self.post)
+
+        notification = Notification.objects.get(user=self.user)
+        self.assertEqual(notification.type, Notification.COMMENTED_POST, 1)
+        self.assertEqual(notification.other, other)
+
+    def test_comment_own_post(self):
+        """Should create notification for post owner"""
+        PostComment.objects.create(user=self.user, text='hello!', post=self.post)
+
+        self.assertEqual(Notification.objects.all().count(), 0)

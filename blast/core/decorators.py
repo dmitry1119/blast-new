@@ -12,11 +12,11 @@ def save_to_zset(key_pattern: str):
         def wrapped_function(pk, start: int, end: int):
             key = key_pattern.format(pk)
             if not r.exists(key):
-                logger.info('Heat up cache for {}'.format(key))
+                logger.debug('Heat up cache for {}'.format(key))
                 result = f(pk, start, end)
 
                 if not result:
-                    logger.info('Nothing to cache. Key is {}'.format(key))
+                    logger.debug('Nothing to cache. Key is {}'.format(key))
                     return []
 
                 if len(result) % 2:
@@ -35,11 +35,11 @@ def memoize_list(key_pattern: str):
         def wrapped_function(pk: int, start: int, end: int):
             key = key_pattern.format(pk)
             if not r.exists(key):
-                logger.info('Heat up cache for %s', key)
+                logger.debug('Heat up cache for %s', key)
                 result = f(pk, start, end)
 
                 if not result:
-                    logger.info('Nothing to cache for %s key', key)
+                    logger.debug('Nothing to cache for %s key', key)
                     return []
 
                 for it in result:

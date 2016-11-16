@@ -142,7 +142,7 @@ class Notification(models.Model):
         elif self.type == Notification.MENTIONED_IN_COMMENT:
             return u'@{} mentioned you in comment.'.format(self.other.username)
         elif self.type == Notification.COMMENTED_POST:
-            return u'{} commented: {}'.format(self.other.username, self.comment.text)
+            return u'@{} commented: {}.'.format(self.other.username, self.comment.text)
         else:
             return self.text
 
@@ -173,6 +173,7 @@ class Notification(models.Model):
         ordering = ('-id',)
 
 
+# TODO: move to TextNotificationMixin mixin
 def notify_users(users: list, post: Post, comment: PostComment or None, author: User):
     # TODO: author can be None
     if not users:
@@ -188,15 +189,15 @@ def notify_users(users: list, post: Post, comment: PostComment or None, author: 
     followers = {it.follower_id for it in followers}
 
     notifications = []
-    for it in users:
-        is_follow = it.id in followers
-        if it.settings.notify_comments == UserSettings.OFF:
+    for user in users:
+        is_follow = user.id in followers
+        if user.settings.notify_comments == UserSettings.OFF:
             continue
 
-        for_everyone = it.settings.notify_comments == UserSettings.EVERYONE
-        for_follower = it.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW and is_follow
+        for_everyone = user.settings.notify_comments == UserSettings.EVERYONE
+        for_follower = user.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW and is_follow
         if for_everyone or for_follower:
-            notification = Notification(user=it, post=post,
+            notification = Notification(user=user, post=post,
                                         other=author, comment=comment,
                                         type=Notification.MENTIONED_IN_COMMENT)
             notifications.append(notification)

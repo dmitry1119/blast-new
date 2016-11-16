@@ -44,9 +44,11 @@ def get_expiration_date():
 USER_REG = reg = re.compile(r'(?:(?<=\s)|^)@(\w*[A-Za-z_]+\w*)', re.IGNORECASE)
 
 
-def get_notified_users(text: str):
-    """returns list of users notified by @"""
-    return USER_REG.findall(text)
+class TextNotificationMixin(object):
+    @property
+    def notified_users(self):
+        """returns list of users notified by @"""
+        return USER_REG.findall(self.text)
 
 
 class PostManager(models.Manager):
@@ -67,7 +69,7 @@ class PostManager(models.Manager):
         return qs
 
 
-class Post(models.Model):
+class Post(TextNotificationMixin, models.Model):
 
     objects = PostManager()
 
@@ -116,10 +118,6 @@ class Post(models.Model):
         delta = delta - timedelta(microseconds=delta.microseconds)  # Remove microseconds for pretty printing
         return delta
 
-    @property
-    def notified_users(self):
-        return get_notified_users(self.text)
-
     def comments_count(self):
         # TODO (VM): Cache this value to redis
         return PostComment.objects.filter(post=self.pk).count()
@@ -151,11 +149,10 @@ class PostVote(models.Model):
         unique_together = (('user', 'post'),)
 
 
-class PostComment(models.Model):
+class PostComment(TextNotificationMixin, models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
-    parent = models.ForeignKey('PostComment', db_index=True,
-                               blank=True, null=True)
+    parent = models.ForeignKey('PostComment', db_index=True, blank=True, null=True)
     user = models.ForeignKey(User, db_index=True)
     post = models.ForeignKey(Post, db_index=True)
     text = models.CharField(max_length=1024)
@@ -163,10 +160,6 @@ class PostComment(models.Model):
     def replies_count(self):
         # TODO (VM): Add redis cache
         return PostComment.objects.filter(parent=self.pk).count()
-
-    @property
-    def notified_users(self):
-        return get_notified_users(self.text)
 
     def __str__(self):
         return u'{} for post {}'.format(self.pk, self.post)
@@ -308,8 +301,11 @@ def blast_comment_notification(sender, instance: PostComment, created, **kwargs)
         return
 
     post = instance.post
+    if post.user_id == instance.user_id:  # Ignore post author
+        return
+
     user = User.objects.select_related('settings').get(id=post.user_id)
-    # Check that user allow to send push
+    # Check that user allows to send push
     if user.settings.notify_comments == UserSettings.EVERYONE:
         pass
     elif user.settings.notify_comments == UserSettings.PEOPLE_I_FOLLOW:
