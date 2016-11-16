@@ -100,6 +100,8 @@ class Post(TextNotificationMixin, models.Model):
     downvoted_count = models.PositiveIntegerField(default=0)
     voted_count = models.PositiveIntegerField(default=0)
 
+    is_marked_for_removal = models.BooleanField(default=False)
+
     @property
     def is_anonymous(self):
         return self.user_id == User.objects.anonymous_id
