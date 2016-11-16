@@ -47,6 +47,13 @@ class FollowRequest(models.Model):
         ordering = ('-id',)
 
 
+class NotificationManager(models.Manager):
+
+    @staticmethod
+    def create_marked_for_removal(user_id: int, post_id: int):
+        return Notification.objects.create(user_id=user_id, post_id=post_id, type=Notification.MARKED_FOR_REMOVAL)
+
+
 class Notification(models.Model):
     TEXT_STARTED_FOLLOW_PATTERN = 'Started following you.'
     TEXT_VOTES_REACHED_PATTERN = 'You blast reached {} votes.'
@@ -71,6 +78,7 @@ class Notification(models.Model):
     SHARE_TAG = 8
 
     COMMENTED_POST = 9
+    MARKED_FOR_REMOVAL = 10
 
     TYPE = (
         (STARTED_FOLLOW, 'Started follow'),
@@ -83,7 +91,10 @@ class Notification(models.Model):
         (SHARE_POST, "Shared a Blast"),
         (SHARE_TAG, "Shared a hashtag"),
         (COMMENTED_POST, "Commented post"),
+        (MARKED_FOR_REMOVAL, "Marked for removal")
     )
+
+    objects = NotificationManager()
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -128,6 +139,8 @@ class Notification(models.Model):
             return self.TEXT_SHARE_TAG.format(self.tag_id)
         elif self.type == Notification.COMMENTED_POST:
             return u'Commented: {}'.format(self.comment.text)
+        elif self.type == Notification.MARKED_FOR_REMOVAL:
+            return u'Content Removed: Your Blast is ending soon.'
 
         raise ValueError('Unknown notification type')
 

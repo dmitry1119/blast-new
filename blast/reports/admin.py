@@ -3,7 +3,6 @@ from datetime import timedelta
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
-from push_notifications.models import APNSDevice
 
 from notifications.models import Notification
 from posts.models import Post
@@ -23,8 +22,9 @@ def mark_for_removal(modeladmin, request, qs):
     Post.objects.filter(pk__in=post_ids).update(expired_at=expired_at, is_marked_for_removal=True)
 
     # Send notification PUSH'es
-    # for it in reports:
-    #     Notification.objects.create()
+    for it in reports:
+        notification = Notification.objects.create_marked_for_removal(it['user_id'], it['object_pk'])
+        notification.send_push_message()
 
 
 mark_for_removal.short_description = 'Mark for removal (posts only)'
