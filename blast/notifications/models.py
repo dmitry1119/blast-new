@@ -168,6 +168,8 @@ class Notification(models.Model):
             return u'@{} mentioned you in comment.'.format(self.other.username)
         elif self.type == Notification.COMMENTED_POST:
             return u'@{} commented: {}.'.format(self.other.username, self.comment.text)
+        elif self.type == Notification.REPLIED_ON_COMMENT:
+            return u'Replied to your comment: {}'.format(self.other.username, self.comment.text)
         else:
             return self.text
 
