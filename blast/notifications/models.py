@@ -59,7 +59,8 @@ class NotificationManager(models.Manager):
         parent = comment.parent
         return Notification.objects.create(post_id=comment.post_id,
                                            user_id=parent.user_id, other_id=comment.user_id,
-                                           comment_id=comment.pk, type=Notification.REPLIED_ON_COMMENT)
+                                           comment_id=comment.pk, parent_comment_id=comment.parent_id,
+                                           type=Notification.REPLIED_ON_COMMENT)
 
 
 class Notification(models.Model):
@@ -112,6 +113,7 @@ class Notification(models.Model):
     votes = models.PositiveIntegerField(default=0)
     post = models.ForeignKey(Post, blank=True, null=True)
     comment = models.ForeignKey(PostComment, blank=True, null=True)
+    parent_comment = models.ForeignKey(PostComment, blank=True, null=True, related_name='notifaication_parent')
     user = models.ForeignKey(User, related_name='notifications', db_index=True)
     tag = models.ForeignKey(Tag, blank=True, null=True)
     other = models.ForeignKey(User, null=True, blank=True, related_name='mention_notifications')
@@ -187,6 +189,9 @@ class Notification(models.Model):
 
         if self.comment_id:
             payload['commentId'] = self.comment_id
+
+        if self.parent_comment_id:
+            payload['parentId'] = self.parent_comment_id
 
         return payload
 
