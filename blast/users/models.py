@@ -338,15 +338,15 @@ class UserSettings(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
 
     notify_my_blasts = models.BooleanField(default=True)
-    notify_upvoted_blasts = models.BooleanField(default=False)
-    notify_downvoted_blasts = models.BooleanField(default=False)
-    notify_pinned_blasts = models.BooleanField(default=False)
+    notify_upvoted_blasts = models.BooleanField(default=True)
+    notify_downvoted_blasts = models.BooleanField(default=True)
+    notify_pinned_blasts = models.BooleanField(default=True)
 
     notify_votes = models.BooleanField(default=True)
 
-    notify_new_followers = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
-    notify_comments = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
-    notify_reblasts = models.IntegerField(choices=CHOICES, default=PEOPLE_I_FOLLOW)
+    notify_new_followers = models.IntegerField(choices=CHOICES, default=EVERYONE)
+    notify_comments = models.IntegerField(choices=CHOICES, default=EVERYONE)
+    notify_reblasts = models.IntegerField(choices=CHOICES, default=EVERYONE)
 
 
 @receiver(post_save, sender=User, dispatch_uid='users_post_user_save_handler')
