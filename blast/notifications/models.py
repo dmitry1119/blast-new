@@ -152,7 +152,7 @@ class Notification(models.Model):
         elif self.type == Notification.MARKED_FOR_REMOVAL:
             return u'Content Removed: Your Blast is ending soon.'
         elif self.type == Notification.REPLIED_ON_COMMENT:
-            return u'@{} replied to your comment: {}'.format(self.other.username, self.comment.text)
+            return u'Replied to your comment: {}'.format(self.comment.text)
 
         raise ValueError('Unknown notification type')
 
@@ -169,7 +169,7 @@ class Notification(models.Model):
         elif self.type == Notification.COMMENTED_POST:
             return u'@{} commented: {}.'.format(self.other.username, self.comment.text)
         elif self.type == Notification.REPLIED_ON_COMMENT:
-            return u'Replied to your comment: {}'.format(self.comment.text)
+            return u'@{} replied to your comment: {}'.format(self.other.username, self.comment.text)
         else:
             return self.text
 
