@@ -1,7 +1,8 @@
 from django import forms
+from django.conf.urls import url
 from django.contrib import admin
 from django.contrib.auth.models import Group
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
 from users.models import User, UserSettings, Follower, BlockedUsers
@@ -52,8 +53,10 @@ class UserChangeForm(forms.ModelForm):
     the user, but replaces the password field with admin's
     password hash display field.
     """
-    password = ReadOnlyPasswordHashField()
-
+    password = ReadOnlyPasswordHashField(label="Password",
+                                         help_text="Raw passwords are not stored, so there is no way to see "
+                                                   "this user's password, but you can change the password "
+                                                   "using <a href=\"password/\">this form</a>.")
     class Meta:
         model = User
         fields = ('username', 'country', 'bio', 'website')
@@ -65,7 +68,7 @@ class UserChangeForm(forms.ModelForm):
         return self.initial["password"]
 
 
-class UserAdmin(BaseUserAdmin):
+class UserAdmin(DjangoUserAdmin):
     # The forms to add and change user instances
     form = UserChangeForm
     add_form = UserCreationForm
@@ -92,6 +95,16 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('email',)
     ordering = ('email',)
     filter_horizontal = ()
+
+    def get_urls(self):
+        return [
+            url(
+                r'^(?P<id>\d+)/change/password/$',
+                self.admin_site.admin_view(self.user_change_password),
+                name='auth_user_password_change',
+            ),
+        ] + super(UserAdmin, self).get_urls()
+
 
 # Now register the new UserAdmin...
 admin.site.register(User, UserAdmin)
