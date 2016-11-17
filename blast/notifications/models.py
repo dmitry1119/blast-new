@@ -185,6 +185,9 @@ class Notification(models.Model):
         if self.other_id:
             payload['userId'] = self.other_id
 
+        if self.comment_id:
+            payload['commentId'] = self.comment_id
+
         return payload
 
     def send_push_message(self):
