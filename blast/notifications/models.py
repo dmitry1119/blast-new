@@ -57,7 +57,7 @@ class NotificationManager(models.Manager):
 
 class Notification(models.Model):
     TEXT_STARTED_FOLLOW_PATTERN = 'Started following you.'
-    TEXT_VOTES_REACHED_PATTERN = 'You blast reached {} votes.'
+    TEXT_VOTES_REACHED_PATTERN = 'You Blast reached {} votes.'
 
     TEXT_END_SOON_OWNER = 'Your Blast is ending soon.'
     TEXT_END_SOON_PINNER = 'Pinned Blast ending soon.'
@@ -244,8 +244,8 @@ def blast_save_notifications(sender, instance: Post, **kwargs):
 
     if (votes <= 100 and votes % 10 == 0) or (votes >= 1000 and votes % 1000 == 0):
         logger.info('Post {} reached {} votes'.format(instance, votes))
-        notification = Notification.objects.create(user=instance.user, post_id=instance.pk,
-                                                   votes=votes, type=Notification.VOTES_REACHED)
+        notification = Notification.objects.create(user_id=instance.user_id, other_id=instance.user_id,
+                                                   post_id=instance.pk, votes=votes, type=Notification.VOTES_REACHED)
 
         if instance.user.settings.notify_votes:
             notification.send_push_message()

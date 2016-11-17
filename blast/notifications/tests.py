@@ -34,7 +34,11 @@ class TestPostVotesNotification(BaseTestCase):
         notify_counter = reversed(range(500, 10001, 500))
 
         for it in notify_counter:
-            Post.objects.create(user=self.user, voted_count=it)
+            post = Post.objects.create(user=self.user, voted_count=it-1)
+
+            # Verify that signal will call for existing posts.
+            post.voted_count += 1
+            post.save()
 
         notifications = Notification.objects.all()
         self.assertEqual(notifications.count(), 10)
