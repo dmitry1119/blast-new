@@ -54,6 +54,13 @@ class NotificationManager(models.Manager):
         return Notification.objects.create(user_id=user_id, other_id=user_id,
                                            post_id=post_id, type=Notification.MARKED_FOR_REMOVAL)
 
+    @staticmethod
+    def create_replied_on_comment(comment: PostComment):
+        parent = comment.parent
+        return Notification.objects.create(post_id=comment.post_id,
+                                           user_id=parent.user_id, other_id=comment.user_id,
+                                           comment_id=comment.pk, type=Notification.REPLIED_ON_COMMENT)
+
 
 class Notification(models.Model):
     TEXT_STARTED_FOLLOW_PATTERN = 'Started following you.'
@@ -80,6 +87,7 @@ class Notification(models.Model):
 
     COMMENTED_POST = 9
     MARKED_FOR_REMOVAL = 10
+    REPLIED_ON_COMMENT = 11
 
     TYPE = (
         (STARTED_FOLLOW, 'Started follow'),
@@ -92,7 +100,8 @@ class Notification(models.Model):
         (SHARE_POST, "Shared a Blast"),
         (SHARE_TAG, "Shared a hashtag"),
         (COMMENTED_POST, "Commented post"),
-        (MARKED_FOR_REMOVAL, "Marked for removal")
+        (MARKED_FOR_REMOVAL, "Marked for removal"),
+        (REPLIED_ON_COMMENT, "Replied on comment")
     )
 
     objects = NotificationManager()
@@ -142,6 +151,8 @@ class Notification(models.Model):
             return u'Commented: {}'.format(self.comment.text)
         elif self.type == Notification.MARKED_FOR_REMOVAL:
             return u'Content Removed: Your Blast is ending soon.'
+        elif self.type == Notification.REPLIED_ON_COMMENT:
+            return u'@{} replied to your comment: {}'.format(self.other.username, self.comment.text)
 
         raise ValueError('Unknown notification type')
 
@@ -229,6 +240,10 @@ def save_comment_notifications(sender, instance: PostComment, **kwargs):
 
     users = instance.notified_users
     notify_users(users, instance.post, instance, instance.user)
+
+    if instance.parent_id:
+        notification = Notification.objects.create_replied_on_comment(instance)
+        notification.send_push_message()
 
 
 @receiver(post_save, sender=Post, dispatch_uid='notifications_posts')
