@@ -87,5 +87,8 @@ def attach_recent_posts_to_users(data: Iterable, request):
 
     for it in data:
         pk = it['id']
-        it['posts'] = [] if it['is_private'] and not it['is_followee'] else user_to_posts[pk]
+
+        is_owner = it['id'] == request.user.pk
+        is_visible = (not it['is_private'] or it['is_followee']) or is_owner
+        it['posts'] = user_to_posts[pk] if is_visible else []
 

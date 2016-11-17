@@ -22,8 +22,7 @@ from users.serializers import (RegisterUserSerializer, PublicUserSerializer,
 
 from push_notifications.models import APNSDevice
 from notifications.tasks import send_push_notification_to_device
-from users.utils import filter_followee_users, mark_followee, mark_requested, \
-    attach_recent_posts_to_users
+from users.utils import filter_followee_users, mark_followee, mark_requested, attach_recent_posts_to_users
 
 logger = logging.getLogger(__name__)
 

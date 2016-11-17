@@ -247,7 +247,8 @@ def blast_save_handle_tags(sender, instance: Post, **kwargs):
 
     tags = instance.get_tag_titles()
 
-    logger.info('Created new post with {} tags'.format(tags))
+    if tags:
+        logger.info('Created new post with {} tags'.format(tags))
 
     if not tags:
         return
