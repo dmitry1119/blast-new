@@ -199,6 +199,22 @@ def blast_delete_handler(sender, instance: Post, **kwargs):
     r.lrem(key, 1, instance.pk)
 
 
+@receiver(pre_delete, sender=Post, dispatch_uid='post_clear_cache')
+def blast_delete_handle_tags(sender, instance: Post, **kwargs):
+    tags = list(instance.tags.all())
+    tags = {it.title for it in tags}
+    logging.info('pre_delete: Post. Update tag counters. {}'.format(tags))
+    for it in tags:
+        key = Tag.redis_posts_key(it)
+        logging.info('pre_delete: Post. Update tag {} with key {}'.format(it, key))
+        r.zrem(key, instance.pk)
+
+    try:
+        Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') - 1)
+    except IntegrityError as e:
+        logger.error('{}'.format(e))
+
+
 @receiver(post_save, sender=Post, dispatch_uid='on_blast_save')
 def blast_save_handler(sender, instance: Post, **kwargs):
     if not kwargs['created']:
@@ -222,26 +238,6 @@ def blast_save_handler(sender, instance: Post, **kwargs):
     # Update user recent posts
     key = USER_RECENT_POSTS_KEY.format(instance.user_id)
     r.lpush(key, instance.pk)
-
-
-@receiver(post_save, sender=PostVote, dispatch_uid='posts_post_save_vote_handler')
-def vote_save(sender, instance: PostVote, created: bool, **kwargs):
-    if not created or instance.is_positive is None:
-        return
-
-    user_key = User.redis_posts_key(instance.post.user_id)
-    if instance.is_positive:
-        r.zincrby(user_key, instance.post_id, 1)  # incr post in redis cache
-        Post.objects.filter(pk=instance.post_id).update(voted_count=F('voted_count') + 1)
-        logger.debug('Incremented voted_count {} {}'.format(instance, instance.post_id))
-    else:
-        r.zincrby(user_key, instance.post_id, -1)  # incr post in redis cache
-        Post.objects.filter(pk=instance.post_id).update(downvoted_count=F('downvoted_count') + 1)
-        logger.debug('Decremented voted_count {} {}'.format(instance, instance.post_id))
-
-    logger.debug('Refreshing post after changing counter')
-    # FIXME: Workaround for tests.VoteTest.test_twice_vote
-    instance.post.refresh_from_db()
 
 
 @receiver(post_save, sender=Post, dispatch_uid='post_create_tags')
@@ -280,20 +276,24 @@ def blast_save_handle_tags(sender, instance: Post, **kwargs):
     Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') + 1)
 
 
-@receiver(pre_delete, sender=Post, dispatch_uid='post_clear_cache')
-def blast_delete_handle_tags(sender, instance: Post, **kwargs):
-    tags = list(instance.tags.all())
-    tags = {it.title for it in tags}
-    logging.info('pre_delete: Post. Update tag counters. {}'.format(tags))
-    for it in tags:
-        key = Tag.redis_posts_key(it)
-        logging.info('pre_delete: Post. Update tag {} with key {}'.format(it, key))
-        r.zrem(key, instance.pk)
+@receiver(post_save, sender=PostVote, dispatch_uid='posts_post_save_vote_handler')
+def vote_save(sender, instance: PostVote, created: bool, **kwargs):
+    if not created or instance.is_positive is None:
+        return
 
-    try:
-        Tag.objects.filter(title__in=tags).update(total_posts=F('total_posts') - 1)
-    except IntegrityError as e:
-        logger.error('{}'.format(e))
+    user_key = User.redis_posts_key(instance.post.user_id)
+    if instance.is_positive:
+        r.zincrby(user_key, instance.post_id, 1)  # incr post in redis cache
+        Post.objects.filter(pk=instance.post_id).update(voted_count=F('voted_count') + 1)
+        logger.debug('Incremented voted_count {} {}'.format(instance, instance.post_id))
+    else:
+        r.zincrby(user_key, instance.post_id, -1)  # incr post in redis cache
+        Post.objects.filter(pk=instance.post_id).update(downvoted_count=F('downvoted_count') + 1)
+        logger.debug('Decremented voted_count {} {}'.format(instance, instance.post_id))
+
+    logger.debug('Refreshing post after changing counter')
+    # FIXME: Workaround for tests.VoteTest.test_twice_vote
+    instance.post.refresh_from_db()
 
 
 @receiver(post_save, sender=PostComment, dispatch_uid='blast_comment_notification')

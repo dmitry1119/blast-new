@@ -234,9 +234,6 @@ def save_comment_notifications(sender, instance: PostComment, **kwargs):
 @receiver(post_save, sender=Post, dispatch_uid='notifications_posts')
 def blast_save_notifications(sender, instance: Post, **kwargs):
     """Handles changing of votes counter and creates notification"""
-    if not kwargs['created']:
-        return
-
     votes = instance.voted_count
 
     users = instance.notified_users
