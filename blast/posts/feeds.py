@@ -87,7 +87,9 @@ class MainFeedView(BaseFeedView):
         qs = super().get_queryset()
 
         qs = Post.objects.actual().filter(Q(user__in=self.followees()) | Q(user_id=user.pk))
-        qs = qs.exclude(user_id=User.objects.anonymous_id)
+
+        if user.pk != User.objects.anonymous_id:
+            qs = qs.exclude(user_id=User.objects.anonymous_id)
 
         return qs
 
