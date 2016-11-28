@@ -5,12 +5,11 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from rest_framework import filters, pagination
+from rest_framework import filters
 from rest_framework import viewsets, mixins, permissions, status
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 
-from core.pagination import DateTimePaginator
 from core.views import ExtendableModelMixin
 
 from posts.models import Post, PostComment, PostVote
@@ -62,71 +61,6 @@ class PerObjectPermissionMixin(object):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-
-# TODO (VM): Add feeds test, check author, hidden posts and voted posts
-# Order of posts should be by date, with newest appearing at the top:  
-#
-# - Blasts users currently Following (all post uploaded by users that you have chosen to follow) 
-#
-# - Within the posts of users you are currently following,
-#   Anonymous posts will be displayed (1 in every 10 at random)
-#   *Example: First 10 posts display 9 posts from users that you are following and
-#   1 Anonymous at position 8. 
-#
-# - After all posts by users currently following has been viewed all other posts will
-#   be rendered based on popularity with Anonymous posts being displayed in
-#   the same manner as described above.
-class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = Post.objects.filter(Q(user__is_private=False) | Q(user=None),
-                                   expired_at__gte=timezone.now())
-    serializer_class = PostPublicSerializer
-    pagination_class = DateTimePaginator
-
-    def extend_response_data(self, data):
-        extend_posts(data, self.request.user, self.request)
-
-        # Adds is_requested and is_followee flags
-        authors = [it['author'] for it in data if it['author']]
-        mark_followee(authors, self.request.user)
-        mark_requested(authors, self.request.user)
-
-    def get_queryset(self):
-        qs = Post.objects.actual()
-        user = self.request.user
-
-        if not user.is_authenticated():
-            return qs
-
-        # Include followers posts
-        # FIXME: write method for getting all followees
-        followees = User.get_followees(user.pk, 0, 1000)
-
-        qs = Post.objects.actual().filter(Q(user__is_private=False) |
-                                          Q(user__in=followees) |
-                                          Q(user=self.request.user.pk))
-
-        # Exclude blocked users
-        # FIXME (VM): cache list in redis?
-        blocked = BlockedUsers.objects.filter(user=self.request.user)
-        blocked = {it.blocked_id for it in blocked}
-        qs = qs.exclude(user__in=blocked)
-
-        # Exclude hidden posts
-        # FIXME (VM): cache list in redis?
-        hidden = user.hidden_posts.all().values('pk')
-        hidden = {it['pk'] for it in hidden}
-        qs = qs.exclude(pk__in=hidden)
-
-        # Exclude voted posts
-        # FIXME (VM): votes list can be very large
-        # FIXME (VM): cache list in redis?
-        voted = PostVote.objects.filter(user=user.pk).values('post')
-        voted = {it['post'] for it in voted}
-        qs = qs.exclude(pk__in=voted)
-        qs = qs.order_by('-created_at')
-
-        return qs
 
 
 class PostsViewSet(PerObjectPermissionMixin,

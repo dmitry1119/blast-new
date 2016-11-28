@@ -76,11 +76,11 @@ class UserAdmin(DjangoUserAdmin):
     # The fields to be used in displaying the User model.
     # These override the definitions on the base UserAdmin
     # that reference specific fields on auth.User.
-    list_display = ('username', 'phone', 'country', 'is_admin')
+    list_display = ('username', 'phone', 'country', 'is_private', 'is_admin')
     list_filter = ('is_admin', 'country')
     fieldsets = (
         (None, {'fields': ('username', 'password', 'country')}),
-        ('Personal Info', {'fields': ('fullname', 'bio', 'avatar', 'website', 'save_original_content')}),
+        ('Personal Info', {'fields': ('fullname', 'bio', 'avatar', 'website', 'save_original_content', 'is_private')}),
         ('Private', {'fields': ('gender', 'birthday')}),
         ('Permissions', {'fields': ('is_admin', 'is_active')})
     )

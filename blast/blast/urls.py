@@ -31,10 +31,13 @@ from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
                                    SinchPhoneConfirmationView)
 
 from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
-                         DonwvotedPostsViewSet, PinnedPostsViewSet, FeedsView, PostSearchViewSet)
+                         DonwvotedPostsViewSet, PinnedPostsViewSet, PostSearchViewSet)
+
+from posts.feeds import MainFeedView, RecentFeedView
 
 api_1 = DefaultRouter()
-api_1.register(r'feeds', FeedsView, base_name='feed')
+api_1.register(r'feeds/first', MainFeedView, base_name='feed-first')
+api_1.register(r'feeds/second', RecentFeedView, base_name='feed-second')
 api_1.register(r'users/search', UserSearchView, base_name='user-search')
 api_1.register(r'users', UserViewSet, base_name='user')
 api_1.register(r'usernames', UsernameSearchView, base_name='usernames')
