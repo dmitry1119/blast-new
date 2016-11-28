@@ -5,11 +5,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from rest_framework import filters
+from rest_framework import filters, pagination
 from rest_framework import viewsets, mixins, permissions, status
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 
+from core.pagination import DateTimePaginator
 from core.views import ExtendableModelMixin
 
 from posts.models import Post, PostComment, PostVote
@@ -79,8 +80,8 @@ class PerObjectPermissionMixin(object):
 class FeedsView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
     queryset = Post.objects.filter(Q(user__is_private=False) | Q(user=None),
                                    expired_at__gte=timezone.now())
-
     serializer_class = PostPublicSerializer
+    pagination_class = DateTimePaginator
 
     def extend_response_data(self, data):
         extend_posts(data, self.request.user, self.request)
