@@ -26,7 +26,7 @@ class DateTimePaginator(BasePagination):
     def get_page_size(self, request):
         if self.page_size_query_param:
             try:
-                value = request.query_params[self.page_size_query_param]
+                value = int(request.query_params[self.page_size_query_param])
                 value = min(value, self.max_page_size)
                 return value
             except (KeyError, ValueError):
