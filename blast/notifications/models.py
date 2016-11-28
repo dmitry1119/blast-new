@@ -57,6 +57,9 @@ class NotificationManager(models.Manager):
     @staticmethod
     def create_replied_on_comment(comment: PostComment):
         parent = comment.parent
+        if parent.user_id == comment.user_id:
+            return None
+
         return Notification.objects.create(post_id=comment.post_id,
                                            user_id=parent.user_id, other_id=comment.user_id,
                                            comment_id=comment.pk, parent_comment_id=comment.parent_id,
@@ -253,7 +256,8 @@ def save_comment_notifications(sender, instance: PostComment, **kwargs):
 
     if instance.parent_id:
         notification = Notification.objects.create_replied_on_comment(instance)
-        notification.send_push_message()
+        if notification:
+            notification.send_push_message()
 
 
 @receiver(post_save, sender=Post, dispatch_uid='notifications_posts')
