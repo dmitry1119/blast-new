@@ -349,7 +349,7 @@ class UserChangePhoneView(generics.UpdateAPIView):
 class UserSearchView(ExtendableModelMixin,
                      viewsets.ReadOnlyModelViewSet):
     # TODO: take into account a followers
-    queryset = User.objects.filter().order_by('-search_range', 'username')
+    queryset = User.objects.exclude(pk=User.objects.anonymous_id).order_by('-search_range', 'username')
     serializer_class = PublicUserSerializer
 
     filter_backends = (filters.SearchFilter,)
