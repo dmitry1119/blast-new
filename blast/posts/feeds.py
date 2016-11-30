@@ -85,8 +85,7 @@ class MainFeedView(BaseFeedView):
             return Post.objects.filter(id__lt=0)  # Empty response :(
 
         qs = super().get_queryset()
-
-        qs = Post.objects.actual().filter(Q(user__in=self.followees()) | Q(user_id=user.pk))
+        qs = qs.filter(Q(user__in=self.followees()) | Q(user_id=user.pk))
 
         if user.pk != User.objects.anonymous_id:
             qs = qs.exclude(user_id=User.objects.anonymous_id)
@@ -102,7 +101,16 @@ class RecentFeedView(BaseFeedView):
         if not user.is_authenticated():
             return qs
 
-        qs = qs.exclude(Q(user_id__in=self.followees()) | Q(user__is_private=True))
-        qs = qs.exclude(user_id=user.pk)
+        followees = self.followees()
+        followees.remove(User.objects.anonymous_id)
+
+        show_anonymous = User.objects.anonymous_id in followees
+
+        if show_anonymous:
+            qs = qs.filter(user_id=user.pk)
+            followees.remove(User.objects.anonymous_id)
+        
+        qs = qs.exclude(Q(user_id__in=followees))
+        qs = qs.filter(user__is_private=False)
 
         return qs
