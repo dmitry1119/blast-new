@@ -170,7 +170,7 @@ class PostsViewSet(PerObjectPermissionMixin,
 
         post.save()
 
-        serializer = VoteSerializer(instance=vote)
+        serializer = PostPublicSerializer(instance=post)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @detail_route(methods=['get'])

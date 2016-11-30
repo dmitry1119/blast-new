@@ -68,7 +68,7 @@ class NotificationManager(models.Manager):
 
 class Notification(models.Model):
     TEXT_STARTED_FOLLOW_PATTERN = 'Started following you.'
-    TEXT_VOTES_REACHED_PATTERN = 'Your Blast now has {} votes.'
+    TEXT_VOTES_REACHED_PATTERN = 'Your Blast now has {:,} votes.'
 
     TEXT_END_SOON_OWNER = 'Your Blast is ending soon.'
     TEXT_END_SOON_PINNER = 'Pinned Blast ending soon.'

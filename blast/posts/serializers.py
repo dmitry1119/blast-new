@@ -21,15 +21,15 @@ class PostPublicSerializer(serializers.ModelSerializer):
     image_248 = serializers.ImageField()
 
     def get_image(self, instance):
-        request = self.context['request']
-        if instance.image:
+        request = self.context.get('request', None)
+        if request and instance.image:
             return request.build_absolute_uri(instance.image.url)
 
         return None
 
     def get_video(self, instance):
-        request = self.context['request']
-        if instance.video:
+        request = self.context.get('request', None)
+        if request and instance.video:
             return request.build_absolute_uri(instance.video.url)
 
         return None

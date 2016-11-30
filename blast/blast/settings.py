@@ -152,6 +152,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',  # TODO(VM): Get rid?
         'rest_framework.authentication.TokenAuthentication',
     ),
+    'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S.%fZ',
     'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardResultsSetPagination'
 }
 
