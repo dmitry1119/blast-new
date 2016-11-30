@@ -102,14 +102,15 @@ class RecentFeedView(BaseFeedView):
             return qs
 
         followees = self.followees()
-        followees.remove(User.objects.anonymous_id)
+        if User.objects.anonymous_id in followees:
+            followees.remove(User.objects.anonymous_id)
 
         show_anonymous = User.objects.anonymous_id in followees
 
         if show_anonymous:
             qs = qs.filter(user_id=user.pk)
             followees.remove(User.objects.anonymous_id)
-        
+
         qs = qs.exclude(Q(user_id__in=followees))
         qs = qs.filter(user__is_private=False)
 
