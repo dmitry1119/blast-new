@@ -9,7 +9,7 @@ from django import forms
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'text', 'image', 'video', 'time_remains', 'created_at', 'is_marked_for_removal')
-    readonly_fields = ('is_marked_for_removal',)
+    readonly_fields = ('is_marked_for_removal', 'image_tag', 'video_tag')
 
     formfield_overrides = {
         models.DateTimeField: {'widget': forms.DateTimeInput(format='%Y-%m-%d %H:%M:%S.%f')},

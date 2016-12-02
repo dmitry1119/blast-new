@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from notifications.models import Notification
 from posts.models import Post
-from reports.models import Report
+from reports.models import Report, PostReport
 
 
 def mark_for_removal(modeladmin, request, qs):
@@ -34,4 +34,14 @@ mark_for_removal.short_description = 'Mark for removal (posts only)'
 @admin.register(Report)
 class ReportsAdmin(admin.ModelAdmin):
     list_display = ('pk', 'reason', 'content_type', 'object_pk', 'content_object', 'user')
+
+
+@admin.register(PostReport)
+class PostReportAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'reason', 'user', 'image_tag', 'video_tag', 'url_to_post')
     actions = [mark_for_removal]
+    readonly_fields = ('image_tag', 'video_tag')
+
+    def get_queryset(self, request):
+        content_type = ContentType.objects.get(app_label='posts', model='post')
+        return PostReport.objects.filter(content_type=content_type)

@@ -12,6 +12,7 @@ from django.db.backends.dummy.base import IntegrityError
 
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
+from django.utils.safestring import mark_safe
 
 from notifications.tasks import send_push_notification
 from tags.models import Tag
@@ -69,7 +70,28 @@ class PostManager(models.Manager):
         return qs
 
 
-class Post(TextNotificationMixin, models.Model):
+class PostAdminFields(object):
+    def image_tag(self):
+        if self.image_248:
+            return mark_safe(u'<img src="{0}"/>'.format(self.image_248.url))
+        else:
+            return mark_safe('<img src="http://placehold.it/248x248?text=No image">')
+
+    image_tag.short_description = 'Image'
+
+    def video_tag(self):
+        if self.video:
+            return mark_safe(
+                '<video controls><source src="{0}"></video>'.format(self.video.url))
+        else:
+            return mark_safe('<img src="http://placehold.it/248x248?text=No video">')
+
+    video_tag.short_description = 'Video'
+
+
+class Post(PostAdminFields,
+           TextNotificationMixin,
+           models.Model):
 
     objects = PostManager()
 
