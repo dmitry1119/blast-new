@@ -330,6 +330,7 @@ def blast_comment_notification(sender, instance: PostComment, created, **kwargs)
         return
 
     user = User.objects.select_related('settings').get(id=post.user_id)
+
     # Check that user allows to send push
     if user.settings.notify_comments == UserSettings.EVERYONE:
         pass
@@ -341,7 +342,11 @@ def blast_comment_notification(sender, instance: PostComment, created, **kwargs)
         return
 
     notification = Notification(comment_id=instance.pk, post_id=instance.post_id,
-                                user_id=user.pk, other_id=instance.user_id, type=Notification.COMMENTED_POST)
+                                user_id=user.pk, other_id=instance.user_id,
+                                type=Notification.COMMENTED_POST)
+    if instance.parent_id:
+        notification.parent_comment_id = instance.parent_id
+
     notification.save()
     notification.send_push_message()
 

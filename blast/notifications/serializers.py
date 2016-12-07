@@ -6,6 +6,7 @@ from users.models import Follower
 
 from notifications.tasks import send_push_notification
 
+
 class NotificationPublicSerializer(serializers.ModelSerializer):
     # user = serializers.SerializerMethodField()
     post = PreviewPostSerializer()
