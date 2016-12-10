@@ -46,8 +46,6 @@ def sinch_request(resource, data, method):
                          hashlib.sha256).digest()
     signature = base64.b64encode(signature)
 
-    # assert signature != 'qDXMwzfaxCRS849c/2R0hg0nphgdHciTo7OdM6MsdnM=', "Wrong signature"
-
     authorization = '{} {}:{}'.format(scheme, settings.SINCH['APP_KEY'], signature.decode('utf-8'))
     headers['Authorization'] = authorization
 
@@ -87,4 +85,4 @@ def send_verification_request(phone):
         "method": "sms",
     }, method='POST')
 
-    logging.info('send_verification_request', phone, response.content)
+    logging.info('send_verification_request {} {}'.format(phone, response.content))
