@@ -113,5 +113,6 @@ class RecentFeedView(BaseFeedView):
 
         qs = qs.exclude(Q(user_id__in=followees))
         qs = qs.filter(user__is_private=False)
+        qs = qs.exclude(user_id=user.pk)
 
         return qs
