@@ -23,7 +23,7 @@ def sinch_request(resource, data, method):
     }
 
     URL = 'https://api.sinch.com{}'.format(resource)
-
+    
     scheme = 'Application'
 
     canonicalized_headers = '{}:{}'.format('x-timestamp', headers['X-Timestamp'])
@@ -78,11 +78,15 @@ def send_code_confirmation_request_async(code, phone):
 
 @shared_task(bind=False)
 def send_verification_request(phone):
-    logging.info('verifying phone {}'.format(phone))
+    #logging.info('verifying phone {}'.format(phone))
 
     response = sinch_request('/verification/v1/verifications', data={
         "identity": {"type": "number", "endpoint": str(phone)},
         "method": "sms",
+        "metadata": {
+            "os": "rest",
+            "platform": "N/A"
+        }
     }, method='POST')
 
-    logging.info('send_verification_request {} {}'.format(phone, response.content))
+    #logging.info('send_verification_request {} {}'.format(phone, response.content))

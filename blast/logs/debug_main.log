@@ -63,3 +63,6 @@ INFO:smsconfirmation.views: {'reference': 'A:9da10921-3481-4c01-9359-0a3891fd0d7
 INFO:smsconfirmation.views: {'message': 'Invalid authorization key: 155edefs-1s1d-4e14-864e-4e9451a21bd6', 'reference': 'A:155edefs-1s1d-4e14-864e-4e9451a21bd6_E7l2e9J2WkStEqATbTMliw', 'errorCode': 40107} (2017-01-13 09:27:31; views.py:188)
 INFO:smsconfirmation.views: {'errorCode': 40003, 'message': 'Invalid identity or code.', 'reference': 'A:155edefb-991d-4e14-864e-4e9451a21bd6_XJRZVgjou0GwQGP4E+xA0Q'} (2017-01-13 09:54:10; views.py:188)
 INFO:smsconfirmation.views: {'errorCode': 40003, 'message': 'Invalid identity or code.', 'reference': 'A:155edefb-991d-4e14-864e-4e9451a21bd6_eCpMhW2xpU2ttq60gdG3wQ'} (2017-01-13 09:55:57; views.py:188)
+INFO:smsconfirmation.views: {'errorCode': 40003, 'message': 'Invalid identity or code.', 'reference': 'A:155edefb-991d-4e14-864e-4e9451a21bd6_/7f8fWYubk2PESmIHb+pgA'} (2017-01-13 10:10:29; views.py:188)
+INFO:smsconfirmation.views: {'errorCode': 40003, 'message': 'Invalid identity or code.', 'reference': 'A:155edefb-991d-4e14-864e-4e9451a21bd6_RaF2ib6la0y64QvO4JYZvw'} (2017-01-13 10:11:01; views.py:188)
+INFO:smsconfirmation.views: {'message': 'Invalid identity or code.', 'errorCode': 40003, 'reference': 'A:155edefb-991d-4e14-864e-4e9451a21bd6_PA1psG9t6UuHQvhbWVe/CA'} (2017-01-13 10:21:55; views.py:188)
