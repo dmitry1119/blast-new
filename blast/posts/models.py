@@ -95,17 +95,21 @@ class Post(PostAdminFields,
 
     objects = PostManager()
 
-#    post_type = models.IntegerField(null=True, blank=True)
-#    media_width = models.FloatField(default=0)
-#    media_height = models.FloatField(default=0)
-#    caption_width = models.FloatField('Caption Width', null=True)
-#    caption_height = models.FloatField('Caption Height', null=True)
-#    caption_x_pos = models.FloatField('Caption Center X Position', null=True)
-#    caption_y_pos = models.FloatField('Caption Center Y Position', null=True)
-#    cap_rotate_ang = models.FloatField('Caption Rotation Angle', null=True)
-#    lat = models.FloatField('Location Latitude', blank=True, null=True)
-#    lon = models.FloatField('Location Longitude', blank=True, null=True)
-#    location_name = models.CharField(max_length=1024, null=True)
+    post_type = models.IntegerField(null=True, blank=True)
+
+    media_width = models.FloatField(default=0)
+    media_height = models.FloatField(default=0)
+
+    caption_width = models.FloatField('Caption Width', null=True)
+    caption_height = models.FloatField('Caption Height', null=True)
+    caption_x_pos = models.FloatField('Caption Center X Position', null=True)
+    caption_y_pos = models.FloatField('Caption Center Y Position', null=True)
+    cap_rotate_ang = models.FloatField('Caption Rotation Angle', null=True)
+
+    lat = models.FloatField('Location Latitude', blank=True, null=True)
+    lon = models.FloatField('Location Longitude', blank=True, null=True)
+    location_name = models.CharField(max_length=1024, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     expired_at = models.DateTimeField(default=get_expiration_date)

@@ -78,7 +78,7 @@ def send_code_confirmation_request_async(code, phone):
 
 @shared_task(bind=False)
 def send_verification_request(phone):
-    #logging.info('verifying phone {}'.format(phone))
+    logging.info('verifying phone {}'.format(phone))
 
     response = sinch_request('/verification/v1/verifications', data={
         "identity": {"type": "number", "endpoint": str(phone)},
@@ -89,4 +89,4 @@ def send_verification_request(phone):
         }
     }, method='POST')
 
-    #logging.info('send_verification_request {} {}'.format(phone, response.content))
+    logging.info('send_verification_request {} {}'.format(phone, response.content))

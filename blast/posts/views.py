@@ -70,16 +70,37 @@ class PostsViewSet(PerObjectPermissionMixin,
     ---
     create:
         parameters:
-            - name: type
+            - name: post_type
               type: integer
             - name: video
               type: file
             - name: image
               type: file
-#            - name: caption center position X
-#              type: float
-#            - name: caption center position Y
-#              type: float
+            - name: caption_height
+              type: float
+              description: caption height              
+            - name: caption_x_pos
+              type: float
+              description: caption center position Y
+            - name: caption_y_pos
+              type: float
+              description: caption center position X
+            - name: cap_rotate_ang
+              type: float
+              description: caption rotation angle
+            - name: caption_width
+              type: float
+              description: caption width
+            - name: lat
+              type: float
+              description: Location Latitude 
+            - name: lon
+              type: float
+              description: Location Longitude 
+            - name: location_name
+              type: string
+              description: location name
+
     """
     queryset = Post.objects.public()
 

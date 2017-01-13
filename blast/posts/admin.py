@@ -8,7 +8,9 @@ from django import forms
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'user', 'text', 'image', 'video', 'time_remains', 'created_at', 'is_marked_for_removal')
+    list_display = ('pk', 'user', 'text', 'image', 'video', 'time_remains', 'created_at', 'is_marked_for_removal', 'post_type',
+                    'media_width', 'media_height', 'caption_width', 'caption_height', 'caption_x_pos', 'caption_y_pos', 'cap_rotate_ang',
+                    'lat', 'lon', 'location_name')
     readonly_fields = ('is_marked_for_removal', 'image_tag', 'video_tag')
 
     formfield_overrides = {
