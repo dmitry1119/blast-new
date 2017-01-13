@@ -157,9 +157,10 @@ REST_FRAMEWORK = {
 }
 
 SINCH = {
-    'APP_KEY': '155edefs-1s1d-4e14-864e-4e9451a21bd6',
-    'APP_SECRET': '2JS8PK22Syk2AgNf+3DIvZQ==',
+    'APP_KEY': '155edefb-991d-4e14-864e-4e9451a21bd6',
+    'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
 }
+
 
 CELERYBEAT_SCHEDULE = {
     'clear-expired-posts': {

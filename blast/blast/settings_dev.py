@@ -9,7 +9,6 @@ SINCH = {
     'APP_SECRET': '2JS8PKvSyk2AgNf+3DIvZQ==',
 }
 
-
 CELERYBEAT_SCHEDULE = {
     'clear-expired-posts': {
         'task': 'posts.tasks.clear_expired_posts',
