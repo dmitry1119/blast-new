@@ -96,3 +96,8 @@ class VoteSerializer(serializers.ModelSerializer):
 class VotePublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostVote
+
+class LocationPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        field = ('location_name', 'lat', 'lon',)        
