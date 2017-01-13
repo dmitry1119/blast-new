@@ -100,11 +100,11 @@ class Post(PostAdminFields,
     media_width = models.FloatField(default=0)
     media_height = models.FloatField(default=0)
 
-    caption_width = models.FloatField('Caption Width', null=True)
-    caption_height = models.FloatField('Caption Height', null=True)
-    caption_x_pos = models.FloatField('Caption Center X Position', null=True)
-    caption_y_pos = models.FloatField('Caption Center Y Position', null=True)
-    cap_rotate_ang = models.FloatField('Caption Rotation Angle', null=True)
+    caption_width = models.FloatField('Caption Width', default=0)
+    caption_height = models.FloatField('Caption Height', default=0)
+    caption_x_pos = models.FloatField('Caption Center X Position', default=0)
+    caption_y_pos = models.FloatField('Caption Center Y Position', default=0)
+    cap_rotate_ang = models.FloatField('Caption Rotation Angle', default=0)
 
     lat = models.FloatField('Location Latitude', blank=True, null=True)
     lon = models.FloatField('Location Longitude', blank=True, null=True)
