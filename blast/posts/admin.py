@@ -22,12 +22,12 @@ class PostAdmin(admin.ModelAdmin):
         queryset, use_distinct = super(PostAdmin, self).get_search_results(request, queryset, search_term)
         
         # posts = request.user.pinned.filter().values('post_id')
+        queryset = queryset.order_by('-created_at')
         if search_term in [None, '']:
             pass
         else:
             queryset = queryset[:3]
 
-        queryset = queryset.order_by('-created_at')
         
         return queryset, use_distinct
 
