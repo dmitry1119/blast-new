@@ -16,7 +16,20 @@ class PostAdmin(admin.ModelAdmin):
     formfield_overrides = {
         models.DateTimeField: {'widget': forms.DateTimeInput(format='%Y-%m-%d %H:%M:%S.%f')},
     }
+    search_fields = ('location_name', 'lat', 'lon')
 
+    def get_search_results(self, request, queryset, search_term):
+        queryset, use_distinct = super(PostAdmin, self).get_search_results(request, queryset, search_term)
+        
+        # posts = request.user.pinned.filter().values('post_id')
+        if search_term in [None, '']:
+            pass
+        else:
+            queryset = queryset[:3]
+
+        queryset = queryset.order_by('-created_at')
+        
+        return queryset, use_distinct
 
 @admin.register(PostComment)
 class PostCommentAdmin(admin.ModelAdmin):

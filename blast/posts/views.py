@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from rest_framework import filters
 from rest_framework import viewsets, mixins, permissions, status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
 from core.views import ExtendableModelMixin
@@ -15,7 +15,7 @@ from core.views import ExtendableModelMixin
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
-                               VoteSerializer, LocationPublicSerializer)
+                               VoteSerializer)
 
 from datetime import timedelta
 
@@ -100,7 +100,6 @@ class PostsViewSet(PerObjectPermissionMixin,
             - name: location_name
               type: string
               description: location name
-
     """
     queryset = Post.objects.public()
 
@@ -493,44 +492,5 @@ class PostSearchViewSet(mixins.ListModelMixin,
         posts = posts.order_by('-expired_at')
 
         return posts
-
-class PostSearchByLocationViewSet(mixins.ListModelMixin,
-                                  viewsets.GenericViewSet):
-    """Returns list of post for given tag
-
-    ---
-    list:
-        parameters:
-            - name: location
-              type: string
-              description: location name to search
-            - name: lon
-              type: float
-              description: Location Longitude
-            - name: lat
-              type: float
-              description: Location Latitude
-    """
-
-    public_serializer_class = LocationPublicSerializer
-    private_serializer_class = PostPublicSerializer
-
-    queryset = Post.objects.all()
-
-#    def get_queryset(self):
-#        location_name = self.request.query_params.get('location_name')
-#        lon = self.request.query_params.get('lon')
-#        lat = self.request.query_params.get('lat')
-
-        # Select first 100 posts assume that search output will be short
-#        pinned = self.request.user.pinned
-#        pinned = pinned.filter(tags__in=tags, expired_at__gte=timezone.now())
-#        pinned = pinned.order_by('-expired_at').distinct()[:100]
-
-#        posts = Post.objects.filter(tags__in=tags, expired_at__gte=timezone.now())[:3]
-#        posts = posts.exclude(pk__in={it.pk for it in pinned}).distinct()
-#        posts = posts.order_by('-expired_at')
-
-#        return posts
 
 

@@ -291,6 +291,7 @@ class TagExactSearchView(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         tag = self.request.query_params.get('search')
+        print (tag)
         qs = Post.objects.actual().filter(tags=tag)
 
         order = self.request.query_params.get('order', 'neweset')

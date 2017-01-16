@@ -1,6 +1,6 @@
 from django.contrib import admin
 from notifications.models import Notification, FollowRequest
-
+import datetime
 
 def send_push(modeladmin, request, qs):
     for it in qs:
@@ -13,7 +13,6 @@ send_push.short_description = 'Send push notifications'
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'text', 'type', 'created_at')
     actions = [send_push]
-
 
 @admin.register(FollowRequest)
 class FollowRequestAdmin(admin.ModelAdmin):

@@ -11,7 +11,8 @@ from notifications.serializers import NotificationPublicSerializer, FollowReques
 from  users.models import User, Follower
 from users.serializers import OwnerSerializer
 from users.utils import mark_followee, mark_requested
-
+import datetime
+from django.utils import timezone
 
 class NotificationsViewSet(ExtendableModelMixin,
                            viewsets.ReadOnlyModelViewSet):
@@ -45,6 +46,8 @@ class NotificationsViewSet(ExtendableModelMixin,
     serializer_class = NotificationPublicSerializer
 
     def get_queryset(self):
+        time_24_hours_ago = timezone.now() - datetime.timedelta(days=1)
+        Notification.objects.filter(user=self.request.user, is_seen=True, created_at__lt=time_24_hours_ago).delete()
         return Notification.objects.filter(user=self.request.user)
 
     # FIXME: need to write PUT for this action
@@ -63,7 +66,7 @@ class NotificationsViewSet(ExtendableModelMixin,
         return Response({
             'count': Notification.unseen_count(request.user.pk)
         })
-
+    
 
 class FollowRequestViewSet(mixins.RetrieveModelMixin,
                            mixins.UpdateModelMixin,
