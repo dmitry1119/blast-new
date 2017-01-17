@@ -8,9 +8,8 @@ from core.views import ExtendableModelMixin
 from posts.models import Post, PostVote
 from posts.serializers import PostPublicSerializer
 from posts.utils import extend_posts
-from users.models import User, BlockedUsers
+from users.models import User, BlockedUsers, PinnedPosts
 from users.utils import mark_followee, mark_requested
-
 
 # TODO (VM): Add feeds test, check author, hidden posts and voted posts
 # Order of posts should be by date, with newest appearing at the top:  
@@ -65,6 +64,13 @@ class BaseFeedView(ExtendableModelMixin, viewsets.ReadOnlyModelViewSet):
         voted = PostVote.objects.filter(user=user.pk).values('post')
         voted = {it['post'] for it in voted}
         qs = qs.exclude(pk__in=voted)
+
+        # Exclude pinned posts
+        # FIXME (VM): pinned list can be very large
+        # FIXME (VM): cache list in redis?
+        pinned = PinnedPosts.objects.filter(user=user.pk).values('post')
+        pinned = {it['post'] for it in pinned}
+        qs = qs.exclude(pk__in=pinned)
 
         return qs.order_by('-created_at')
 

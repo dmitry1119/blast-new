@@ -31,7 +31,8 @@ from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
                                    SinchPhoneConfirmationView)
 
 from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
-                         DonwvotedPostsViewSet, PinnedPostsViewSet, PostSearchViewSet, PostSearchByLocationViewSet)
+                         DonwvotedPostsViewSet, PinnedPostsViewSet, PostSearchViewSet, 
+                         PostSearchByLocationViewSet, PostSortViewSet)
 
 from posts.feeds import MainFeedView, RecentFeedView
 
@@ -47,6 +48,7 @@ api_1.register(r'posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
 api_1.register(r'posts/voted', VotedPostsViewSet, base_name='voted')
 api_1.register(r'posts/search', PostSearchViewSet, base_name='post-search')
 api_1.register(r'posts/searchbylocation', PostSearchByLocationViewSet, base_name='post-search-by-location')
+api_1.register(r'posts/sort', PostSortViewSet, base_name='post-sort')
 api_1.register(r'posts', PostsViewSet, base_name='post')
 api_1.register(r'comments', CommentsViewSet, base_name='comment')
 api_1.register(r'tags/search', TagExactSearchView, base_name='tag-exact-search')

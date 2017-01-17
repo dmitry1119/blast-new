@@ -215,6 +215,22 @@ class PostsViewSet(PerObjectPermissionMixin,
 
         return self.get_paginated_response(serializer.data)
 
+    @detail_route(methods=['get'])
+    def votersbypostid(self, request, pk=None):
+        qs = PostVote.objects.filter(post_id=pk)
+        qs = qs.prefetch_related('user')
+
+        page = self.paginate_queryset(qs)
+        users = [it.user for it in page]
+
+        serializer = UsernameSerializer(users, many=True,
+                                        context=self.get_serializer_context())
+
+        mark_followee(serializer.data, self.request.user)
+        mark_requested(serializer.data, self.request.user)
+
+        return self.get_paginated_response(serializer.data)
+
     @detail_route(methods=['put'])
     def vote(self, request, pk=None):
         """
@@ -511,22 +527,42 @@ class PostSearchByLocationViewSet(  mixins.ListModelMixin,
     """                                    
     serializer_class = PostPublicSerializer
 
-    queryset = Post.objects.all().order_by('-created_at')
+    def extend_response_data(self, data):
+        extend_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
-        posts = super().get_queryset()
-
+        posts = Post.objects.filter(user=self.request.user)
+        
+        tags = Tag.objects.all()
+        if tags:
+            posts = posts.filter(tags__in=tags)
+        
         location = self.request.query_params.get('location', None)
         lat = self.request.query_params.get('lat', None)
         lon = self.request.query_params.get('lon', None)
 
-        if location is not None:
+        if location:
             posts = posts.filter(location_name=location)
-        if lat is not None:
+        if lat:
             posts = posts.filter(lat=lat)
-        if lon is not None:
+        if lon:
             posts = posts.filter(lon=lon)
         
-        posts = posts[:3]
-
+        posts = posts.order_by('-created_at')[:3]
+        
         return posts
+
+class PostSortViewSet(  mixins.ListModelMixin,
+                        viewsets.GenericViewSet):
+
+    serializer_class = PostPublicSerializer
+
+    queryset = Post.objects.all().order_by('-created_at')
+
+    def extend_response_data(self, data):
+        extend_posts(data, self.request.user, self.request)
+
+    def get_queryset(self):
+        posts = super().get_queryset()
+
+        return posts        
