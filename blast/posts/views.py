@@ -494,3 +494,39 @@ class PostSearchViewSet(mixins.ListModelMixin,
         return posts
 
 
+class PostSearchByLocationViewSet(  mixins.ListModelMixin,
+                                    viewsets.GenericViewSet):
+    """Returns list of post for location
+
+    ---
+    list:
+        parameters:
+            - name: location
+              type: string
+              description: location name to search
+            - name: lat
+              type: float
+            - name: lon
+              type: float
+    """                                    
+    serializer_class = PostPublicSerializer
+
+    queryset = Post.objects.all().order_by('-created_at')
+
+    def get_queryset(self):
+        posts = super().get_queryset()
+
+        location = self.request.query_params.get('location', None)
+        lat = self.request.query_params.get('lat', None)
+        lon = self.request.query_params.get('lon', None)
+
+        if location is not None:
+            posts = posts.filter(location_name=location)
+        if lat is not None:
+            posts = posts.filter(lat=lat)
+        if lon is not None:
+            posts = posts.filter(lon=lon)
+        
+        posts = posts[:3]
+
+        return posts
