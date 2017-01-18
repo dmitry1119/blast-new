@@ -15,7 +15,7 @@ from core.views import ExtendableModelMixin
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
-                               VoteSerializer)
+                               VoteSerializer, VotePublicSerializer)
 
 from datetime import timedelta
 
@@ -216,18 +216,25 @@ class PostsViewSet(PerObjectPermissionMixin,
         return self.get_paginated_response(serializer.data)
 
     @detail_route(methods=['get'])
-    def votersbypostid(self, request, pk=None):
-        qs = PostVote.objects.filter(post_id=pk)
-        qs = qs.prefetch_related('user')
+    def votes(self, request, pk=None):
+        if not self.request.user.is_authenticated():
+            return self.permission_denied(self.request, 'You are not authenticated')
 
-        page = self.paginate_queryset(qs)
-        users = [it.user for it in page]
+        try:
+            post = self.get_queryset().get(pk=pk)
+        except Post.DoesNotExist:
+            raise Http404()
 
-        serializer = UsernameSerializer(users, many=True,
+        try:
+            votes = PostVote.objects.filter(user=request.user, post=post)
+        except PostVote.DoesNotExist:
+            raise Http404()
+
+        votes = PostVote.objects.order_by('-created_at')
+        page = self.paginate_queryset(votes)
+
+        serializer = VotePublicSerializer(page, many=True,
                                         context=self.get_serializer_context())
-
-        mark_followee(serializer.data, self.request.user)
-        mark_requested(serializer.data, self.request.user)
 
         return self.get_paginated_response(serializer.data)
 
