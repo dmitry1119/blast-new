@@ -520,6 +520,7 @@ class PostSearchByLocationViewSet(  mixins.ListModelMixin,
     ---
     list:
         parameters:
+            form: replace
             - name: location
               type: string
               description: location name to search
@@ -534,8 +535,10 @@ class PostSearchByLocationViewSet(  mixins.ListModelMixin,
         extend_posts(data, self.request.user, self.request)
 
     def get_queryset(self):
+        if self.request.user.is_anonymous():
+            return self.permission_denied(request)
+
         posts = Post.objects.filter(user=self.request.user)
-        
         tags = Tag.objects.all()
         if tags:
             posts = posts.filter(tags__in=tags)
@@ -552,6 +555,11 @@ class PostSearchByLocationViewSet(  mixins.ListModelMixin,
             posts = posts.filter(lon=lon)
         
         posts = posts.order_by('-created_at')[:3]
+        
+        for post in posts:
+            if not PinnedPosts.objects.filter(user_id=self.request.user.pk, post=post).exists():
+                print ('pinned post')
+                PinnedPosts.objects.create(user_id=self.request.user.pk, post=post)    
         
         return posts
 
