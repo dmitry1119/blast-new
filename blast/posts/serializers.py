@@ -5,7 +5,7 @@ from posts.models import Post, PostComment, PostVote
 
 # TODO (VM): Exclude user for anonymous posts
 from users.models import User
-
+from users.serializers import UsernameSerializer
 
 class PostPublicSerializer(serializers.ModelSerializer):
     comments = serializers.ReadOnlyField(source='comments_count')
@@ -90,9 +90,10 @@ class CommentSerializer(serializers.ModelSerializer):
 class VoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostVote
-        fields = ('post', 'is_positive', )
+        fields = ('post', 'is_positive')
 
 
 class VotePublicSerializer(serializers.ModelSerializer):
+    user = UsernameSerializer()
     class Meta:
         model = PostVote

@@ -217,25 +217,21 @@ class PostsViewSet(PerObjectPermissionMixin,
 
     @detail_route(methods=['get'])
     def votes(self, request, pk=None):
-        if not self.request.user.is_authenticated():
-            return self.permission_denied(self.request, 'You are not authenticated')
-
         try:
             post = self.get_queryset().get(pk=pk)
         except Post.DoesNotExist:
             raise Http404()
 
         try:
-            votes = PostVote.objects.filter(user=request.user, post=post)
+            votes = PostVote.objects.filter(post=post).order_by('-created_at')
+            votes = votes.prefetch_related('user')
         except PostVote.DoesNotExist:
             raise Http404()
-
-        votes = PostVote.objects.order_by('-created_at')
+        
         page = self.paginate_queryset(votes)
-
+        
         serializer = VotePublicSerializer(page, many=True,
                                         context=self.get_serializer_context())
-
         return self.get_paginated_response(serializer.data)
 
     @detail_route(methods=['put'])
