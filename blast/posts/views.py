@@ -15,8 +15,8 @@ from core.views import ExtendableModelMixin
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
-                               VoteSerializer, VotePublicSerializer,
-                               TagPublicSerializer)
+                               VoteSerializer, VotePublicSerializer)
+from tags.serializers import TagPublicSerializer                               
 
 from datetime import timedelta
 
