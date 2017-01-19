@@ -16,7 +16,6 @@ from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
                                VoteSerializer, VotePublicSerializer)
-from tags.serializers import TagPublicSerializer                               
 
 from datetime import timedelta
 
@@ -524,27 +523,11 @@ class PinnedPostsByLocationView( generics.ListAPIView):
     filter_fields = ('location_name', 'lat', 'lon')
 
     def filter_queryset(self, request):
-        qs = request.user.pinned_tags.all()
-        page = self.paginate_queryset(qs)
-
-        serializer_context = self.get_serializer_context()
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            response = self.get_paginated_response(serializer.data)
-            for it in serializer.data:
-                it['is_pinned'] = True
-
-            extend_tags(response.data['results'], serializer_context)
-
-            return response
-
-        serializer = self.get_serializer(qs, many=True)
-        for it in serializer.data:
-            it['is_pinned'] = True
-
-        extend_tags(serializer.data, serializer_context)
-
-        return Response(serializer.data)
+        if not self.request.user.is_authenticated():
+            return self.queryset
+                    
+        posts = self.request.user.pinned.filter().values('post_id')
+        return self.queryset.filter(id__in=posts).order_by('-created_at')[:3]
 
 class UnpinnedPostsByLocationView( generics.ListAPIView):
     queryset = Post.objects.all()
@@ -559,37 +542,9 @@ class UnpinnedPostsByLocationView( generics.ListAPIView):
     def filter_queryset(self, request):
         if not self.request.user.is_authenticated():
             return self.queryset
-
-        page = self.request.query_params.get('page', 0)
-        page_size = self.request.query_params.get('page_size', 50)
-
-        try:
-            page = int(page)
-            page_size = int(page_size)
-        except ValueError:
-            logging.error('Failed to cast page and page size to int')
-            return Response('page and page_size should be int', status=400)
-
-        start = page * page_size
-        end = (page + 1) * page_size
-
-        pinned = self.request.user.pinned_tags.all()
-        pinned_tags = {it.title for it in pinned}
-
-        qs = Tag.objects.filter(total_posts__gt=0).exclude(title__in=pinned_tags)
-        tags = qs[start:end]
-
-        context = self.get_serializer_context()
-        serializer = TagPublicSerializer(tags, many=True, context=context)
-        for it in serializer.data:
-            it['is_pinned'] = False
-
-        extend_tags(serializer.data, context)
-
-        return Response({
-            'count': qs.count(),
-            'results': serializer.data
-        })      
+                    
+        posts = self.request.user.pinned.filter().values('post_id')
+        return self.queryset.exclude(id__in=posts).order_by('-created_at')[:3]  
 
 class PostFeedsByLocationView( generics.ListAPIView):
 
