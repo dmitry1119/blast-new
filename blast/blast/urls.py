@@ -32,7 +32,13 @@ from smsconfirmation.views import (PhoneConfirmView, ResetPasswordView,
 
 from posts.views import (PostsViewSet, CommentsViewSet, VotedPostsViewSet,
                          DonwvotedPostsViewSet, PinnedPostsViewSet, PostSearchViewSet, 
-                         PostSearchByLocationViewSet, PostSortViewSet)
+                         PostSortViewSet, 
+                         PinnedPostsByLocationView,
+                         UnpinnedPostsByLocationView,
+                         PostSearchByLocationView,
+                         PinPostByLocationView,
+                         UnpinPostByLocationView,
+                         SharePostByLocationView)
 
 from posts.feeds import MainFeedView, RecentFeedView
 
@@ -47,7 +53,6 @@ api_1.register(r'posts/pinned', PinnedPostsViewSet, base_name='pinned')
 api_1.register(r'posts/downvoted', DonwvotedPostsViewSet, base_name='downvoted')
 api_1.register(r'posts/voted', VotedPostsViewSet, base_name='voted')
 api_1.register(r'posts/search', PostSearchViewSet, base_name='post-search')
-api_1.register(r'posts/searchbylocation', PostSearchByLocationViewSet, base_name='post-search-by-location')
 api_1.register(r'posts/sort', PostSortViewSet, base_name='post-sort')
 api_1.register(r'posts', PostsViewSet, base_name='post')
 api_1.register(r'comments', CommentsViewSet, base_name='comment')
@@ -65,6 +70,13 @@ urlpatterns = [
     url(r'^api/v1/user/profile/$', UserProfileView.as_view(), name='user-profile'),
     url(r'^api/v1/user/settings/$', UserSettingsView.as_view(), name='user-settings'),
     url(r'^api/v1/user/phone/$', UserChangePhoneView.as_view(), name='user-phone'),
+
+    url(r'^api/v1/locations/pinned/$', PinnedPostsByLocationView.as_view(), name='pinned-posts-by-location'),
+    url(r'^api/v1/locations/unpinned/$', UnpinnedPostsByLocationView.as_view(), name='unpinned-posts-by-location'),
+    url(r'^api/v1/locations/search/$', PostSearchByLocationView.as_view(), name='post-search-by-location'),
+    url(r'^api/v1/locations/pin/$', PinPostByLocationView.as_view(), name='pin-post-by-location'),
+    url(r'^api/v1/locations/unpin/$', UnpinPostByLocationView.as_view(), name='unpin-post-by-location'),
+    url(r'^api/v1/locations/share/$', SharePostByLocationView.as_view(), name='share-post-by-location'),
 
     url(r'^api/v1/token/$', UserAuthView.as_view(), name='get-auth-token'),
     url(r'^api/v1/sms/phone', PhoneConfirmView.as_view(), name='phone-confirmation'),

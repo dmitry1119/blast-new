@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from rest_framework import filters
-from rest_framework import viewsets, mixins, permissions, status
+from rest_framework import viewsets, mixins, permissions, status, generics
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.response import Response
 
@@ -15,7 +15,8 @@ from core.views import ExtendableModelMixin
 from posts.models import Post, PostComment, PostVote
 from posts.serializers import (PostSerializer, PostPublicSerializer,
                                CommentSerializer, CommentPublicSerializer,
-                               VoteSerializer, VotePublicSerializer)
+                               VoteSerializer, VotePublicSerializer,
+                               TagPublicSerializer)
 
 from datetime import timedelta
 
@@ -512,56 +513,271 @@ class PostSearchViewSet(mixins.ListModelMixin,
 
         return posts
 
+class PinnedPostsByLocationView( generics.ListAPIView):
+    queryset = Post.objects.all()
 
-class PostSearchByLocationViewSet(  mixins.ListModelMixin,
-                                    viewsets.GenericViewSet):
-    """Returns list of post for location
+    permissions = (permissions.IsAuthenticated,)
+    
+    serializer_class = PostPublicSerializer
+
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('location_name', 'lat', 'lon')
+
+    def filter_queryset(self, request):
+        qs = request.user.pinned_tags.all()
+        page = self.paginate_queryset(qs)
+
+        serializer_context = self.get_serializer_context()
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+            for it in serializer.data:
+                it['is_pinned'] = True
+
+            extend_tags(response.data['results'], serializer_context)
+
+            return response
+
+        serializer = self.get_serializer(qs, many=True)
+        for it in serializer.data:
+            it['is_pinned'] = True
+
+        extend_tags(serializer.data, serializer_context)
+
+        return Response(serializer.data)
+
+class UnpinnedPostsByLocationView( generics.ListAPIView):
+    queryset = Post.objects.all()
+
+    permissions = (permissions.IsAuthenticated,)
+    
+    serializer_class = PostPublicSerializer
+
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('location_name', 'lat', 'lon')
+
+    def filter_queryset(self, request):
+        if not self.request.user.is_authenticated():
+            return self.queryset
+
+        page = self.request.query_params.get('page', 0)
+        page_size = self.request.query_params.get('page_size', 50)
+
+        try:
+            page = int(page)
+            page_size = int(page_size)
+        except ValueError:
+            logging.error('Failed to cast page and page size to int')
+            return Response('page and page_size should be int', status=400)
+
+        start = page * page_size
+        end = (page + 1) * page_size
+
+        pinned = self.request.user.pinned_tags.all()
+        pinned_tags = {it.title for it in pinned}
+
+        qs = Tag.objects.filter(total_posts__gt=0).exclude(title__in=pinned_tags)
+        tags = qs[start:end]
+
+        context = self.get_serializer_context()
+        serializer = TagPublicSerializer(tags, many=True, context=context)
+        for it in serializer.data:
+            it['is_pinned'] = False
+
+        extend_tags(serializer.data, context)
+
+        return Response({
+            'count': qs.count(),
+            'results': serializer.data
+        })      
+
+class PostFeedsByLocationView( generics.ListAPIView):
+
+    queryset = Post.objects.all()
+
+    permissions = (permissions.IsAuthenticated,)
+    
+    serializer_class = PostPublicSerializer
+
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('location_name', 'lat', 'lon')
+
+    def filter_queryset(self, request):
+        posts = super().filter_queryset(request).order_by('-created_at')[:1]
+        pinned = self.request.user.pinned.filter(post=posts)
+        return pinned
+
+
+class PostSearchByLocationView( generics.ListAPIView ):
+    """Returns list of post for given tag
 
     ---
-    list:
+    GET:
         parameters:
-            form: replace
+            - name: tag
+              type: string
+              required: true
+              description: tag name to search
+    """    
+    queryset = Post.objects.all()
+
+    permissions = (permissions.IsAuthenticated,)
+    
+    serializer_class = PostPublicSerializer
+
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('location_name', 'lat', 'lon')
+
+    def filter_queryset(self, request):
+        posts = super().filter_queryset(request)
+
+        tag = self.request.query_params.get('tag', '')
+        try:
+            tags = Tag.objects.filter(title__istartswith=tag)
+            tags = tags.order_by('-total_posts')[:100]
+            # Select first 100 posts assume that search output will be short
+            pinned = self.request.user.pinned
+            pinned = pinned.filter(tags__in=tags)
+            pinned = pinned.order_by('-created_at').distinct()[:100]
+            
+            posts = posts.filter(tags__in=tags, expired_at__gte=timezone.now())
+            posts = posts.exclude(pk__in={it.pk for it in pinned}).distinct()
+            posts = posts.order_by('-created_at')[:3]
+            
+        except:
+            raise Http404()
+
+        return posts
+
+
+class PinPostByLocationView( generics.RetrieveUpdateAPIView ):
+    """
+    ---
+    PUT:
+        parameters:
             - name: location
               type: string
-              description: location name to search
+              description: location name
             - name: lat
               type: float
             - name: lon
               type: float
-    """                                    
-    serializer_class = PostPublicSerializer
+    """
+        
+    queryset = Post.objects.all()
 
-    def extend_response_data(self, data):
-        extend_posts(data, self.request.user, self.request)
+    permissions = (permissions.IsAuthenticated,)
+    
+    public_serializer_class = PostPublicSerializer
+    private_serializer_class = PostSerializer
 
-    def get_queryset(self):
+    def put(self, request, *args, **kwargs):
+        posts = super().get_queryset()
+
         if self.request.user.is_anonymous():
             return self.permission_denied(request)
 
-        posts = Post.objects.filter(user=self.request.user)
-        tags = Tag.objects.all()
-        if tags:
-            posts = posts.filter(tags__in=tags)
+        location = request.data['location'] or None
+        lat = request.data['lat'] or None
+        lon = request.data['lon'] or None
         
-        location = self.request.query_params.get('location', None)
-        lat = self.request.query_params.get('lat', None)
-        lon = self.request.query_params.get('lon', None)
-
-        if location:
-            posts = posts.filter(location_name=location)
-        if lat:
-            posts = posts.filter(lat=lat)
-        if lon:
-            posts = posts.filter(lon=lon)
-        
-        posts = posts.order_by('-created_at')[:3]
+        try:
+            posts = posts.filter(location_name=location, lat=lat, lon=lon)
+            posts = posts.order_by('-created_at')[:3]
+        except:
+            raise Http404()
         
         for post in posts:
             if not PinnedPosts.objects.filter(user_id=self.request.user.pk, post=post).exists():
-                print ('pinned post')
-                PinnedPosts.objects.create(user_id=self.request.user.pk, post=post)    
+                PinnedPosts.objects.create(user_id=self.request.user.pk, post=post)
         
-        return posts
+        return Response()
+
+class UnpinPostByLocationView( generics.RetrieveUpdateAPIView ):
+    """
+    ---
+    PUT:
+        parameters:
+            - name: location
+              type: string
+              description: location name
+            - name: lat
+              type: float
+            - name: lon
+              type: float
+    """    
+    queryset = Post.objects.all()
+
+    permissions = (permissions.IsAuthenticated,)
+
+    public_serializer_class = PostPublicSerializer
+    private_serializer_class = PostSerializer
+
+    def put(self, request, *args, **kwargs):
+        posts = super().get_queryset()
+
+        if self.request.user.is_anonymous():
+            return self.permission_denied(request)
+
+        location = request.data['location'] or None
+        lat = request.data['lat'] or None
+        lon = request.data['lon'] or None
+
+        try:
+            posts = posts.filter(location_name=location, lat=lat, lon=lon)
+            posts = posts.order_by('-created_at')[:3]
+        except:
+            raise Http404()
+        
+        for post in posts:
+            PinnedPosts.objects.filter(user_id=self.request.user.pk, post=post).delete()
+        
+        return Response()
+    
+
+class SharePostByLocationView( generics.CreateAPIView ):
+    """
+    ---
+    POST:
+        parameters:
+            - name: location
+              type: string
+              description: location name
+            - name: lat
+              type: float
+            - name: lon
+              type: float
+            - name: users
+              description: list of id of followers
+    """    
+    queryset = Post.objects.all()
+
+    permissions = (permissions.IsAuthenticated,)
+
+    public_serializer_class = PostPublicSerializer
+    private_serializer_class = PostSerializer
+
+    def post(self, request, *args, **kwargs):
+        posts = super().get_queryset()
+
+        if self.request.user.is_anonymous():
+            return self.permission_denied(request)
+
+        location = request.data['location'] or None
+        lat = request.data['lat'] or None
+        lon = request.data['lon'] or None
+        users = request.data['users']
+
+        try:
+            posts = posts.filter(location_name=location, lat=lat, lon=lon)
+            posts = posts.order_by('-created_at')[:3]
+        except:
+            raise Http404()
+        
+        for post in posts:
+            send_share_notifications.delay(user_id=self.request.user.pk, post=post, users=users)
+
+        return Response({'users': users})
 
 class PostSortViewSet(  mixins.ListModelMixin,
                         viewsets.GenericViewSet):
